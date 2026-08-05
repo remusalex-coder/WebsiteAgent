@@ -1,0 +1,10 @@
+# Run artifacts land here, one folder per run:
+#
+#   output/<runId>/1-discovery.json
+#   output/<runId>/2-collected.json
+#   output/<runId>/3-content.json
+#   output/<runId>/4-deployment.json
+#   output/<runId>/result.json
+#   output/<runId>/run.log.ndjson
+#
+# Contents are gitignored; this file keeps the folder tracked.

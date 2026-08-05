@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.local
+
+# Machine-local Claude Code state, not project configuration.
+.claude/settings.local.json
+
+# Generated run artifacts — the folder itself is tracked, its contents are not.
+output/*
+!output/.gitkeep
