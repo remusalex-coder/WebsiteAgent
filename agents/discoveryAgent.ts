@@ -33,7 +33,7 @@ import type {
 
 const NAME = 'discoveryAgent';
 
-/** Artifact filename written under `config.outputDir`. */
+/** Artifact filename written under the run directory. */
 const ARTIFACT = 'discovery.json';
 
 /** Hosts that legitimately serve a Maps listing. */
@@ -571,7 +571,7 @@ async function waitForPlaceUrl(page: PageHandle, logger: Logger): Promise<string
 /* ------------------------------------------------------------------ */
 
 async function writeArtifact(ctx: AgentContext, result: DiscoveryResult): Promise<string> {
-  const filePath = path.join(ctx.config.outputDir, ARTIFACT);
+  const filePath = path.join(ctx.outputDir, ARTIFACT);
   await fs.mkdir(path.dirname(filePath), { recursive: true });
   await fs.writeFile(filePath, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
   return filePath;

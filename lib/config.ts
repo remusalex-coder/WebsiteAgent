@@ -245,7 +245,11 @@ export const DEFAULTS = {
 export const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   anthropic: 'claude-opus-5',
   openai: 'gpt-5',
-  gemini: 'gemini-2.5-pro',
+  // Not `gemini-2.5-pro`: the 2.5 family is no longer served to accounts
+  // created after mid-2026 (404 "no longer available to new users"), and Pro
+  // lost its free tier in April 2026. A flash model on the free tier is the
+  // honest default for a project whose cost target is zero.
+  gemini: 'gemini-3.6-flash',
   openrouter: 'openai/gpt-5',
 };
 

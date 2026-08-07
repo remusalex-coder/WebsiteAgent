@@ -105,7 +105,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     directions: ['friendly', 'elegant', 'playful'],
     density: 'balanced',
     imageReliance: 'essential',
-    prioritySections: ['hero', 'services', 'menu', 'gallery', 'hours', 'location', 'contact'],
+    prioritySections: ['hero', 'services', 'menu', 'gallery', 'about', 'hours', 'location', 'contact'],
     // `list`, not `cards`. A price set right against a leader is a four-hundred
     // year old convention and the single strongest signal that a page belongs
     // to somewhere that sells food; the same items in a card grid read as a
@@ -120,7 +120,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     directions: ['elegant', 'editorial', 'friendly'],
     density: 'balanced',
     imageReliance: 'essential',
-    prioritySections: ['hero', 'menu', 'gallery', 'hours', 'location', 'testimonials', 'contact'],
+    prioritySections: ['hero', 'menu', 'gallery', 'about', 'hours', 'location', 'testimonials', 'contact'],
     variantHints: { menu: 'list', gallery: 'grid', testimonials: 'quotes' },
     // Brick / wine red, from #9c3b2e (30.2°) and #722f37 (15.1°). Appetite-warm
     // without tipping into the orange the bakery owns.
@@ -132,7 +132,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     directions: ['friendly', 'minimal', 'elegant'],
     density: 'airy',
     imageReliance: 'essential',
-    prioritySections: ['hero', 'menu', 'gallery', 'hours', 'location', 'contact'],
+    prioritySections: ['hero', 'menu', 'gallery', 'about', 'hours', 'location', 'contact'],
     variantHints: { menu: 'list', gallery: 'masonry' },
     // Roasted coffee / sienna, from #6f4e37 (55.6°) and #a0522d (44.6°).
     fallbackHue: 52,
@@ -143,7 +143,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     directions: ['bold', 'premium', 'creative'],
     density: 'balanced',
     imageReliance: 'essential',
-    prioritySections: ['hero', 'menu', 'gallery', 'hours', 'location', 'contact'],
+    prioritySections: ['hero', 'menu', 'gallery', 'about', 'hours', 'location', 'contact'],
     variantHints: { menu: 'list', gallery: 'grid' },
     // Wine, from #7b2d43 (5.8°) and #722f37 (15.1°). Two earlier attempts are
     // worth recording: 300° rendered an electric violet that belonged to a
@@ -196,7 +196,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     directions: ['elegant', 'luxury', 'playful'],
     density: 'airy',
     imageReliance: 'essential',
-    prioritySections: ['hero', 'services', 'gallery', 'testimonials', 'hours', 'contact'],
+    prioritySections: ['hero', 'services', 'gallery', 'testimonials', 'about', 'hours', 'contact'],
     variantHints: { services: 'list', gallery: 'masonry', testimonials: 'cards' },
     // Rose, from #d99ab0 (356.5°). Far enough from the bar's plum that the two
     // do not read as the same pink at a glance.
@@ -219,7 +219,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     directions: ['bold', 'modern', 'premium'],
     density: 'dense',
     imageReliance: 'essential',
-    prioritySections: ['hero', 'services', 'gallery', 'testimonials', 'hours', 'cta', 'contact'],
+    prioritySections: ['hero', 'services', 'gallery', 'testimonials', 'about', 'hours', 'cta', 'contact'],
     variantHints: { services: 'feature-grid', testimonials: 'cards', gallery: 'grid' },
     // Electric orange, from #ff5a1f (37.7°). The `bold` direction's 0.22 chroma
     // takes this most of the way to the full-strength hue, which is the point.
@@ -270,7 +270,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     directions: ['modern', 'friendly', 'minimal'],
     density: 'balanced',
     imageReliance: 'essential',
-    prioritySections: ['hero', 'services', 'gallery', 'hours', 'location', 'contact'],
+    prioritySections: ['hero', 'services', 'gallery', 'about', 'hours', 'location', 'contact'],
     variantHints: { services: 'cards', gallery: 'grid' },
     // Boutique violet, from #7c3aed (293°).
     fallbackHue: 298,

@@ -446,16 +446,28 @@
         "background": "canvas"
       },
       {
-        "index": 6,
-        "kind": "hours",
-        "variant": "list",
+        "index": 1,
+        "kind": "about",
+        "variant": "stack",
         "emphasis": "secondary",
         "density": "balanced",
         "columns": null,
         "fullBleed": false,
+        "rationale": "Chose stack for about: the section has 0 items and 0 images.",
+        "frame": "statement",
+        "background": "subtle"
+      },
+      {
+        "index": 6,
+        "kind": "hours",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
         "rationale": "Chose list for hours: the section has 2 items and 0 images.",
         "frame": "aside",
-        "background": "subtle"
+        "background": "canvas"
       },
       {
         "index": 7,
@@ -467,7 +479,7 @@
         "fullBleed": false,
         "rationale": "Chose stack for location: the section has 0 items and 0 images.",
         "frame": "statement",
-        "background": "canvas"
+        "background": "subtle"
       },
       {
         "index": 8,
@@ -479,18 +491,6 @@
         "fullBleed": false,
         "rationale": "Chose list for contact: the section has 2 items and 0 images.",
         "frame": "aside",
-        "background": "subtle"
-      },
-      {
-        "index": 1,
-        "kind": "about",
-        "variant": "stack",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": null,
-        "fullBleed": false,
-        "rationale": "Chose stack for about: the section has 0 items and 0 images.",
-        "frame": "statement",
         "background": "canvas"
       },
       {
@@ -502,7 +502,7 @@
         "columns": 1,
         "fullBleed": false,
         "rationale": "Chose quotes for testimonials: the section has 1 item and 0 images.",
-        "frame": "aside",
+        "frame": "offset",
         "background": "subtle"
       },
       {
@@ -514,7 +514,7 @@
         "columns": null,
         "fullBleed": false,
         "rationale": "Chose list for faq: the section has 2 items and 0 images.",
-        "frame": "offset",
+        "frame": "aside",
         "background": "canvas"
       },
       {
@@ -535,10 +535,10 @@
       2,
       3,
       4,
+      1,
       6,
       7,
       8,
-      1,
       5,
       9,
       10

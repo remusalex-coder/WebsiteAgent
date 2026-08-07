@@ -94,6 +94,37 @@ function renderOrder(plan: LayoutPlan | null, count: number): readonly number[] 
   return order;
 }
 
+/**
+ * What a section is called *in the navigation*.
+ *
+ * Not the heading. A heading earns its length — it is the first thing read
+ * inside the section and it should say something only this business could say.
+ * A nav label is scanned, not read, and it competes for the most expensive
+ * space on the page.
+ *
+ * Deriving one from the other produced a header 165px tall on desktop and
+ * 322px on a 390px phone — 38% of the first screen — with entries reading
+ * "Sourdough loaves, pastries, cakes, and dining" and "Stone ovens, whole
+ * grains, and daily fermentation". Every generated site had it, because the
+ * writer is asked for headings that are specific and was being obeyed.
+ *
+ * A closed map keyed by kind is the fix: always short, always conventional,
+ * never a sentence, and it cannot regress when a writer gets more expressive.
+ */
+const NAV_LABELS: Readonly<Record<SectionKind, string>> = {
+  hero: 'Top',
+  about: 'About',
+  services: 'Services',
+  menu: 'Menu',
+  gallery: 'Gallery',
+  testimonials: 'Reviews',
+  hours: 'Hours',
+  location: 'Visit',
+  contact: 'Contact',
+  cta: 'Start',
+  faq: 'FAQ',
+};
+
 /** Header navigation, in render order. A section with no heading is skipped. */
 function buildNav(
   sections: readonly WebsiteSection[],
@@ -107,9 +138,10 @@ function buildNav(
     const fragment = ids[index];
     if (section === undefined || fragment === undefined) continue;
 
-    const label = section.heading.trim();
-    if (label === '' || UNLISTED.has(section.kind)) continue;
-    items.push({ label, fragment });
+    // A section with no heading has nothing to jump to that a reader would
+    // recognise, so it stays out of the outline even though its label is known.
+    if (section.heading.trim() === '' || UNLISTED.has(section.kind)) continue;
+    items.push({ label: NAV_LABELS[section.kind], fragment });
   }
 
   return items;

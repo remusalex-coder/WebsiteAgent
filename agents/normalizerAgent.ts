@@ -616,7 +616,7 @@ export const normalizerAgent: NormalizerAgent = {
       ...(collected.hero ? [collected.hero] : []),
       ...collected.gallery,
     ];
-    const hashes = await contentHashes(allImages, config.outputDir, logger);
+    const hashes = await contentHashes(allImages, ctx.outputDir, logger);
     const uniqueImages = dedupeImages(allImages, hashes);
     const images = rankImages(uniqueImages);
 
@@ -657,7 +657,7 @@ export const normalizerAgent: NormalizerAgent = {
 
     const profile: BusinessProfile = { ...draft, validation: validate(draft) };
 
-    const filePath = path.join(config.outputDir, ARTIFACT);
+    const filePath = path.join(ctx.outputDir, ARTIFACT);
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, `${JSON.stringify(profile, null, 2)}\n`, 'utf8');
 

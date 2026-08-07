@@ -47,6 +47,7 @@ import type {
   BusinessStrategy,
   ImageAsset,
   OpeningHours,
+  PhoneNumber,
   SectionKind,
   WebsiteContent,
   WebsiteSection,
@@ -247,7 +248,7 @@ STRUCTURE. Emit six to nine sections in reading order, always starting with hero
 - hero — the headline is the single most important line on the page. Say what they make or do, concretely.
 - about — the story, drawn from what the site says about itself. Aim for at least two paragraphs where the material exists; this is the section that carries voice.
 - services or menu — what a customer can get. Five to eight bullets is the target: at that length the layout engine gives the section its strongest treatment, and below five it renders as a plain list. Write each as "Name — one clause of detail". Only name things the brief names.
-- gallery — a short heading and one line. The photographs do the work.
+- gallery — REQUIRED whenever the brief reports four or more gallery photographs. Give it a short heading and at most one line of body; the photographs do the work and you do not need to describe them. Omitting a gallery when the business has photography is the single most damaging thing you can do to the finished page: it leaves the site looking like a text document about a business that clearly has pictures.
 - hours, contact — write the heading and, at most, one line of body. Leave bullets EMPTY. Verified data is inserted afterwards.
 - location — where they are and what the building or street is like, if the brief says.
 - testimonials — ONLY if the brief contains actual customer words. It usually does not. Omit it.
@@ -474,14 +475,95 @@ export function hourBullets(hours: readonly OpeningHours[]): readonly string[] {
   return bullets;
 }
 
+/** Mailbox names a customer should never be routed to from a contact block. */
+const NON_CUSTOMER_MAILBOXES = [
+  'press', 'media', 'jobs', 'careers', 'recruit', 'hiring', 'invoice',
+  'billing', 'accounts', 'legal', 'privacy', 'abuse', 'noreply', 'no-reply',
+  'postmaster', 'webmaster', 'admin',
+];
+
+/** Mailbox names that are the front door, best first. */
+const CUSTOMER_MAILBOXES = ['hello', 'info', 'contact', 'enquiries', 'inquiries', 'orders', 'bookings'];
+
+/**
+ * Ranks the profile's emails by how well they serve a customer.
+ *
+ * The first Tartine run published three addresses: `info@tartinebakery.com`,
+ * `info@tartinemanufactory.com` and `press@tartinebakery.com`. The second
+ * belongs to a *different business* and the third routes a customer to a press
+ * officer. Both were on the site, so both are true — and neither belongs on a
+ * page whose job is to get someone through the door.
+ *
+ * Truthfulness was never the problem here. Editorial judgement was.
+ */
+function rankEmails(profile: BusinessProfile): readonly string[] {
+  let host: string | null = null;
+  const website = profile.website?.value;
+  if (website !== undefined) {
+    try {
+      host = new URL(website).host.replace(/^www\./, '').toLowerCase();
+    } catch {
+      host = null;
+    }
+  }
+
+  const scored = profile.emails
+    .map((entry) => entry.value)
+    .map((email) => {
+      const [mailbox = '', domain = ''] = email.toLowerCase().split('@');
+      const known = CUSTOMER_MAILBOXES.indexOf(mailbox);
+      return {
+        email,
+        // Lower sorts first.
+        score:
+          (host !== null && domain !== host ? 100 : 0) +
+          (NON_CUSTOMER_MAILBOXES.includes(mailbox) ? 50 : 0) +
+          (known === -1 ? 10 : known),
+      };
+    })
+    .filter((entry) => entry.score < 100) // A different company's domain is never shown.
+    .sort((a, b) => a.score - b.score);
+
+  // A press or careers inbox is only worth showing when there is no customer
+  // inbox at all. Given `info@` and `press@`, printing both invites half the
+  // visitors to write to the wrong person.
+  const customer = scored.filter((entry) => entry.score < 50);
+  const shown = customer.length > 0 ? customer : scored;
+
+  // Two is the most a visitor will ever read. One is usually right.
+  return shown.slice(0, 2).map((entry) => entry.email);
+}
+
+/**
+ * A phone number set the way its own country writes it.
+ *
+ * Maps handed back `+14154872600`, which is correct, unambiguous and something
+ * no San Francisco bakery has ever printed. Regrouping digits is presentation,
+ * not invention — the digits are unchanged and `tel:` still uses E.164 — so
+ * this stays inside the no-invention rule. Anything whose shape is not
+ * recognised is passed through exactly as published.
+ */
+export function displayPhone(phone: PhoneNumber): string {
+  const formatted = phone.formatted.trim();
+  // Already human-formatted by whoever published it: leave it alone.
+  if (/[\s().-]/.test(formatted)) return formatted;
+
+  const e164 = phone.e164 ?? formatted;
+  const nanp = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(e164);
+  if (nanp !== null) return `+1 (${nanp[1]}) ${nanp[2]}-${nanp[3]}`;
+
+  const uk = /^\+44(\d{2,4})(\d{3,4})(\d{4})$/.exec(e164);
+  if (uk !== null) return `+44 ${uk[1]} ${uk[2]} ${uk[3]}`;
+
+  return formatted;
+}
+
 /**
  * Contact details as bullets, in the order a visitor needs them.
  *
  * Each is `Caption — value`, which is the shape the renderer's contact block
  * reads: it captions the row from the label and turns a recognisable address or
- * number into something pressable. Values are verbatim from the profile — a
- * phone number reformatted into a house style is a number a local reader no
- * longer recognises.
+ * number into something pressable.
  */
 export function contactBullets(profile: BusinessProfile): readonly string[] {
   const bullets: string[] = [];
@@ -489,8 +571,12 @@ export function contactBullets(profile: BusinessProfile): readonly string[] {
   const address = profile.address?.value.formatted;
   if (address !== undefined && address.trim() !== '') bullets.push(`Address — ${address}`);
 
-  for (const phone of profile.phones) bullets.push(`Phone — ${phone.value.formatted}`);
-  for (const email of profile.emails) bullets.push(`Email — ${email.value}`);
+  // One number. A second is a decision for the visitor to make and they did
+  // not come here to make it.
+  const phone = profile.phones[0]?.value;
+  if (phone !== undefined) bullets.push(`Phone — ${displayPhone(phone)}`);
+
+  for (const email of rankEmails(profile)) bullets.push(`Email — ${email}`);
 
   return bullets;
 }
@@ -615,6 +701,29 @@ function schemaTypeFor(category: string | null): string {
  * batch; `about` takes one, which is what lets the layout engine choose a split
  * or editorial treatment for it instead of a bare column of text.
  */
+/**
+ * Words that mark an image as merchandise rather than the business itself.
+ *
+ * The first gallery Tartine produced was six Amazon cookbook covers with their
+ * alt text showing — "Tartine bread on Amazon", "BREAD BOOK Cover" — because
+ * the normalizer ranks by CDN path and byte size, and a 3D product mockup is a
+ * big file. A book cover is a real photograph on the real site, so nothing was
+ * invented; it is simply not a picture of the bakery.
+ *
+ * Matched against the alt text and the file name, both of which the collector
+ * captured verbatim.
+ */
+const NOT_PHOTOGRAPHY = [
+  'amazon', 'book', 'cover', 'cookbook', 'logo', 'icon', 'badge', 'sprite',
+  'placeholder', 'avatar', 'screenshot', 'banner-ad', 'gift card', 'giftcard',
+];
+
+/** True when an image looks like merchandise, packaging or chrome. */
+function looksLikeProductShot(image: ImageAsset): boolean {
+  const haystack = `${image.alt ?? ''} ${image.url}`.toLowerCase();
+  return NOT_PHOTOGRAPHY.some((needle) => haystack.includes(needle));
+}
+
 function assignImages(
   sections: readonly DraftSection[],
   profile: BusinessProfile,
@@ -624,7 +733,13 @@ function assignImages(
 
   // A site with no tagged hero still has a lead photograph: the best gallery
   // image. Taking it here is what stops the gallery from opening the page.
-  const pool = [...gallery];
+  //
+  // Product shots sort to the back rather than being dropped: on a business
+  // whose only imagery is packaging, a page with photographs of the packaging
+  // still beats a page with none.
+  const photographs = gallery.filter((image) => !looksLikeProductShot(image));
+  const products = gallery.filter((image) => looksLikeProductShot(image));
+  const pool = [...photographs, ...products];
   const lead = hero ?? pool.shift() ?? null;
 
   const indexOf = (kind: SectionKind): number => sections.findIndex((section) => section.kind === kind);
@@ -646,9 +761,24 @@ function assignImages(
     assigned.set(galleryIndex, pool.splice(0, MAX_GALLERY_IMAGES));
   }
 
-  const aboutIndex = indexOf('about');
-  if (aboutIndex !== -1 && pool.length > 0) {
-    assigned.set(aboutIndex, pool.splice(0, 1));
+  /*
+   * Sections that carry one photograph each, in the order they get one.
+   *
+   * The first Tartine run put three images on a 4,500px page while forty-nine
+   * sat unused in the run directory, because only `hero`, `gallery` and `about`
+   * were ever fed — and that spec had no gallery. Worse, `location` was chosen
+   * as a `split` on body length, found no image, and rendered the design's
+   * gradient placeholder, which reads as a broken image rather than as a
+   * deliberately image-free section.
+   *
+   * Feeding the single-image sections fixes both: the page carries photography
+   * proportional to what the business actually has, and a `split` gets the
+   * media its layout was chosen for.
+   */
+  for (const kind of ['about', 'location', 'services', 'menu', 'testimonials'] as const) {
+    if (pool.length === 0) break;
+    const index = indexOf(kind);
+    if (index !== -1) assigned.set(index, pool.splice(0, 1));
   }
 
   return assigned;
@@ -984,7 +1114,7 @@ export const writerAgent: WriterAgent = {
       logger.warn('writer output was corrected or is suspect', { warning });
     }
 
-    const filePath = path.join(config.outputDir, ARTIFACT);
+    const filePath = path.join(ctx.outputDir, ARTIFACT);
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, `${JSON.stringify(content, null, 2)}\n`, 'utf8');
 

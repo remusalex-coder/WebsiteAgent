@@ -188,8 +188,15 @@ function mediaFallback(ctx: SectionContext, modifier = ''): Html {
 /**
  * Images as a figure grid.
  *
- * A caption is emitted only where the collector actually found alt text —
- * writing one from the file name would be inventing content.
+ * **No captions.** Alt text is written for a screen reader, and scraped alt
+ * text is written by whoever built the previous site — "Tartine bread on
+ * Amazon", "BREAD BOOK Cover", or a file name. Printing it under each tile
+ * turned a bakery's gallery into what looked like a list of shop listings.
+ *
+ * The alt attribute is still emitted, so nothing is lost for a screen reader;
+ * it simply stops being visual furniture. A gallery should caption
+ * deliberately or not at all, and the pipeline has nothing deliberate to say
+ * about an individual photograph.
  */
 function renderGallery(
   images: readonly ResolvedImage[],
@@ -201,10 +208,7 @@ function renderGallery(
   // `null` is the pre-design form, emitted byte-for-byte as it always was.
   const items = images.map((image, index) =>
     element('li', { class: variant === null ? 'gallery__item' : `gallery__item gallery__item--${index % 6}` },
-      element('figure', {}, [
-        renderImage(image),
-        image.alt === '' ? null : element('figcaption', {}, text(image.alt)),
-      ]),
+      element('figure', {}, renderImage(image)),
     ),
   );
 

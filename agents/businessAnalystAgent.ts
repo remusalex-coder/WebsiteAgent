@@ -386,7 +386,7 @@ export const businessAnalystAgent: BusinessAnalystAgent = {
       generatedAt: new Date().toISOString(),
     };
 
-    const filePath = path.join(config.outputDir, ARTIFACT);
+    const filePath = path.join(ctx.outputDir, ARTIFACT);
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
 

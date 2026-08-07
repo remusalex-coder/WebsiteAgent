@@ -162,17 +162,32 @@ describe('sections', () => {
     const labels = [...page.matchAll(/class="site-nav__link" href="#[^"]+">([^<]+)</g)]
       .map((match) => match[1]);
     // The hero and the CTA banner are not navigation targets.
+    //
+    // Labels come from the section's *kind*, never its heading. A heading is
+    // read inside the section and earns its length; a nav label is scanned and
+    // competes for the most expensive space on the page. Deriving one from the
+    // other gave a 322px header on a 390px phone, with entries reading
+    // "Sourdough loaves, pastries, cakes, and dining".
     assert.deepEqual(labels, [
-      'About "the oven"',
-      'What we bake',
+      'About',
+      'Services',
       'Menu',
-      'The shop',
-      'What people say',
-      'Opening hours',
-      'Find us',
+      'Gallery',
+      'Reviews',
+      'Hours',
+      'Visit',
       'Contact',
-      'Questions',
+      'FAQ',
     ]);
+  });
+
+  it('keeps nav labels short enough to sit on one row', () => {
+    const labels = [...page.matchAll(/class="site-nav__link" href="#[^"]+">([^<]+)</g)]
+      .map((match) => match[1] ?? '');
+    for (const label of labels) {
+      assert.ok(label.length <= 12, `nav label "${label}" is ${label.length} chars; nav labels must stay scannable`);
+      assert.ok(!label.includes(' ') || label.split(' ').length <= 2, `nav label "${label}" reads as a sentence`);
+    }
   });
 
   it('shows the tagline above the hero heading', () => {
@@ -186,8 +201,16 @@ describe('sections', () => {
   });
 
   it('renders a gallery as figures and omits the unusable image', () => {
-    assert.ok(page.includes('<figcaption>The counter at opening time</figcaption>'));
     assert.equal(count(page, /<li class="gallery__item">/g), 1);
+  });
+
+  it('keeps gallery alt text in the attribute and out of the page', () => {
+    // Alt text is written for a screen reader, and scraped alt text is written
+    // by whoever built the previous site. Printed under each tile it turned a
+    // bakery's gallery into what read as a list of Amazon listings.
+    assert.ok(page.includes('alt="The counter at opening time"'));
+    assert.ok(!page.includes('<figcaption>The counter at opening time</figcaption>'));
+    assert.equal(count(page, /<figcaption>/g), 0);
   });
 
   it('loads the hero image eagerly and everything else lazily', () => {

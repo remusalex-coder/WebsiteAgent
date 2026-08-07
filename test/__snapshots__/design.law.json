@@ -501,18 +501,6 @@
         "background": "canvas"
       },
       {
-        "index": 6,
-        "kind": "hours",
-        "variant": "list",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": null,
-        "fullBleed": false,
-        "rationale": "Chose list for hours: the section has 2 items and 0 images.",
-        "frame": "aside",
-        "background": "subtle"
-      },
-      {
         "index": 9,
         "kind": "faq",
         "variant": "list",
@@ -521,6 +509,18 @@
         "columns": null,
         "fullBleed": false,
         "rationale": "Chose list for faq: the section has 2 items and 0 images.",
+        "frame": "aside",
+        "background": "subtle"
+      },
+      {
+        "index": 6,
+        "kind": "hours",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for hours: the section has 2 items and 0 images.",
         "frame": "offset",
         "background": "canvas"
       },
@@ -546,8 +546,8 @@
       7,
       3,
       4,
-      6,
       9,
+      6,
       10
     ],
     "stickyHeader": true,

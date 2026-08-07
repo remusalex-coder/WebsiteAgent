@@ -12,10 +12,10 @@
  *     services → cards (primary, canvas): Chose cards for services: it is the bakery convention for a services section.
  *     menu → list (primary, subtle): Chose list for menu: it is the bakery convention for a menu section.
  *     gallery → grid (secondary, canvas): Chose grid for gallery: the section has 0 items and 2 images.
- *     hours → list (secondary, subtle): Chose list for hours: the section has 2 items and 0 images.
- *     location → stack (quiet, canvas): Chose stack for location: the section has 0 items and 0 images.
- *     contact → list (quiet, subtle): Chose list for contact: the section has 2 items and 0 images.
- *     about → stack (quiet, canvas): Chose stack for about: the section has 0 items and 0 images.
+ *     about → stack (secondary, subtle): Chose stack for about: the section has 0 items and 0 images.
+ *     hours → list (quiet, canvas): Chose list for hours: the section has 2 items and 0 images.
+ *     location → stack (quiet, subtle): Chose stack for location: the section has 0 items and 0 images.
+ *     contact → list (quiet, canvas): Chose list for contact: the section has 2 items and 0 images.
  *     testimonials → quotes (quiet, subtle): Chose quotes for testimonials: the section has 1 item and 0 images.
  *     faq → list (quiet, canvas): Chose list for faq: the section has 2 items and 0 images.
  *     cta → banner (quiet, brand): Chose banner for cta: the section has 0 items and 0 images.

@@ -651,7 +651,7 @@ export const collectorAgent: CollectorAgent = {
 
   async run(input: DiscoveryResult, ctx: AgentContext): Promise<CollectedBusiness> {
     const { logger, config } = ctx;
-    const outputDir = config.outputDir;
+    const outputDir = ctx.outputDir;
     const siteUrl = input.website ? normalizeSiteUrl(input.website) : null;
 
     const empty: CollectedBusiness = {

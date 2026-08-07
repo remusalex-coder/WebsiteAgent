@@ -343,14 +343,48 @@ function assignBackgrounds(designs: readonly Omit<SectionDesign, 'background' | 
  * their written order, which is a stable tiebreak and keeps the result
  * deterministic.
  */
+/**
+ * Where a section sits when its industry has no opinion about it.
+ *
+ * An industry's `prioritySections` names the kinds that category leads with; it
+ * is not required to be exhaustive, and most are not. The previous fallback
+ * gave every unnamed kind the same rank, so they all collided and fell through
+ * to written order *after* everything named — which put Tartine's `about`, the
+ * best copy on the page, below the contact details.
+ *
+ * That is a bug rather than a judgement: nothing decided `about` belonged last,
+ * it was simply absent. This gives the unnamed kinds a deterministic ordering
+ * of their own, so an omission degrades to "generic sensible" rather than to
+ * "last".
+ */
+const DEFAULT_ORDER: readonly SectionKind[] = [
+  'hero',
+  'about',
+  'services',
+  'menu',
+  'gallery',
+  'testimonials',
+  'faq',
+  'hours',
+  'location',
+  'contact',
+  'cta',
+];
+
 export function orderSections(content: WebsiteContent, industry: Industry): readonly number[] {
   const priorities = defaultsFor(industry).prioritySections;
 
-  const indexed = content.sections.map((section, index) => ({
-    index,
-    kind: section.kind,
-    rank: priorities.indexOf(section.kind),
-  }));
+  const indexed = content.sections.map((section, index) => {
+    const listed = priorities.indexOf(section.kind);
+    const fallback = DEFAULT_ORDER.indexOf(section.kind);
+    return {
+      index,
+      kind: section.kind,
+      // Named kinds always outrank unnamed ones; unnamed ones then order among
+      // themselves rather than tying.
+      rank: listed === -1 ? priorities.length + (fallback === -1 ? DEFAULT_ORDER.length : fallback) : listed,
+    };
+  });
 
   return indexed
     .slice()
@@ -360,9 +394,7 @@ export function orderSections(content: WebsiteContent, industry: Industry): read
       if (a.kind === 'cta' && b.kind !== 'cta') return 1;
       if (b.kind === 'cta' && a.kind !== 'cta') return -1;
 
-      const ra = a.rank === -1 ? priorities.length : a.rank;
-      const rb = b.rank === -1 ? priorities.length : b.rank;
-      if (ra !== rb) return ra - rb;
+      if (a.rank !== b.rank) return a.rank - b.rank;
 
       // Stable: equal-priority sections keep the order the writer chose.
       return a.index - b.index;
