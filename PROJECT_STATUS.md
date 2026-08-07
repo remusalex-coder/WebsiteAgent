@@ -1,9 +1,15 @@
 # Project Status
 
-_Last updated: 2026-08-06_
+_Last updated: 2026-08-07_
+
+> **Canonical status now lives in BusinessForge HQ (Notion) → Executive
+> Dashboard.** This file remains the in-repo technical reference: architecture,
+> known limitations and engineering debt. For milestone, blockers and next
+> action, read the Dashboard.
 
 Autonomous website builder: one Google Maps URL in, a deployed website out.
-Stages 1–4 and the renderer implemented, 5–6 stubbed.
+Stages 1–5b and the renderer implemented; stage 6 stubbed. **Stages 4 and 5 have
+never executed against a live model** — that is the current milestone.
 
 ## Architecture
 
@@ -41,9 +47,10 @@ output/              artifacts (gitignored)
 | 1 | `discoveryAgent` | Maps URL → `DiscoveryResult` | ✅ verified live |
 | 2 | `collectorAgent` | identity → `CollectedBusiness` | ✅ verified live |
 | 3 | `normalizerAgent` | both → `BusinessProfile` | ✅ verified live |
-| 4 | `businessAnalystAgent` | profile → `BusinessStrategy` | ⚠️ built, **API call unverified** |
-| 5 | `writerAgent` | profile + strategy → `WebsiteContent` | ⛔ stub |
-| — | `lib/render` | content → `index.html`, `styles.css`, assets | ✅ built and tested |
+| 4 | `businessAnalystAgent` | profile → `BusinessStrategy` | ⚠️ built, **never executed** |
+| 5 | `writerAgent` | profile + strategy → `WebsiteContent` | ⚠️ built, **never executed** |
+| 5b | `designAgent` | all three → `WebsiteDesign` | ✅ built and tested (no model call) |
+| — | `lib/render` | content + design → `index.html`, `styles.css`, assets | ✅ built and tested |
 | 6 | `lovableAgent` | content → `DeploymentResult` | ⛔ stub |
 
 Stages 1–3 need no credentials. Stage 4 onward needs an AI provider — `AI_PROVIDER`
@@ -112,12 +119,13 @@ Run standalone with `npm run render -- output/<runId>/5-content.json`.
 
 ## Pending
 
-**5. Writer** — profile + strategy → site structure, copy, brand voice, SEO metadata,
-LocalBusiness JSON-LD. The only stage that produces prose. **This is now the one thing
-between the pipeline and a rendered site** — the renderer downstream of it is built.
-
 **6. Deployment** — a rendered site → a live URL. Consumes `renderSite` output
-unchanged; it uploads `RenderedFile[]` rather than rendering its own.
+unchanged; it uploads `RenderedFile[]` rather than rendering its own. **The only
+remaining stub.**
+
+**Live verification of stages 4 and 5.** Both are implemented and unit-tested;
+neither has made a model call. Their first execution is the current milestone and
+needs one credential. See `NEXT_SESSION.md` for the four gates.
 
 ## Known limitations
 
@@ -172,11 +180,11 @@ Also:
 
 ## Engineering debt
 
-- **Everything after stage 3 is uncommitted.** `git log` ends at stage 3. The analyst, the AI provider layer, the capability platform, the render layer, `docs/` and `test/` all exist only in the working tree. Losing this machine loses all of it.
+- ~~**Everything after stage 3 is uncommitted.**~~ **Resolved 2026-08-07** — 158 files, 30,003 lines committed as `f078d4b` and pushed to `origin/main`.
+- ~~**No `.gitattributes`**~~ **Resolved 2026-08-07** — `* text=auto eol=lf` plus binary rules, added before the first large commit so the repository never needed a renormalisation pass.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
 - **Only the renderer is tested.** `npm test` runs 110 assertions, all in `test/render/`. Nothing else in the repository has a committed test.
 - **Older suites still live outside the repo** — discovery parsers, normalizer primitives, merge/dedup/validation, analyst schema and analyst brief remain in a scratchpad rather than `test/`.
 - **No accessibility or HTML validation in CI.** The markup is checked by assertions about the string, not by axe or the W3C validator. A real audit would be worth one pass before the first deploy.
-- **No `.gitattributes`** — `core.autocrlf=true` locally; a collaborator on macOS/Linux would see whole-file diffs.
 - **No retry/backoff** on transient Maps or site failures beyond Playwright's timeouts. The platform reports `retryable` honestly on every failure, but nothing acts on it yet.
 - `npm install` downloads Chromium (~150 MB) via `postinstall`.

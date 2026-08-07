@@ -1,121 +1,88 @@
 # Next Session
 
-_Written 2026-08-06, after M1 (the renderer)._
+_Written 2026-08-07, after Milestone 1 (repository secured)._
 
-## Do this first (~5 minutes)
+> **Canonical documentation is BusinessForge HQ in Notion.** This file is the
+> thirty-second version for whoever opens the repo first. The HQ has the
+> Executive Dashboard, Decision Log, Master Backlog and one page per subsystem.
 
-**Commit.** `git log` still ends at stage 3. The working tree now holds the analyst,
-the AI provider layer, the capability platform, the renderer, `docs/` and `test/` —
-four milestones of work on one machine, none of it on GitHub.
+## The one thing blocking everything
 
-Verify before committing:
+Stages 4 and 5 need an AI provider credential. There is none on this machine.
 
 ```bash
-npm run typecheck && npm test && npm run build
+printf 'AI_PROVIDER=gemini\nGEMINI_API_KEY=<key>\nANALYST_MODEL=gemini-2.5-flash\nWRITER_MODEL=gemini-2.5-flash\n' > .env
 ```
 
-All three pass as of this writing: 110 tests, 0 failures.
+A free key comes from `aistudio.google.com`; no card is required. `.env` is
+gitignored.
 
----
+**The two `*_MODEL` lines are mandatory, not optional.** `DEFAULT_MODELS.gemini`
+in `lib/config.ts` is `gemini-2.5-pro`, which lost its free tier in April 2026 —
+setting `AI_PROVIDER=gemini` alone silently selects a paid model.
 
-## Then implement: Vercel preview deployment (M2)
+## Then run the four gates, in order
 
-### Why this one, and not the writer
+Each is cheap, and each has a defined failure exit.
 
-Because it needs no API key. `writerAgent` and the unverified stage-4 call both do,
-and both are blocked on that; deployment is not. The renderer already produces a
-complete site, and a fixture spec in `test/fixtures/content.ts` will drive an end-to-end
-deploy today, with nothing else built.
+**Gate 1 — first live provider call this project has ever made.** A throwaway
+script: `provider.health()`, then one `generate()` against a two-field schema.
+Proves credential, endpoint, header and schema translation in isolation.
+*Fails → the adapter has a bug; fall back to `AI_PROVIDER=anthropic` with
+`claude-haiku-4-5` (~$0.12/site).*
 
-That also makes it the honest next test of the renderer: it has been opened from disk
-and read, but no host has ever served it.
+**Gate 2 — stage 4 on the real profile.** No re-scraping; the Tartine profile is
+already on disk.
 
-### The contract to hold
-
-**Consume `renderSite` unchanged.** The deployment agent uploads `RenderedFile[]` and
-the assets beside them. It renders nothing of its own, templates nothing, and rewrites
-no markup. A second rendering system is the failure mode to design against — the whole
-point of `lib/render` being a library rather than a stage is that deployment can call it
-and get exactly the bytes that were reviewed locally.
-
-```ts
-import { renderSite } from './lib/render/index.js';
-
-const site = renderSite(content);
-// site.files   -> upload as-is
-// site.assets  -> read sourcePath from the run dir, upload at .path
+```bash
+npx tsx main.ts --from=analyze 25e648c7 --env-file=.env
 ```
 
-`writeRenderedSite` is *not* on the path: the deployment agent should not need a
-temporary folder. It exists for local inspection and for `npm run render`.
+*Fails → `STRATEGY_SCHEMA` is 6,954 chars and Google publishes no size limit;
+flatten it, or run the analyst on Haiku.*
 
-### What to build
+**Gate 3 — stage 5.** Same run continues. Check `5-content.json`: 6–9 sections,
+hero first, services with ≥ 5 bullets, `hours` and `contact` matching the
+profile exactly, `unresolvedGaps` naming the six missing opening days, and no
+grounding warnings in the run log.
 
-1. **A deployment agent** — `WebsiteContent` → `DeploymentResult`, which already has
-   the right shape (`projectId`, `liveUrl`, `status`, `deployedAt`).
-2. **Project create or reuse**, upload, poll to ready or failed, return the URL.
-   Bounded by a configured timeout and cancellable via `ctx.signal`, the same way the
-   analyst handles its request.
-3. **Reproducibility** — persist what was deployed alongside the run's artifacts, so a
-   run can be replayed from `output/<runId>/` without calling Vercel again.
-4. **Decide what happens to `lovableAgent`.** It is still a stub, and its contract
-   comment still says it is "the only agent that knows Lovable exists". Replacing it is
-   probably right; the milestone should say so either way.
-5. **Config** — a `vercel` section in `lib/config.ts` plus entries in `.env.example`,
-   and nowhere else. Follow the `lovable` block already there.
+**Gate 4 — read the site.** The design agent and renderer run automatically and
+write `output/25e648c7/site/index.html`. Stage 6 then throws
+`NotImplementedError` — expected; the site is written before that point, so the
+artifact survives.
 
-### Recommended prompt
+## What is already true, so you do not re-derive it
 
-> Implement the Vercel preview deployment agent only.
->
-> Input: WebsiteContent
-> Output: DeploymentResult
->
-> Requirements:
->
-> 1. Render with `renderSite` from `lib/render`. Do not build a second renderer.
-> 2. Upload `RenderedFile[]` and the assets from the run directory.
-> 3. Create or reuse a project; poll to ready or failed; return the preview URL.
-> 4. Bound by a configured timeout, cancellable via `ctx.signal`.
-> 5. Persist what was deployed so the run is reproducible from its artifacts.
-> 6. Config goes in `lib/config.ts` and `.env.example`, nowhere else.
-> 7. Verify against `test/fixtures/content.ts` — no API key is needed upstream.
->
-> Do not implement writerAgent.
-> Do not modify WebsiteContent or lib/render.
+- **246 tests pass, typecheck is clean.** `npm run typecheck && npm test`.
+- **Everything is committed.** `git log` no longer ends at stage 3.
+- **`writerAgent` is implemented.** The model writes prose only; contact details,
+  opening hours, JSON-LD and image selection are assembled from
+  `BusinessProfile` afterwards. Its deterministic half is verified against the
+  real Tartine profile — hours merging, JSON-LD, and the grounding check, which
+  caught all three plants in deliberately poisoned copy.
+- **`designAgent` makes no model call** and never will. Determinism is a
+  property of the code, not a promise about temperature.
+- **The renderer is a library, not a stage**, so deployment can call it and get
+  byte-identical output to what was reviewed locally.
+- **Resume is the fast loop.** `npm run render -- output/<runId>/5-content.json`
+  re-renders a saved spec in milliseconds without paying for two model calls.
 
-### Notes for whoever picks this up
+## Two known product defects, already diagnosed
 
-- **The renderer is deterministic and tested** — if a deployed page differs from the
-  local one, the difference came from the host, not from rendering. Diff
-  `output/<runId>/site/index.html` against what was served.
-- **`site.warnings` is not an error channel.** It reports fields the renderer worked
-  around. Log it; do not fail a deploy on it.
-- **Nothing in a rendered site fetches anything external** — no web fonts, no CDN. A
-  host that needs a CSP will not need an allow-list.
-- **`npm run render -- output/<runId>/5-content.json`** re-renders a saved spec in
-  milliseconds. Use it while iterating rather than re-running the pipeline.
+Both surfaced from verifying the writer against real data, and both will be
+visible on the first generated site:
 
----
+1. **The contact block lists three emails**, including a press inbox and a
+   *different* business's address. `contactBullets` emits every email in the
+   profile; it needs ranking and a cap.
+2. **The phone renders as `+14154872600`** because that is what Maps supplied.
+   Honest, and wrong for a customer-facing page. Needs display formatting that
+   invents no digits.
 
-## After that: M3, which needs a key
-
-`ANTHROPIC_API_KEY` (or another provider's) unblocks both remaining pieces:
-
-1. **Verify stage 4.** It has still never executed. Check `strategy.json` parses,
-   `stop_reason` is clean, and the recommendations are grounded rather than generic.
-2. **`writerAgent`.** Grounding is the hard part, not the API call — that pattern is
-   established in `businessAnalystAgent.ts`; copy it. Every claim must trace to a
-   profile field, and a gap the layout wants belongs in `unresolvedGaps`, never in
-   plausible filler. `config.writer` exists; note that Opus 5 rejects `temperature`, so
-   use `effort`.
+Do not fix these before Milestone 7. The critique decides what is highest impact.
 
 ## Current state, in one line
 
-Stages 1–3 verified live; stage 4 built but unproven; stage 5 a stub; the renderer
-built, tested and read; nothing deployed. Repo is private at
-`github.com/remusalex-coder/WebsiteAgent`, branch `main`, last commit `9ae470e` —
-which includes **none** of the above.
-
-See `PROJECT_STATUS.md` for known limitations, `ROADMAP.md` for the ordered plan, and
-`docs/renderer.md` for the renderer.
+Repository secured at `f078d4b`; stages 1–3 verified live; stages 4–5 built and
+never executed; design and renderer built and tested; nothing deployed; blocked
+on one credential.

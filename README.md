@@ -2,20 +2,26 @@
 
 Autonomous website builder. One Google Maps URL in, one deployed website out.
 
-**Status: stages 1–4 and the renderer implemented.** `discoveryAgent`,
-`collectorAgent`, `normalizerAgent`, `businessAnalystAgent`, the `lib/render`
-renderer, and the `config`, `logger`, and `browser` libraries are real. Stages 5–6
-are documented stubs that throw `NotImplementedError`.
+> **📓 Full documentation lives in BusinessForge HQ (Notion).** Status, roadmap,
+> architecture, decision log, backlog and one page per subsystem. Start at the
+> Executive Dashboard. This README covers running the code; the HQ covers why it
+> is the way it is.
+
+**Status: stages 1–5b and the renderer implemented; stage 6 is a stub.**
+Stages 1–3 are verified against live sites. **Stages 4 and 5 have never executed
+against a real model** — they are built, typechecked and unit-tested, and their
+first live call is the current milestone.
 
 ## Pipeline
 
 ```
 mapsUrl
-  -> discoveryAgent       -> DiscoveryResult    who is this business?      [implemented]
-  -> collectorAgent       -> CollectedBusiness  what are the raw facts?    [implemented]
-  -> normalizerAgent      -> BusinessProfile    one canonical truth        [implemented]
-  -> businessAnalystAgent -> BusinessStrategy   what should the site do?   [implemented]
-  -> writerAgent          -> WebsiteContent     what should the site say?  [stub]
+  -> discoveryAgent       -> DiscoveryResult    who is this business?      [verified live]
+  -> collectorAgent       -> CollectedBusiness  what are the raw facts?    [verified live]
+  -> normalizerAgent      -> BusinessProfile    one canonical truth        [verified live]
+  -> businessAnalystAgent -> BusinessStrategy   what should the site do?   [never executed]
+  -> writerAgent          -> WebsiteContent     what should the site say?  [never executed]
+  -> designAgent          -> WebsiteDesign      how should it look?        [implemented]
   -> lib/render           -> index.html + css   turn the spec into a site  [implemented]
   -> lovableAgent         -> DeploymentResult   build it and put it online [stub]
 ```
