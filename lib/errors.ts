@@ -38,6 +38,56 @@ export class InvalidInputError extends AgentError {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* AI provider configuration                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * `AI_PROVIDER` resolved to nothing.
+ *
+ * Configuration errors are separated from request failures below because they
+ * are fixed in a different place: these mean the environment is wrong and no
+ * amount of retrying helps, so they are never retryable.
+ */
+export class MissingProviderError extends InvalidInputError {
+  constructor(source: string) {
+    super(
+      'No AI provider selected. Set AI_PROVIDER to one of: anthropic, openai, gemini, openrouter.',
+      source,
+    );
+  }
+}
+
+/** `AI_PROVIDER` named something this build has no adapter for. */
+export class UnsupportedProviderError extends InvalidInputError {
+  readonly requested: string;
+
+  constructor(requested: string, supported: readonly string[], source: string) {
+    super(
+      `Unsupported AI provider "${requested}". Set AI_PROVIDER to one of: ${supported.join(', ')}.`,
+      source,
+    );
+    this.requested = requested;
+  }
+}
+
+/** The selected provider has no credentials. Names the exact variable to set. */
+export class MissingApiKeyError extends InvalidInputError {
+  readonly provider: string;
+  readonly variable: string;
+
+  constructor(provider: string, variable: string, source: string) {
+    super(
+      `${variable} is not set; the "${provider}" AI provider needs it. ` +
+        `Copy .env.example to .env, set ${variable}, and run with --env-file=.env ` +
+        `(or export it in your shell).`,
+      source,
+    );
+    this.provider = provider;
+    this.variable = variable;
+  }
+}
+
 /** A remote source (Maps, an LLM API, Lovable) failed or was unreachable. */
 export class UpstreamError extends AgentError {
   /** HTTP status when the failure came from an HTTP call. */
@@ -53,5 +103,26 @@ export class UpstreamError extends AgentError {
       ...(options.cause !== undefined ? { cause: options.cause } : {}),
     });
     this.status = options.status;
+  }
+}
+
+/**
+ * An AI provider request failed: transport, HTTP status, refusal, truncation,
+ * or a response that would not validate against the requested schema.
+ *
+ * Carries the provider so a multi-provider deployment can tell whose fault a
+ * failure was, and inherits `UpstreamError`'s retryability so the caller's
+ * existing retry logic keeps working unchanged.
+ */
+export class ProviderRequestError extends UpstreamError {
+  readonly provider: string;
+
+  constructor(
+    provider: string,
+    message: string,
+    options: { source: string; status?: number | undefined; retryable?: boolean; cause?: unknown },
+  ) {
+    super(`AI provider "${provider}" request failed: ${message}`, options);
+    this.provider = provider;
   }
 }

@@ -11,6 +11,7 @@
 import type { AppConfig } from './config.js';
 import type { Logger } from './logger.js';
 import type { BrowserSession } from './browser.js';
+import type { Platform } from './platform/platform.js';
 
 /* ------------------------------------------------------------------ */
 /* Agent contract                                                      */
@@ -32,6 +33,14 @@ export interface AgentContext {
    * call this never pay the cost of launching a browser.
    */
   readonly getBrowser: () => Promise<BrowserSession>;
+  /**
+   * Every pluggable capability: AI providers, skills, MCP servers.
+   *
+   * An agent asks for a capability and gets one; it never learns which vendor,
+   * library or endpoint is behind it. That is what lets a provider be swapped,
+   * a skill be implemented, or a server be added without any agent changing.
+   */
+  readonly platform: Platform;
   /** Absolute path to this run's artifact directory under `/output`. */
   readonly outputDir: string;
   /** Aborts long-running work when the pipeline is cancelled or times out. */
@@ -295,7 +304,92 @@ export interface BusinessProfile {
 }
 
 /* ------------------------------------------------------------------ */
-/* Stage 4 — writing                                                   */
+/* Stage 4 — business analysis                                         */
+/* ------------------------------------------------------------------ */
+
+export type Priority = 'high' | 'medium' | 'low';
+
+/**
+ * A single recommendation.
+ *
+ * `rationale` and `evidence` are not decoration — they are what makes the
+ * strategy reviewable. `evidence` quotes or names the facts in the profile the
+ * recommendation rests on, so a reader can tell an inference from a guess.
+ */
+export interface Recommendation {
+  readonly title: string;
+  readonly rationale: string;
+  readonly priority: Priority;
+  readonly evidence: readonly string[];
+}
+
+export interface BusinessCategory {
+  readonly primary: string;
+  readonly secondary: readonly string[];
+  readonly rationale: string;
+  /** `listing` when the Maps category settled it, `inferred` from site content. */
+  readonly basis: 'listing' | 'inferred';
+}
+
+export interface AudienceSegment {
+  readonly name: string;
+  readonly description: string;
+  /** What this group is trying to accomplish when it reaches the site. */
+  readonly needs: readonly string[];
+  readonly rationale: string;
+}
+
+export interface TargetAudience {
+  readonly primary: AudienceSegment;
+  readonly secondary: readonly AudienceSegment[];
+}
+
+export interface PageRecommendation extends Recommendation {
+  /** Route the page should live at, e.g. `/` or `/services`. */
+  readonly path: string;
+  readonly sections: readonly string[];
+}
+
+export type ModuleLayer = 'backend' | 'frontend';
+
+export interface ModuleRecommendation extends Recommendation {
+  readonly layer: ModuleLayer;
+  /** Titles of other recommended modules this one needs. */
+  readonly dependsOn: readonly string[];
+}
+
+export type SeoKind = 'local' | 'content' | 'technical' | 'schema';
+
+export interface SeoRecommendation extends Recommendation {
+  readonly kind: SeoKind;
+  readonly targetKeywords: readonly string[];
+}
+
+/**
+ * What the business is, who it serves, and what its site should therefore do.
+ *
+ * Strategy only — no markup, no code, no copy. Every recommendation carries a
+ * rationale and the evidence behind it.
+ */
+export interface BusinessStrategy {
+  readonly businessName: string;
+  readonly category: BusinessCategory;
+  readonly goals: readonly Recommendation[];
+  readonly audience: TargetAudience;
+  readonly pages: readonly PageRecommendation[];
+  readonly features: readonly Recommendation[];
+  readonly backendModules: readonly ModuleRecommendation[];
+  readonly frontendModules: readonly ModuleRecommendation[];
+  readonly seoPriorities: readonly SeoRecommendation[];
+  /** What the profile could not settle, and would need the owner to answer. */
+  readonly openQuestions: readonly string[];
+  /** Model that produced the strategy, for reproducibility. */
+  readonly model: string;
+  readonly generatedAt: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Stage 5 — writing                                                   */
 /* ------------------------------------------------------------------ */
 
 export type SectionKind =
@@ -348,7 +442,24 @@ export interface WebsiteContent {
 }
 
 /* ------------------------------------------------------------------ */
-/* Stage 5 — deployment                                                */
+/* Stage 5b — design                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * How the site should look, decided separately from what it says.
+ *
+ * Lives in `lib/design/types.ts` with the rest of the design vocabulary — the
+ * same way the AI and platform layers keep their own — and is re-exported here
+ * so every pipeline contract can still be read in one file.
+ *
+ * `WebsiteContent` and `WebsiteDesign` are independent by design: neither
+ * imports the other, and the same content rendered under two designs differs in
+ * every visual respect and in none of its claims.
+ */
+export type { WebsiteDesign } from './design/types.js';
+
+/* ------------------------------------------------------------------ */
+/* Stage 6 — deployment                                                */
 /* ------------------------------------------------------------------ */
 
 export interface DeploymentResult {
@@ -372,7 +483,9 @@ export interface PipelineResult {
   readonly discovery: DiscoveryResult;
   readonly collected: CollectedBusiness;
   readonly profile: BusinessProfile;
+  readonly strategy: BusinessStrategy;
   readonly content: WebsiteContent;
+  readonly design: import('./design/types.js').WebsiteDesign;
   readonly deployment: DeploymentResult;
   readonly startedAt: string;
   readonly finishedAt: string;

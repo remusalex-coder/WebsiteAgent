@@ -1,0 +1,594 @@
+{
+  "version": 1,
+  "personality": {
+    "direction": "corporate",
+    "mood": {
+      "temperature": "cool",
+      "energy": "steady",
+      "formality": "formal"
+    },
+    "density": "balanced",
+    "contrast": "high",
+    "rationale": "The law category's first preference is corporate, and nothing in the copy argues for another.",
+    "evidence": [
+      "industry:law"
+    ]
+  },
+  "industry": {
+    "id": "law",
+    "basis": "listing",
+    "matchedOn": [
+      "category:law"
+    ],
+    "rationale": "Maps lists the business as \"Law firm\", which matches \"law\"."
+  },
+  "tokens": {
+    "color": {
+      "ramps": {
+        "primary": {
+          "role": "primary",
+          "seed": "#b56a42",
+          "steps": [
+            "#fefbfa",
+            "#fbf6f3",
+            "#f6ece7",
+            "#f0e1d9",
+            "#e8d3c8",
+            "#dcc1b3",
+            "#d0ab99",
+            "#c1927b",
+            "#a55b34",
+            "#8c4923",
+            "#6d4029",
+            "#331e13"
+          ]
+        },
+        "secondary": {
+          "role": "secondary",
+          "seed": "#b56a42",
+          "steps": [
+            "#fafcfe",
+            "#f4f7fa",
+            "#e9eff6",
+            "#dce6f0",
+            "#ccd9e7",
+            "#b8cadb",
+            "#a0b7ce",
+            "#83a2c0",
+            "#4276a5",
+            "#30618d",
+            "#31506d",
+            "#172533"
+          ]
+        },
+        "accent": {
+          "role": "accent",
+          "seed": "#b56a42",
+          "steps": [
+            "#f9fcfc",
+            "#f2f8f8",
+            "#e5f1f2",
+            "#d6e9e9",
+            "#c4ddde",
+            "#adcfd0",
+            "#8fbebf",
+            "#6babad",
+            "#008285",
+            "#006b6e",
+            "#00595b",
+            "#072a2b"
+          ]
+        },
+        "neutral": {
+          "role": "neutral",
+          "seed": "#b56a42",
+          "steps": [
+            "#fcfcfc",
+            "#f7f7f6",
+            "#efeeee",
+            "#e5e4e4",
+            "#d8d7d6",
+            "#c8c7c6",
+            "#b6b4b3",
+            "#a09e9c",
+            "#75716f",
+            "#605d5b",
+            "#4f4c4b",
+            "#252423"
+          ]
+        },
+        "success": {
+          "role": "success",
+          "seed": "#b56a42",
+          "steps": [
+            "#fafdfa",
+            "#f3f8f3",
+            "#e8f2e8",
+            "#dbe9db",
+            "#cadeca",
+            "#b5d0b5",
+            "#9cbf9c",
+            "#7dad7e",
+            "#308639",
+            "#1d7028",
+            "#295a2c",
+            "#132a15"
+          ]
+        },
+        "warning": {
+          "role": "warning",
+          "seed": "#b56a42",
+          "steps": [
+            "#fefbf8",
+            "#fbf6f0",
+            "#f6ede1",
+            "#f0e2d0",
+            "#e7d4bb",
+            "#dcc3a2",
+            "#d0ae81",
+            "#c19657",
+            "#986600",
+            "#7e5400",
+            "#694500",
+            "#331f00"
+          ]
+        },
+        "danger": {
+          "role": "danger",
+          "seed": "#b56a42",
+          "steps": [
+            "#fffbfa",
+            "#fef4f3",
+            "#fceae7",
+            "#f9ddda",
+            "#f3cec9",
+            "#eabab4",
+            "#e1a29a",
+            "#d7857c",
+            "#c13c36",
+            "#a52926",
+            "#7e302a",
+            "#3c1714"
+          ]
+        }
+      },
+      "semantic": {
+        "canvas": "#fcfcfc",
+        "canvasSubtle": "#f7f7f6",
+        "surface": "#efeeee",
+        "surfaceRaised": "#e5e4e4",
+        "border": "#c8c7c6",
+        "borderStrong": "#b6b4b3",
+        "text": "#252423",
+        "textMuted": "#4f4c4b",
+        "heading": "#252423",
+        "brand": "#a55b34",
+        "brandHover": "#8c4923",
+        "onBrand": "#fcfcfc",
+        "brandText": "#9f552e",
+        "accent": "#008285",
+        "onAccent": "#fcfcfc",
+        "inverted": "#252423",
+        "onInverted": "#fcfcfc",
+        "success": "#308639",
+        "warning": "#986600",
+        "danger": "#c13c36"
+      },
+      "scheme": "light",
+      "contrast": {
+        "textOnCanvas": 15.1,
+        "textOnSurface": 13.38,
+        "onBrandOnBrand": 4.94,
+        "mutedOnCanvas": 8.29
+      }
+    },
+    "typography": {
+      "heading": {
+        "family": "IBM Plex Sans",
+        "stack": "\"IBM Plex Sans\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "character": "sans",
+        "weights": [
+          500,
+          600,
+          700
+        ]
+      },
+      "body": {
+        "family": "IBM Plex Sans",
+        "stack": "\"IBM Plex Sans\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "character": "sans",
+        "weights": [
+          400,
+          500
+        ]
+      },
+      "mono": {
+        "family": "IBM Plex Mono",
+        "stack": "\"IBM Plex Mono\", ui-monospace, SFMono-Regular, \"SF Mono\", Menlo, Consolas, monospace",
+        "character": "mono",
+        "weights": [
+          400
+        ]
+      },
+      "ratio": 1.2,
+      "baseRem": 1,
+      "scale": {
+        "display": {
+          "name": "display",
+          "minRem": 1.794,
+          "maxRem": 2.488,
+          "lineHeight": 1.05,
+          "letterSpacing": -0.01,
+          "weight": 700
+        },
+        "h1": {
+          "name": "h1",
+          "minRem": 1.596,
+          "maxRem": 2.074,
+          "lineHeight": 1.05,
+          "letterSpacing": -0.01,
+          "weight": 700
+        },
+        "h2": {
+          "name": "h2",
+          "minRem": 1.42,
+          "maxRem": 1.728,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.005,
+          "weight": 700
+        },
+        "h3": {
+          "name": "h3",
+          "minRem": 1.263,
+          "maxRem": 1.44,
+          "lineHeight": 1.25,
+          "letterSpacing": -0.005,
+          "weight": 500
+        },
+        "h4": {
+          "name": "h4",
+          "minRem": 1.124,
+          "maxRem": 1.2,
+          "lineHeight": 1.35,
+          "letterSpacing": 0,
+          "weight": 500
+        },
+        "bodyLarge": {
+          "name": "bodyLarge",
+          "minRem": 1.06,
+          "maxRem": 1.095,
+          "lineHeight": 1.6,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "body": {
+          "name": "body",
+          "minRem": 1,
+          "maxRem": 1,
+          "lineHeight": 1.6,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "small": {
+          "name": "small",
+          "minRem": 0.89,
+          "maxRem": 0.833,
+          "lineHeight": 1.5,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "caption": {
+          "name": "caption",
+          "minRem": 0.839,
+          "maxRem": 0.761,
+          "lineHeight": 1.5,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "eyebrow": {
+          "name": "eyebrow",
+          "minRem": 0.839,
+          "maxRem": 0.761,
+          "lineHeight": 1.5,
+          "letterSpacing": 0.12,
+          "weight": 500
+        }
+      },
+      "measureCh": 68,
+      "fluidRange": {
+        "minRem": 20,
+        "maxRem": 90
+      }
+    },
+    "spacing": {
+      "baseRem": 0.8,
+      "ratio": 1.5,
+      "scale": {
+        "3xs": {
+          "name": "3xs",
+          "minRem": 0.237,
+          "maxRem": 0.237
+        },
+        "2xs": {
+          "name": "2xs",
+          "minRem": 0.356,
+          "maxRem": 0.356
+        },
+        "xs": {
+          "name": "xs",
+          "minRem": 0.533,
+          "maxRem": 0.533
+        },
+        "sm": {
+          "name": "sm",
+          "minRem": 0.8,
+          "maxRem": 0.8
+        },
+        "md": {
+          "name": "md",
+          "minRem": 0.744,
+          "maxRem": 1.2
+        },
+        "lg": {
+          "name": "lg",
+          "minRem": 1.116,
+          "maxRem": 1.8
+        },
+        "xl": {
+          "name": "xl",
+          "minRem": 1.674,
+          "maxRem": 2.7
+        },
+        "2xl": {
+          "name": "2xl",
+          "minRem": 2.511,
+          "maxRem": 4.05
+        },
+        "3xl": {
+          "name": "3xl",
+          "minRem": 3.767,
+          "maxRem": 6.075
+        },
+        "4xl": {
+          "name": "4xl",
+          "minRem": 5.65,
+          "maxRem": 9.113
+        }
+      },
+      "sectionMinRem": 2.25,
+      "sectionMaxRem": 4.5
+    },
+    "radius": {
+      "style": "subtle",
+      "none": "0",
+      "sm": "0.1875rem",
+      "md": "0.3125rem",
+      "lg": "0.5rem",
+      "pill": "999rem"
+    },
+    "elevation": {
+      "style": "subtle",
+      "prefersBorders": false,
+      "levels": {
+        "none": {
+          "name": "none",
+          "shadow": "none"
+        },
+        "sm": {
+          "name": "sm",
+          "shadow": "0 0.063rem 0.125rem rgb(23 22 21 / 0.05)"
+        },
+        "md": {
+          "name": "md",
+          "shadow": "0 0.25rem 0.75rem rgb(23 22 21 / 0.06)"
+        },
+        "lg": {
+          "name": "lg",
+          "shadow": "0 0.75rem 2rem rgb(23 22 21 / 0.08)"
+        }
+      }
+    },
+    "motion": {
+      "level": "subtle",
+      "durationFastMs": 120,
+      "durationBaseMs": 200,
+      "durationSlowMs": 320,
+      "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "effects": [
+        "fade"
+      ],
+      "respectReducedMotion": true
+    }
+  },
+  "layout": {
+    "hero": "split",
+    "footer": "corporate",
+    "sections": [
+      {
+        "index": 0,
+        "kind": "hero",
+        "variant": "stack",
+        "emphasis": "lead",
+        "density": "airy",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose stack for hero: the section has 0 items and 1 image.",
+        "frame": "stacked",
+        "background": "subtle"
+      },
+      {
+        "index": 2,
+        "kind": "services",
+        "variant": "list",
+        "emphasis": "primary",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for services: it is the law convention for a services section.",
+        "frame": "aside",
+        "background": "canvas"
+      },
+      {
+        "index": 1,
+        "kind": "about",
+        "variant": "stack",
+        "emphasis": "primary",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose stack for about: the section has 0 items and 0 images.",
+        "frame": "statement",
+        "background": "subtle"
+      },
+      {
+        "index": 5,
+        "kind": "testimonials",
+        "variant": "quotes",
+        "emphasis": "secondary",
+        "density": "balanced",
+        "columns": 1,
+        "fullBleed": false,
+        "rationale": "Chose quotes for testimonials: it is the law convention for a testimonials section.",
+        "frame": "aside",
+        "background": "canvas"
+      },
+      {
+        "index": 8,
+        "kind": "contact",
+        "variant": "list",
+        "emphasis": "secondary",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for contact: the section has 2 items and 0 images.",
+        "frame": "offset",
+        "background": "subtle"
+      },
+      {
+        "index": 7,
+        "kind": "location",
+        "variant": "stack",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose stack for location: the section has 0 items and 0 images.",
+        "frame": "statement",
+        "background": "canvas"
+      },
+      {
+        "index": 3,
+        "kind": "menu",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for menu: the section has 2 items and 0 images.",
+        "frame": "aside",
+        "background": "subtle"
+      },
+      {
+        "index": 4,
+        "kind": "gallery",
+        "variant": "grid",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": 2,
+        "fullBleed": false,
+        "rationale": "Chose grid for gallery: the section has 0 items and 2 images.",
+        "frame": "stacked",
+        "background": "canvas"
+      },
+      {
+        "index": 6,
+        "kind": "hours",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for hours: the section has 2 items and 0 images.",
+        "frame": "aside",
+        "background": "subtle"
+      },
+      {
+        "index": 9,
+        "kind": "faq",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for faq: the section has 2 items and 0 images.",
+        "frame": "offset",
+        "background": "canvas"
+      },
+      {
+        "index": 10,
+        "kind": "cta",
+        "variant": "banner",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose banner for cta: the section has 0 items and 0 images.",
+        "frame": "centered",
+        "background": "brand"
+      }
+    ],
+    "order": [
+      0,
+      2,
+      1,
+      5,
+      8,
+      7,
+      3,
+      4,
+      6,
+      9,
+      10
+    ],
+    "stickyHeader": true,
+    "showNavigation": true,
+    "rationale": "Chose the split hero because the corporate direction leads with imagery and the hero has 1 usable image."
+  },
+  "imagery": {
+    "treatment": "natural",
+    "heroCrop": "landscape",
+    "galleryCrop": "landscape",
+    "radius": "md",
+    "overlayOpacity": null,
+    "fallback": "omit"
+  },
+  "icons": {
+    "style": "solid",
+    "strokeWidth": 0,
+    "sizeRem": 1.5
+  },
+  "responsive": {
+    "containerMaxRem": 72,
+    "containerWideRem": 88,
+    "breakpoints": {
+      "smRem": 30,
+      "mdRem": 48,
+      "lgRem": 64
+    },
+    "mobileColumns": 1,
+    "fluid": true
+  },
+  "accessibility": {
+    "targetLevel": "AA",
+    "minContrastBody": 4.5,
+    "minContrastLarge": 3,
+    "minTapTargetPx": 44,
+    "respectReducedMotion": true,
+    "focusStyle": "outline",
+    "semanticLandmarks": true
+  },
+  "notes": [
+    "Density is balanced: the law category expects airy and the corporate direction expects balanced, over 11 sections.",
+    "Sections were reordered for the law category; content itself is unchanged."
+  ]
+}

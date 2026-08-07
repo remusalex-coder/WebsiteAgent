@@ -1,0 +1,299 @@
+{
+  "subset": "latin",
+  "faces": [
+    {
+      "family": "Archivo",
+      "weight": 400,
+      "file": "archivo-400.woff2",
+      "bytes": 34928
+    },
+    {
+      "family": "Archivo",
+      "weight": 500,
+      "file": "archivo-500.woff2",
+      "bytes": 34928
+    },
+    {
+      "family": "Archivo",
+      "weight": 700,
+      "file": "archivo-700.woff2",
+      "bytes": 34928
+    },
+    {
+      "family": "Archivo",
+      "weight": 800,
+      "file": "archivo-800.woff2",
+      "bytes": 34928
+    },
+    {
+      "family": "Archivo",
+      "weight": 900,
+      "file": "archivo-900.woff2",
+      "bytes": 34928
+    },
+    {
+      "family": "Cormorant Garamond",
+      "weight": 300,
+      "file": "cormorant-garamond-300.woff2",
+      "bytes": 37640
+    },
+    {
+      "family": "Cormorant Garamond",
+      "weight": 400,
+      "file": "cormorant-garamond-400.woff2",
+      "bytes": 37640
+    },
+    {
+      "family": "Cormorant Garamond",
+      "weight": 500,
+      "file": "cormorant-garamond-500.woff2",
+      "bytes": 37640
+    },
+    {
+      "family": "Fredoka",
+      "weight": 500,
+      "file": "fredoka-500.woff2",
+      "bytes": 29732
+    },
+    {
+      "family": "Fredoka",
+      "weight": 600,
+      "file": "fredoka-600.woff2",
+      "bytes": 29732
+    },
+    {
+      "family": "IBM Plex Mono",
+      "weight": 400,
+      "file": "ibm-plex-mono-400.woff2",
+      "bytes": 14708
+    },
+    {
+      "family": "IBM Plex Sans",
+      "weight": 400,
+      "file": "ibm-plex-sans-400.woff2",
+      "bytes": 45712
+    },
+    {
+      "family": "IBM Plex Sans",
+      "weight": 500,
+      "file": "ibm-plex-sans-500.woff2",
+      "bytes": 45712
+    },
+    {
+      "family": "IBM Plex Sans",
+      "weight": 600,
+      "file": "ibm-plex-sans-600.woff2",
+      "bytes": 45712
+    },
+    {
+      "family": "IBM Plex Sans",
+      "weight": 700,
+      "file": "ibm-plex-sans-700.woff2",
+      "bytes": 45712
+    },
+    {
+      "family": "Inter",
+      "weight": 400,
+      "file": "inter-400.woff2",
+      "bytes": 48256
+    },
+    {
+      "family": "Inter",
+      "weight": 500,
+      "file": "inter-500.woff2",
+      "bytes": 48256
+    },
+    {
+      "family": "Inter",
+      "weight": 600,
+      "file": "inter-600.woff2",
+      "bytes": 48256
+    },
+    {
+      "family": "Jost",
+      "weight": 300,
+      "file": "jost-300.woff2",
+      "bytes": 26576
+    },
+    {
+      "family": "Jost",
+      "weight": 400,
+      "file": "jost-400.woff2",
+      "bytes": 26576
+    },
+    {
+      "family": "Lora",
+      "weight": 400,
+      "file": "lora-400.woff2",
+      "bytes": 37788
+    },
+    {
+      "family": "Lora",
+      "weight": 500,
+      "file": "lora-500.woff2",
+      "bytes": 37788
+    },
+    {
+      "family": "Lora",
+      "weight": 600,
+      "file": "lora-600.woff2",
+      "bytes": 37788
+    },
+    {
+      "family": "Manrope",
+      "weight": 400,
+      "file": "manrope-400.woff2",
+      "bytes": 24836
+    },
+    {
+      "family": "Manrope",
+      "weight": 500,
+      "file": "manrope-500.woff2",
+      "bytes": 24836
+    },
+    {
+      "family": "Manrope",
+      "weight": 600,
+      "file": "manrope-600.woff2",
+      "bytes": 24836
+    },
+    {
+      "family": "Manrope",
+      "weight": 700,
+      "file": "manrope-700.woff2",
+      "bytes": 24836
+    },
+    {
+      "family": "Manrope",
+      "weight": 800,
+      "file": "manrope-800.woff2",
+      "bytes": 24836
+    },
+    {
+      "family": "Nunito",
+      "weight": 400,
+      "file": "nunito-400.woff2",
+      "bytes": 39128
+    },
+    {
+      "family": "Nunito",
+      "weight": 600,
+      "file": "nunito-600.woff2",
+      "bytes": 39128
+    },
+    {
+      "family": "Nunito Sans",
+      "weight": 400,
+      "file": "nunito-sans-400.woff2",
+      "bytes": 31076
+    },
+    {
+      "family": "Nunito Sans",
+      "weight": 600,
+      "file": "nunito-sans-600.woff2",
+      "bytes": 31076
+    },
+    {
+      "family": "Nunito Sans",
+      "weight": 700,
+      "file": "nunito-sans-700.woff2",
+      "bytes": 31076
+    },
+    {
+      "family": "Outfit",
+      "weight": 300,
+      "file": "outfit-300.woff2",
+      "bytes": 32292
+    },
+    {
+      "family": "Outfit",
+      "weight": 400,
+      "file": "outfit-400.woff2",
+      "bytes": 32292
+    },
+    {
+      "family": "Outfit",
+      "weight": 500,
+      "file": "outfit-500.woff2",
+      "bytes": 32292
+    },
+    {
+      "family": "Outfit",
+      "weight": 600,
+      "file": "outfit-600.woff2",
+      "bytes": 32292
+    },
+    {
+      "family": "Playfair Display",
+      "weight": 500,
+      "file": "playfair-display-500.woff2",
+      "bytes": 38404
+    },
+    {
+      "family": "Playfair Display",
+      "weight": 600,
+      "file": "playfair-display-600.woff2",
+      "bytes": 38404
+    },
+    {
+      "family": "Playfair Display",
+      "weight": 700,
+      "file": "playfair-display-700.woff2",
+      "bytes": 38404
+    },
+    {
+      "family": "Source Sans 3",
+      "weight": 400,
+      "file": "source-sans-3-400.woff2",
+      "bytes": 28740
+    },
+    {
+      "family": "Source Sans 3",
+      "weight": 600,
+      "file": "source-sans-3-600.woff2",
+      "bytes": 28740
+    },
+    {
+      "family": "Source Serif 4",
+      "weight": 400,
+      "file": "source-serif-4-400.woff2",
+      "bytes": 50824
+    },
+    {
+      "family": "Source Serif 4",
+      "weight": 600,
+      "file": "source-serif-4-600.woff2",
+      "bytes": 50824
+    },
+    {
+      "family": "Space Grotesk",
+      "weight": 500,
+      "file": "space-grotesk-500.woff2",
+      "bytes": 22288
+    },
+    {
+      "family": "Space Grotesk",
+      "weight": 700,
+      "file": "space-grotesk-700.woff2",
+      "bytes": 22288
+    },
+    {
+      "family": "Space Mono",
+      "weight": 400,
+      "file": "space-mono-400.woff2",
+      "bytes": 16520
+    },
+    {
+      "family": "Work Sans",
+      "weight": 400,
+      "file": "work-sans-400.woff2",
+      "bytes": 50316
+    },
+    {
+      "family": "Work Sans",
+      "weight": 500,
+      "file": "work-sans-500.woff2",
+      "bytes": 50316
+    }
+  ]
+}

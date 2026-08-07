@@ -1,0 +1,16 @@
+# Normalise line endings in the repository to LF.
+#
+# Development happens on Windows with core.autocrlf=true, which would otherwise
+# commit CRLF and give a collaborator on macOS or Linux a whole-file diff on
+# every file. Working copies still get native endings; only what is stored here
+# is normalised.
+* text=auto eol=lf
+
+# Binary assets must never be touched.
+*.woff2 binary
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.pdf    binary

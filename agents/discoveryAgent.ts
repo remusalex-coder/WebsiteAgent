@@ -18,6 +18,7 @@ import path from 'node:path';
 import { createBrowserSession, type BrowserSession, type PageHandle } from '../lib/browser.js';
 import { createLogger } from '../lib/logger.js';
 import { loadConfig, type AppConfig } from '../lib/config.js';
+import { createPlatform } from '../lib/platform/platform.js';
 import { InvalidInputError, UpstreamError } from '../lib/errors.js';
 import type { Logger } from '../lib/logger.js';
 import type {
@@ -735,6 +736,16 @@ export async function discoverStandalone(
   // Opened on first use, so a rejected URL never costs a browser launch.
   const browser: { session: Promise<BrowserSession> | null } = { session: null };
 
+  // Discovery uses no model, no skill and no MCP server, but `AgentContext`
+  // carries a platform for every agent — so a real one is built rather than
+  // faked. It reaches nothing on construction, so this stays free.
+  const platform = await createPlatform({
+    config,
+    logger,
+    signal: controller.signal,
+    outputDir: config.outputDir,
+  });
+
   try {
     return await discoveryAgent.run(
       { mapsUrl },
@@ -750,12 +761,14 @@ export async function discoverStandalone(
           });
           return browser.session;
         },
+        platform,
         outputDir: config.outputDir,
         signal: controller.signal,
       },
     );
   } finally {
     if (browser.session) await (await browser.session).close();
+    await platform.dispose();
     process.removeListener('SIGINT', onInterrupt);
   }
 }

@@ -1,0 +1,8 @@
+{
+  "// ": "Typechecking config: the build config plus the tests. `npm run build` uses tsconfig.json so nothing under test/ is ever emitted to dist/.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["main.ts", "agents/**/*.ts", "lib/**/*.ts", "test/**/*.ts"]
+}
