@@ -743,6 +743,32 @@ h4 {
   gap: var(--space-md);
 }
 
+/*
+ * Let the hero shrink below the width of its longest word.
+ *
+ * Grid and flex children default to min-width:auto, which means they cannot be
+ * narrower than their min-content size. At the display step one long word is
+ * enough: "Accommodations" set at the hotel's headline size measures 384px,
+ * so a 390px phone rendered a 400px document and every page got a horizontal
+ * scrollbar. The words that trigger it are ordinary trade vocabulary —
+ * Orthodontics, Physiotherapy, Representation, Accommodations — so this is a
+ * mobile defect on a large share of industries rather than an edge case.
+ *
+ * min-width:0 lets the track shrink; overflow-wrap lets the word itself break
+ * as the last resort rather than punching out of the layout.
+ */
+.hero__content,
+.hero__headline,
+.hero__support {
+  min-width: 0;
+}
+
+.section--hero h1,
+.hero .eyebrow,
+.hero__support {
+  overflow-wrap: break-word;
+}
+
 .hero__content > :last-child,
 .hero__support > :last-child {
   margin-bottom: 0;
@@ -757,12 +783,33 @@ h4 {
   display: grid;
   gap: var(--space-sm);
   align-content: start;
-  max-width: var(--measure);
+  /*
+   * Clamped with min(), not the measure alone.
+   *
+   * The measure is a reading width in ch units, which on a generous type scale
+   * computes to about 384px — wider than the 358px a 390px phone leaves after
+   * container padding. Setting max-width to the measure alone therefore acts as
+   * a *minimum* on a small screen: the hero pushed the document to 400px and
+   * gave the page a horizontal scrollbar on mobile.
+   *
+   * Capping at 100% keeps the measure where there is room for it and yields
+   * where there is not.
+   */
+  max-width: min(var(--measure), 100%);
 }
 
 .section--hero h1 {
   margin: 0;
-  font-size: var(--text-display-size);
+  /*
+   * Capped, and it must stay capped here.
+   *
+   * This block is emitted after the base stylesheet, so an uncapped
+   * var(--text-display-size) silently overrides the viewport cap the base sets
+   * at the same specificity — which is how a 390px phone ended up with a 77px
+   * headline nine lines deep, reading "Seaso / nal / organ / ic". The base rule
+   * and this one have to agree; the colour tokens failed the same way once.
+   */
+  font-size: min(var(--text-display-size), 11vw);
   line-height: var(--text-display-height);
   font-weight: var(--text-display-weight);
   letter-spacing: var(--text-display-tracking, normal);
@@ -776,6 +823,10 @@ h4 {
    * setting breaks the way a person would break it.
    */
   max-width: 20ch;
+  /* Long trade words — Accommodations, Orthodontics, Representation — set the
+   * min-content floor of the whole hero grid. Allow the break as a last resort;
+   * the viewport cap above means it almost never fires. */
+  overflow-wrap: break-word;
   /* Even lines, so a three-word headline never leaves one word on line two. */
   text-wrap: balance;
 }
@@ -818,6 +869,22 @@ h4 {
   .hero--minimal h1,
   .hero--editorial h1 {
     max-width: 17ch;
+  }
+
+  /*
+   * A hero that splits into columns hands its headline a fraction of the page,
+   * and the display token knows nothing about that.
+   *
+   * The editorial hero's headline track measured 372px against a 133px font:
+   * thirteen lines, roughly one word each. Capping against the viewport rather
+   * than the track is approximate — it is the only relationship CSS can express
+   * without measuring the box — but it turns thirteen lines into four.
+   */
+  .hero--editorial h1,
+  .hero--minimal h1,
+  .hero--split h1,
+  .hero--magazine h1 {
+    font-size: min(var(--text-display-size), 5.2vw);
   }
 
   .hero--minimal .hero__support,

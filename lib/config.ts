@@ -68,6 +68,10 @@ export interface AiConfig {
   readonly baseUrls: Readonly<Record<AIProviderName, string | null>>;
   /** Wall-clock budget for one provider request. */
   readonly requestTimeoutMs: number;
+  /** Retries for a provider call that failed retryably. `0` disables them. */
+  readonly maxRetries: number;
+  /** First backoff ceiling; doubles per attempt, with full jitter. */
+  readonly retryBaseDelayMs: number;
   /** OpenRouter app attribution; both optional. */
   readonly openRouterReferer: string | null;
   readonly openRouterTitle: string | null;
@@ -204,6 +208,8 @@ export const DEFAULTS = {
   ai: {
     provider: 'anthropic',
     requestTimeoutMs: 300_000,
+    maxRetries: 3,
+    retryBaseDelayMs: 1_000,
   },
   skills: {
     timeoutMs: 120_000,
@@ -508,6 +514,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         openrouter: optional(env, 'OPENROUTER_BASE_URL'),
       },
       requestTimeoutMs: int(env, 'AI_REQUEST_TIMEOUT_MS', DEFAULTS.ai.requestTimeoutMs),
+      maxRetries: int(env, 'AI_MAX_RETRIES', DEFAULTS.ai.maxRetries, 0),
+      retryBaseDelayMs: int(env, 'AI_RETRY_BASE_DELAY_MS', DEFAULTS.ai.retryBaseDelayMs, 0),
       openRouterReferer: optional(env, 'OPENROUTER_REFERER'),
       openRouterTitle: optional(env, 'OPENROUTER_TITLE'),
     },

@@ -16,6 +16,7 @@
  */
 
 import {
+  AgentError,
   MissingApiKeyError,
   MissingProviderError,
   UnsupportedProviderError,
@@ -105,6 +106,54 @@ export function createAIProviderFactory(options: AIProviderFactoryOptions): AIPr
     };
   };
 
+  /**
+   * Retries a provider call that failed for a reason that may not repeat.
+   *
+   * Every adapter already classifies its failures honestly — a 429, a 5xx and a
+   * transport error carry `retryable: true`; a 400, an auth failure and a
+   * refusal carry `false` — and until now nothing consumed that. Two of five
+   * generations in one batch died on `HTTP 503: this model is currently
+   * experiencing high demand`, which is precisely the failure that costs a
+   * customer their website for no reason.
+   *
+   * Wrapping here rather than in each adapter means one implementation for all
+   * four vendors, and rather than in the orchestrator because a stage retry
+   * would re-run a browser scrape to recover from a model hiccup.
+   *
+   * Exponential with full jitter: a spike is shared by every caller, so
+   * retrying on a fixed schedule reconverges the herd onto the same instant.
+   */
+  const withRetry = (name: AIProviderName, provider: AIProvider): AIProvider => ({
+    ...provider,
+    async generate(request) {
+      const scoped = logger.child(name);
+      let lastError: unknown;
+
+      for (let attempt = 0; attempt <= config.maxRetries; attempt += 1) {
+        try {
+          return await provider.generate(request);
+        } catch (error) {
+          lastError = error;
+          const retryable = error instanceof AgentError && error.retryable;
+          const exhausted = attempt === config.maxRetries;
+          // A cancelled run must not be resurrected by a retry.
+          if (!retryable || exhausted || request.signal?.aborted === true) throw error;
+
+          const ceiling = config.retryBaseDelayMs * 2 ** attempt;
+          const delayMs = Math.round(Math.random() * ceiling);
+          scoped.warn('provider call failed, retrying', {
+            attempt: attempt + 1,
+            of: config.maxRetries,
+            delayMs,
+            error: error instanceof Error ? error.message.slice(0, 160) : String(error),
+          });
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+      }
+      throw lastError;
+    },
+  });
+
   const build = (name: AIProviderName): AIProvider => {
     const cached = instances.get(name);
     if (cached !== undefined) return cached;
@@ -113,13 +162,13 @@ export function createAIProviderFactory(options: AIProviderFactoryOptions): AIPr
     const apiKey = config.apiKeys[name];
     if (apiKey === '') throw new MissingApiKeyError(name, adapter.apiKeyVariable, SOURCE);
 
-    const provider = adapter.create({
+    const provider = withRetry(name, adapter.create({
       apiKey,
       baseUrl: config.baseUrls[name],
       logger: logger.child(name),
       timeoutMs: config.requestTimeoutMs,
       headers: headersFor(name),
-    });
+    }));
 
     logger.debug('ai provider constructed', {
       provider: name,

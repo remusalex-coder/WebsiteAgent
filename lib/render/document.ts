@@ -126,7 +126,21 @@ function renderBrand(content: WebsiteContent, logo: ResolvedImage | null): Html 
           height: logo.height,
           decoding: 'async',
         }),
-    element('span', { class: 'brand__name' }, text(content.businessName)),
+    /*
+     * The wordmark is hidden when a logo is present.
+     *
+     * A logo almost always contains the business name already, so rendering
+     * both printed it twice side by side — "TARTINE Tartine Bakery",
+     * "PARADISE DENTAL CARE Paradise Dental Care" — on every site that had a
+     * logo. It stays in the DOM rather than being dropped: the link needs an
+     * accessible name, and a logo's alt text is whatever the previous site's
+     * author wrote, which is often empty.
+     */
+    element(
+      'span',
+      { class: logo === null ? 'brand__name' : 'brand__name visually-hidden' },
+      text(content.businessName),
+    ),
   ]);
 }
 

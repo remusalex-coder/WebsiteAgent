@@ -454,6 +454,39 @@ a:hover {
   list-style: none;
 }
 
+/*
+ * On a phone the section nav becomes a scroll rail rather than wrapping.
+ *
+ * Wrapping cost 170px of a 844px screen on an eight-section page — a fifth of
+ * the first view spent on links, before the visitor sees anything about the
+ * business. Shortening the labels fixed half of it; the other half is that six
+ * to eight items simply do not fit on one row at 390px.
+ *
+ * A rail rather than a disclosure button because it needs no JavaScript and no
+ * markup change: the generated site still opens from disk with no script, and
+ * every link stays in the tab order instead of being hidden behind a control
+ * that would need state. Scroll snapping keeps it from resting mid-label.
+ */
+@media (max-width: 40rem) {
+  .site-nav--header .site-nav__list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Bleed to the container edges so the rail reads as scrollable. */
+    margin-inline: calc(var(--space-md) * -1);
+    padding-inline: var(--space-md);
+  }
+
+  .site-nav--header .site-nav__list::-webkit-scrollbar { display: none; }
+
+  .site-nav--header .site-nav__list > li {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}
+
 .site-nav__link {
   display: inline-block;
   padding-block: var(--space-2xs);
@@ -514,12 +547,28 @@ a:hover {
  * Sending the hero through the h1 step instead flattens all eleven directions
  * into the same headline size.
  */
+/*
+ * The display step, capped against the viewport it has to fit in.
+ *
+ * The design layer sizes this per direction and knows nothing about the screen:
+ * editorial asks for 9rem, and the token is emitted unchanged at every width.
+ * Measured on a 390px phone that produced a 77px headline setting NINE lines at
+ * four or five characters each — "Seaso / nal / organ / ic". The direction was
+ * being honoured exactly and the result was unreadable.
+ *
+ * min() keeps the direction's intent wherever there is room for it — at 1280px
+ * the token still wins — and stops it from exceeding what a narrow screen can
+ * show. 11vw is about three words per line at 390px.
+ */
 .section--hero h1 {
-  font-size: var(--text-display-size, clamp(2rem, 1.4rem + 3vw, 3.5rem));
+  font-size: min(var(--text-display-size, clamp(2rem, 1.4rem + 3vw, 3.5rem)), 11vw);
   line-height: var(--text-display-height, 1.05);
   font-weight: var(--text-display-weight, 700);
   letter-spacing: var(--text-display-tracking, normal);
 }
+
+/* The column-hero cap lives in the variants sheet, which is emitted after this
+ * one and would otherwise override it at equal specificity. */
 
 .hero {
   display: grid;

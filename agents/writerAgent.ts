@@ -255,7 +255,24 @@ STRUCTURE. Emit six to nine sections in reading order, always starting with hero
 - faq — ONLY if the brief answers real questions. Write each bullet as "Question? Answer." Omit the section otherwise.
 - cta — one instruction and a button.
 
-Do not emit two sections of the same kind.`;
+Do not emit two sections of the same kind.
+
+NEVER SAY THE SAME THING TWICE. The tagline, the hero heading, the hero subheading and the hero body are four different jobs, not four phrasings of one sentence. If the brief is thin you will be tempted to restate the trade and the street in all of them — a real page never does this. Given only a category and an address, one honest firm produced:
+
+  eyebrow    "Legal counsel located at 100 Pine Street in San Francisco"
+  heading    "WVBR LLP"
+  subheading "Legal counsel at 100 Pine Street, San Francisco"
+  body       "Located at 100 Pine Street, the firm provides legal counsel..."
+
+Four slots, one fact, zero information after the first. Each slot must add something the previous did not. The heading should say what the business *does* or offers, never just its name — the name is already in the header and the browser tab.
+
+WHEN THE BRIEF IS THIN. Sometimes all you have is the category, the address, the phone and the hours — no website text, no services, no photographs. That is common and it is not your failure. Handle it like this:
+
+- Write FEWER sections, not padded ones. Four good sections beat eight empty ones.
+- Make every section earn its place. If "about" would only restate the address, do not emit an about section.
+- Lead with what a visitor in this situation actually needs: what the business is, where it is, when it is open, and how to reach it in one tap.
+- Write the orientation copy a local would find useful — the neighbourhood, the nearest cross street, what the category means in practice — using only what the brief gives you.
+- Put everything you would have liked to say into unresolvedGaps. A short page plus an honest list of what the owner should confirm is a professional deliverable; a long page of restatements is not.`;
 
 /* ------------------------------------------------------------------ */
 /* Brief                                                               */
@@ -724,6 +741,41 @@ function looksLikeProductShot(image: ImageAsset): boolean {
   return NOT_PHOTOGRAPHY.some((needle) => haystack.includes(needle));
 }
 
+/** Hosts that only ever serve map tiles and static maps. */
+const MAP_HOSTS = [
+  'maps.googleapis.com', 'maps.gstatic.com', 'maps.google.', 'tile.openstreetmap',
+  'api.mapbox.com', 'tiles.mapbox.com', 'staticmap', 'basemaps.',
+];
+
+/**
+ * Whether an image can carry a section of a page.
+ *
+ * A hard exclusion, unlike `looksLikeProductShot` — these are never worth
+ * showing at any position. Paradise Dental's generated gallery contained **six
+ * Google Maps tiles**, because an embedded map is a grid of `<img>` elements
+ * and the normalizer ranks by CDN path and byte size, which cannot tell a
+ * photograph of a surgery from a 256×256 slice of a road.
+ *
+ * Three signals, in increasing generality:
+ *  - the host only ever serves maps;
+ *  - the dimensions are an exact power-of-two tile;
+ *  - the image is too small to be photography at any layout size.
+ */
+function isUsablePhotograph(image: ImageAsset): boolean {
+  const url = image.url.toLowerCase();
+  if (MAP_HOSTS.some((host) => url.includes(host))) return false;
+
+  const { width, height } = image;
+  if (width !== null && height !== null) {
+    // 256×256 and 512×512 are map/sprite tiles, never content.
+    if (width === height && (width === 256 || width === 512)) return false;
+    // Below this, an image is an icon, a badge or a tracking pixel. The
+    // renderer would upscale it into a blur.
+    if (Math.max(width, height) < 320) return false;
+  }
+  return true;
+}
+
 function assignImages(
   sections: readonly DraftSection[],
   profile: BusinessProfile,
@@ -737,8 +789,9 @@ function assignImages(
   // Product shots sort to the back rather than being dropped: on a business
   // whose only imagery is packaging, a page with photographs of the packaging
   // still beats a page with none.
-  const photographs = gallery.filter((image) => !looksLikeProductShot(image));
-  const products = gallery.filter((image) => looksLikeProductShot(image));
+  const usable = gallery.filter(isUsablePhotograph);
+  const photographs = usable.filter((image) => !looksLikeProductShot(image));
+  const products = usable.filter((image) => looksLikeProductShot(image));
   const pool = [...photographs, ...products];
   const lead = hero ?? pool.shift() ?? null;
 
