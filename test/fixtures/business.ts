@@ -13,6 +13,7 @@ import type {
   BusinessCategory,
   BusinessProfile,
   BusinessStrategy,
+  ListingReview,
   PageText,
   ServiceItem,
 } from '../../lib/types.js';
@@ -32,6 +33,26 @@ export interface ProfileOverrides {
   readonly description?: string | null;
   readonly rating?: number | null;
   readonly reviewCount?: number | null;
+  readonly reviews?: readonly ListingReview[];
+}
+
+/**
+ * A verified review, long enough to be publishable.
+ *
+ * The body is padded past the source's forty-character floor deliberately: a
+ * fixture that a real harvest would have rejected tests nothing about the page
+ * a real harvest produces.
+ */
+export function reviewFixture(overrides: Partial<ListingReview> = {}): ListingReview {
+  return {
+    text: 'The custard tarts come out of the oven at eleven and they are worth the wait.',
+    authorName: 'Marta S.',
+    rating: 5,
+    relativeTime: '3 weeks ago',
+    publishedAt: '2026-07-18T09:12:00Z',
+    sourceUrl: `${SOURCE}/review/1`,
+    ...overrides,
+  };
 }
 
 /** An attribute the listing states, available unless said otherwise. */
@@ -71,6 +92,7 @@ export function profileFixture(overrides: ProfileOverrides = {}): BusinessProfil
     services,
     pages: overrides.pages ?? [],
     attributes: overrides.attributes ?? [],
+    reviews: overrides.reviews ?? [],
     description:
       overrides.description === undefined || overrides.description === null
         ? null

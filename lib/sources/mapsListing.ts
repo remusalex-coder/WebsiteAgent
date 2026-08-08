@@ -21,8 +21,9 @@
  * So this module deliberately does not try to scrape reviews. They are not
  * there to scrape, and code that hunted for them would be a maintenance burden
  * that reported an honest zero on every run. Reviews and the full photo set
- * come from the Places API, which returns them under a licence, and which
- * implements this same `ListingHarvest` contract when it lands.
+ * come from the Places API, which returns them under a licence and which
+ * implements this same `ListingHarvest` contract — see `placesApi.ts`. This
+ * module states its empty `reviews` honestly rather than approximating them.
  *
  * ## What it does read
  *
@@ -402,5 +403,11 @@ export async function harvestMapsListing(
     descriptionChars: description?.length ?? 0,
   });
 
-  return { attributes, description, photos, sources: [listingUrl] };
+  return {
+    ...EMPTY_HARVEST,
+    attributes,
+    description,
+    photos,
+    sources: [listingUrl],
+  };
 }

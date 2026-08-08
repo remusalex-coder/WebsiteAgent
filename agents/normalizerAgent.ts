@@ -32,6 +32,7 @@ import type {
   GeoPoint,
   ImageAsset,
   NavigationLink,
+  OpeningHours,
   PageText,
   PhoneNumber,
   PostalAddress,
@@ -494,6 +495,46 @@ function dedupeAttributes(attributes: readonly BusinessAttribute[]): BusinessAtt
 }
 
 /**
+ * The first source that has an answer at all, attributed.
+ *
+ * Sources are passed in authority order and `null` means "did not know", which
+ * is not the same as "said no" — a source with nothing to say must never
+ * outrank one that answered. Collapses the repeated
+ * `x !== null ? chooseBest([candidate(x, …)]) : null` shape that reading two
+ * sources for one scalar would otherwise multiply across the assembly.
+ */
+function firstAttributed<T>(
+  values: readonly (T | null)[],
+  toCandidate: (value: T) => AttributedValue<T>,
+): Attributed<T> | null {
+  for (const value of values) {
+    if (value !== null && value !== undefined) return chooseBest([toCandidate(value)], () => 0);
+  }
+  return null;
+}
+
+/**
+ * Opening hours from several sources, resolved day by day.
+ *
+ * Not "the longer list wins": a source that knows Sunday and a source that
+ * knows Saturday should produce a business open on both, and picking one list
+ * wholesale would silently discard a day the platform had been told about.
+ *
+ * The seven-day trust signal depends on this being a union rather than a
+ * choice — seven distinct days is what "Open seven days a week" is allowed to
+ * mean, and no single source has ever supplied seven.
+ */
+function mergeHours(...sources: readonly (readonly OpeningHours[])[]): readonly OpeningHours[] {
+  const byDay = new Map<number, OpeningHours>();
+  for (const source of sources) {
+    for (const entry of source) {
+      if (!byDay.has(entry.dayOfWeek)) byDay.set(entry.dayOfWeek, entry);
+    }
+  }
+  return [...byDay.values()].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+}
+
+/**
  * Attribute labels that are really a statement of what kind of place this is.
  *
  * Deliberately narrow. A hotel listing carries no category button — which is
@@ -695,15 +736,24 @@ export const normalizerAgent: NormalizerAgent = {
       phones,
       emails,
       socialProfiles,
-      hours: discovery.hours,
-      rating:
-        discovery.rating !== null
-          ? chooseBest([candidate(discovery.rating, 'maps', mapsUrl)], () => 0)
-          : null,
-      reviewCount:
-        discovery.reviewCount !== null
-          ? chooseBest([candidate(discovery.reviewCount, 'maps', mapsUrl)], () => 0)
-          : null,
+      // Content sources first, per day. Discovery reads a signed-out pane that
+      // renders roughly one day; an API that answers with the week is not a
+      // better guess at the same fact, it is a different quality of fact.
+      hours: mergeHours(collected.listingHours, discovery.hours),
+      rating: firstAttributed(
+        [collected.listingRating, discovery.rating],
+        (value) => candidate(value, 'maps', mapsUrl),
+      ),
+      // The count is the field this actually changes. A signed-out pane serves a
+      // rating with no total behind it, so `ratingLine` has never been able to
+      // say "from 812 reviews" and the JSON-LD has never carried an
+      // `AggregateRating` — schema.org requires the count, and the platform
+      // does not emit a number it cannot prove.
+      reviewCount: firstAttributed(
+        [collected.listingReviewCount, discovery.reviewCount],
+        (value) => candidate(value, 'maps', mapsUrl),
+      ),
+      reviews: collected.reviews,
       navigation: dedupeNavigation(collected.navigation),
       services: dedupeServices(collected.services),
       pages: dedupePages(collected.pages),

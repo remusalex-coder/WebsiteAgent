@@ -23,11 +23,17 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { buildCleanPlaceUrl, harvestMapsListing, EMPTY_HARVEST } from '../lib/sources/index.js';
+import {
+  buildCleanPlaceUrl,
+  harvestMapsListing,
+  harvestPlacesApi,
+  mergeHarvests,
+  EMPTY_HARVEST,
+} from '../lib/sources/index.js';
 
 import type { BrowserSession, PageHandle } from '../lib/browser.js';
 import type { Logger } from '../lib/logger.js';
-import type { CollectorConfig } from '../lib/config.js';
+import type { AppConfig, CollectorConfig } from '../lib/config.js';
 import type { ListingHarvest } from '../lib/sources/index.js';
 import type {
   Agent,
@@ -657,6 +663,53 @@ async function collectListing(
   }
 }
 
+/**
+ * Every content source for this business, merged into one harvest.
+ *
+ * The order is the authority order `mergeHarvests` resolves conflicts by. The
+ * Places API leads because it *states* what the scraper *infers*: accessibility
+ * as booleans rather than label text, hours as structured periods rather than
+ * one line of a reduced pane, and a review count Google will not render to a
+ * signed-out visitor at all.
+ *
+ * Both run — this is not a fallback. The API answers with four accessibility
+ * fields; the pane answers with the amenity list, the payment options and the
+ * service attributes that have no place in the API's schema. Neither is a
+ * superset of the other, and the merge is per field precisely so the platform
+ * does not have to choose.
+ *
+ * Adding a third source is another entry in this array.
+ */
+async function collectSources(
+  identity: DiscoveryResult,
+  session: BrowserSession,
+  config: AppConfig,
+  signal: AbortSignal,
+  logger: Logger,
+): Promise<ListingHarvest> {
+  const places =
+    identity.placeId === null
+      ? EMPTY_HARVEST
+      : await harvestPlacesApi(
+          {
+            placeId: identity.placeId,
+            // Both feed the ftid exchange. Every run in the repository carries
+            // the hex form, so this is the normal path rather than the edge.
+            businessName: identity.name,
+            address: identity.address,
+            apiKey: config.places.apiKey,
+            languageCode: config.places.languageCode,
+            timeoutMs: config.places.requestTimeoutMs,
+            signal,
+          },
+          logger,
+        );
+
+  const listing = await collectListing(identity, session, logger);
+
+  return mergeHarvests([places, listing]);
+}
+
 /** Listing photographs enter the same ranking and download path as the site's. */
 function listingImages(harvest: ListingHarvest, listingUrl: string): RawImage[] {
   return harvest.photos.map((photo) => ({
@@ -791,13 +844,16 @@ export const collectorAgent: CollectorAgent = {
     await fs.mkdir(outputDir, { recursive: true });
     const session = await ctx.getBrowser();
 
-    // Source one: the listing. It runs first and unconditionally, so a business
-    // with no website still reaches the writer with photography, stated
-    // attributes and whatever prose Google publishes about it.
-    const listing = await logger.time('read listing', () => collectListing(input, session, logger));
+    // Sources one and two: the Places API and the listing pane. They run first
+    // and unconditionally, so a business with no website still reaches the
+    // writer with photography, stated attributes, its customers' own words and
+    // whatever prose Google publishes about it.
+    const listing = await logger.time('read listing', () =>
+      collectSources(input, session, config, ctx.signal, logger),
+    );
     ctx.signal.throwIfAborted();
 
-    // Source two: the website, when there is one.
+    // Source three: the website, when there is one.
     const visited = new Set<string>();
     const harvests: PageHarvest[] = [];
 
@@ -866,6 +922,10 @@ export const collectorAgent: CollectorAgent = {
       pages: harvests.map((harvest) => harvest.page),
       attributes: listing.attributes,
       listingDescription: listing.description,
+      reviews: listing.reviews,
+      listingHours: listing.hours,
+      listingRating: listing.rating,
+      listingReviewCount: listing.reviewCount,
       favicon: pickByRole(images, 'favicon'),
       logo: pickByRole(images, 'logo'),
       hero: pickByRole(images, 'hero'),

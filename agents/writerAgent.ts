@@ -48,6 +48,7 @@ import type {
   ImageAsset,
   OpeningHours,
   PhoneNumber,
+  ListingReview,
   SectionKind,
   TrustSignal,
   WebsiteContent,
@@ -251,9 +252,9 @@ STRUCTURE. Emit six to nine sections in reading order, always starting with hero
 - about — the story, drawn from what the site says about itself. Aim for at least two paragraphs where the material exists; this is the section that carries voice.
 - services or menu — what a customer can get. Five to eight bullets is the target: at that length the layout engine gives the section its strongest treatment, and below five it renders as a plain list. Write each as "Name — one clause of detail". Only name things the brief names.
 - gallery — REQUIRED whenever the brief reports four or more gallery photographs. Give it a short heading and at most one line of body; the photographs do the work and you do not need to describe them. Omitting a gallery when the business has photography is the single most damaging thing you can do to the finished page: it leaves the site looking like a text document about a business that clearly has pictures.
-- hours, contact — write the heading and, at most, one line of body. Leave bullets EMPTY. Verified data is inserted afterwards.
+- hours, contact, testimonials — write the heading and, at most, one line of body. Leave bullets EMPTY. Verified data is inserted afterwards.
 - location — where they are and what the building or street is like, if the brief says.
-- testimonials — ONLY if the brief contains actual customer words. It usually does not. Omit it.
+- testimonials — include it ONLY when the brief reports verified reviews, and then write the heading alone. You may never write a quotation or a customer's name: real reviews are inserted afterwards, and anything you put in these bullets is discarded unread. If the brief reports no reviews, omit the section — it will be removed anyway.
 - faq — ONLY if the brief answers real questions. Write each bullet as "Question? Answer." Omit the section otherwise.
 - cta — one instruction and a button.
 
@@ -363,6 +364,25 @@ export function buildWriterBrief(
       .join('\n'),
   );
 
+  /*
+   * A count, not the reviews themselves.
+   *
+   * The writer needs exactly one fact about them — whether a testimonials
+   * section would have anything in it — and giving it the text would be handing
+   * a model the raw material for the one thing it must never produce. It cannot
+   * paraphrase a quotation it has not been shown, and it cannot attribute words
+   * to a customer whose name it does not have.
+   *
+   * The quotations go straight from the profile to the page, by way of code,
+   * never through the prompt.
+   */
+  section(
+    'Verified customer reviews',
+    profile.reviews.length === 0
+      ? 'None. Do not emit a testimonials section.'
+      : `${profile.reviews.length} verified review(s) are available and will be inserted into the testimonials section automatically. Write its heading only.`,
+  );
+
   section('Navigation on the current site', profile.navigation.map((link) => `- ${link.label}`).join('\n'));
 
   // Counts, not URLs: the writer never chooses an image, so the only thing it
@@ -418,7 +438,7 @@ export function buildWriterBrief(
 /* ------------------------------------------------------------------ */
 
 /** One section exactly as the model returns it, before any facts are attached. */
-interface DraftSection {
+export interface DraftSection {
   readonly kind: SectionKind;
   readonly heading: string;
   readonly subheading: string;
@@ -647,6 +667,32 @@ const CREDENTIAL_ATTRIBUTE =
 const MAX_TRUST_SIGNALS = 3;
 
 /**
+ * The rating below which a star average stops being reassurance.
+ *
+ * The trust bar promotes a fact to the first screen because it argues *for* the
+ * business. A 3.8 does not: on Google's distribution, where local businesses
+ * average above four, it is a below-average score, and printing it under the
+ * headline is the page making the visitor's counter-argument for them. The
+ * benchmark hotel rendered exactly that, and it looked like reassurance because
+ * the code could not tell the difference.
+ *
+ * **This suppresses a claim; it never makes one.** The true rating stays in the
+ * JSON-LD, where `aggregateRating` carries the real value to every machine that
+ * asks — Google's own panel will show it beside the page whatever this file
+ * does. Nothing here rounds a number up, hides a review, or says anything that
+ * is not so. It decides only what the business *leads with*, which is the same
+ * editorial judgement any agency makes for a client, and the same one that
+ * already keeps an unavailable amenity off the page.
+ *
+ * Four is the threshold because it is where Google's own review UI stops
+ * reading as a warning. A business under it is better served by the other
+ * signals — the trade, the town, the credential — and by the reviews
+ * themselves, where a thoughtful four-star write-up persuades more than its
+ * number does.
+ */
+const MIN_PROMOTABLE_RATING = 4;
+
+/**
  * The verified reassurance for this business, best first.
  *
  * Built here rather than asked for, which is the same rule that governs hours,
@@ -659,7 +705,11 @@ export function trustSignals(profile: BusinessProfile): readonly TrustSignal[] {
   const signals: TrustSignal[] = [];
 
   const rating = ratingLine(profile);
-  if (rating !== null && profile.rating !== null) {
+  if (
+    rating !== null &&
+    profile.rating !== null &&
+    profile.rating.value >= MIN_PROMOTABLE_RATING
+  ) {
     signals.push({ kind: 'rating', label: rating, source: profile.rating.source });
   }
 
@@ -1442,6 +1492,118 @@ function withoutEcho(
 }
 
 /**
+ * How many customer quotations a page carries.
+ *
+ * Three is a wall of praise; more is a page asking to be believed rather than
+ * one being read. The rating in the trust bar already states the aggregate —
+ * these exist to give it a voice, not to restate it louder.
+ */
+const MAX_TESTIMONIALS = 3;
+
+/**
+ * Verified reviews as the renderer's quote bullets.
+ *
+ * The format is the one `splitQuote` in the renderer parses — a quotation
+ * closed by its own quote mark, an em dash, then the attribution. Wrapping the
+ * text in typographic quotes is not decoration: it guarantees the closing
+ * character the parser needs, whatever punctuation the reviewer ended on.
+ *
+ * A review with no author is attributed to the source rather than left bare.
+ * "Google review" is checkable and modest; an unattributed quotation floating
+ * on a page is exactly what a fabricated one looks like.
+ */
+export function testimonialBullets(reviews: readonly ListingReview[]): readonly string[] {
+  return reviews.slice(0, MAX_TESTIMONIALS).map((review) => {
+    // Any dash in the attribution would be read as the separator, splitting the
+    // quotation in the wrong place and putting half a sentence in the mouth of
+    // a name that is not there.
+    const author = (review.authorName ?? '').replace(/[—–-]/g, ' ').trim();
+    return `“${review.text.trim()}” — ${author === '' ? 'Google review' : author}`;
+  });
+}
+
+/**
+ * Replaces any testimonials section with one built from verified reviews.
+ *
+ * ## Why the model is not allowed to write this section
+ *
+ * Every other section it writes is prose about a business. A testimonial is a
+ * claim attributed to a *named human being*, and the failure mode is not a
+ * clumsy sentence — it is a fabricated endorsement under a real person's name,
+ * published on a paying customer's website. That is unfixable after the fact
+ * and it is the one defect that would end the product.
+ *
+ * The prompt has forbidden it since the writer was built: "testimonials — ONLY
+ * if the brief contains actual customer words. It usually does not. Omit it."
+ * That is an instruction, and an instruction is a request. This is the
+ * structural version of the same rule, and it is the one that holds when a
+ * model misreads the brief, when the provider changes, or when someone edits
+ * the prompt in a hurry two years from now.
+ *
+ * So: the drafted section keeps its *position and heading* — where a page
+ * should ask for social proof and how it should introduce it are genuine
+ * editorial judgements, and the model is good at them. Its bullets are
+ * discarded unread and replaced with quotations that came from a source. With
+ * no verified reviews the section is removed entirely, because an empty
+ * testimonials section is worse than none and an invented one is worse still.
+ *
+ * The same rule governs hours, contact rows and the JSON-LD, for the same
+ * reason: a model that is never asked for a fact cannot invent one.
+ */
+export function groundTestimonials(
+  sections: readonly DraftSection[],
+  profile: BusinessProfile,
+  warn: (message: string) => void,
+): readonly DraftSection[] {
+  const bullets = testimonialBullets(profile.reviews);
+  const index = sections.findIndex((section) => section.kind === 'testimonials');
+
+  if (bullets.length === 0) {
+    if (index === -1) return sections;
+    warn(
+      'the writer emitted a testimonials section with no verified review behind it; the section was removed rather than published as written',
+    );
+    return sections.filter((section) => section.kind !== 'testimonials');
+  }
+
+  if (index !== -1) {
+    const drafted = sections[index]!;
+    if (drafted.bullets.length > 0) {
+      warn(
+        `the writer supplied ${drafted.bullets.length} testimonial bullet(s); they were replaced with verified reviews`,
+      );
+    }
+    return sections.map((section, at) =>
+      at === index ? { ...section, body: '', bullets: [...bullets] } : section,
+    );
+  }
+
+  // Reviews exist and the model did not ask for the section. Insert it rather
+  // than waste them: this is the case that holds for every page composed with
+  // no model at all, which is the path a run with no provider takes.
+  //
+  // Placed before whichever of the closing sections comes first, so proof
+  // arrives while a visitor is still deciding rather than after the page has
+  // asked them to act. The design stage may reorder it by industry; this only
+  // has to be a defensible default.
+  const CLOSING: readonly SectionKind[] = ['hours', 'location', 'contact', 'cta'];
+  const at = sections.findIndex((section) => CLOSING.includes(section.kind));
+  const inserted: DraftSection = {
+    kind: 'testimonials',
+    heading: 'In their words',
+    subheading: '',
+    body: '',
+    bullets: [...bullets],
+    ctaLabel: '',
+    ctaTarget: 'none',
+  };
+
+  return at === -1
+    ? [...sections, inserted]
+    : [...sections.slice(0, at), inserted, ...sections.slice(at)];
+}
+
+/**
  * A draft plus the profile, assembled into the finished spec.
  *
  * Everything here is the part of a page the model does not get to decide:
@@ -1460,7 +1622,10 @@ function assembleContent(
   profile: BusinessProfile,
   warn: (message: string) => void,
 ): WebsiteContent {
-  const drafted = dedupeSections(written.sections, warn);
+  // Testimonials are resolved before anything else reads the section list:
+  // the section may be added or removed here, and images, anchors and ids all
+  // key off position.
+  const drafted = groundTestimonials(dedupeSections(written.sections, warn), profile, warn);
   const images = assignImages(drafted, profile);
 
   // Anchors are computed the way the renderer computes them, from the same

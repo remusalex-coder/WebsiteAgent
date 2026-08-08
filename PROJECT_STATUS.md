@@ -33,7 +33,8 @@ runs after stage 5 and deployment will consume it unchanged.
 
 Beneath the collector sits **`lib/sources`**: one contract, `ListingHarvest`, and one
 implementation per place facts can be read from. The collector merges harvests and never
-learns how any were obtained, which is what makes the Places API a drop-in.
+learns how any were obtained. The Places API was the drop-in that proved it — customer
+reviews reached the page without a single change downstream of `lib/sources/`.
 
 ```
 main.ts              orchestration, CLI, run lifecycle
@@ -41,7 +42,7 @@ agents/              one file per stage
 lib/                 browser · config · logger · errors · types
   ai/                AIProvider contract, factory, 4 vendor adapters
   platform/          capability vocabulary, telemetry, skills, MCP
-  sources/           ListingHarvest contract; the Maps listing as content
+  sources/           ListingHarvest contract; Maps listing + Places API; merge policy
   render/            WebsiteContent → index.html + styles.css + assets
 test/                node:test suites, fixtures, snapshots
 docs/                architecture · providers · skills · mcp · renderer · config · dev guide
@@ -191,7 +192,17 @@ pane has:
 This is a wall, not a selector problem, and `lib/sources` deliberately does not try to
 climb it: code that hunted for reviews would be a maintenance burden reporting an honest
 zero every run. Reviews and the full photo set mean the **Places API**, which returns
-both under a licence. The `ListingHarvest` seam exists so that is one file.
+both under a licence. The `ListingHarvest` seam existed so that would be one file, and
+it was — `lib/sources/placesApi.ts`, landed 2026-08-08, nothing downstream changed.
+
+**The Places source is unverified against the live API.** Every parser, the ftid
+exchange, the credential-safety guarantee and the failure paths are covered by 15 tests
+against a stubbed transport, and a live call was made — it returned
+`401 UNAUTHENTICATED` because the only Google key on this machine is scoped to the
+Generative Language API. That confirmed the degradation path (empty harvest, one
+warning, run completes) and nothing else. **Enabling Places API (New) on a billed
+project is the one step between here and reviews on a real page**; see
+[the runbook](docs/runbooks/places-api-source.md).
 
 **Selectors are Google's to rotate.** Every field degrades to `null` rather than
 breaking the run, but `discoveryAgent.ts` is the file to expect maintenance in.
@@ -253,7 +264,7 @@ Also:
   defines the observations a model will eventually be asked to judge. Turning it into an
   agent needs a provider.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
-- **Coverage is the renderer, the design layer, the listing source, and the writer's brief and trust engine.** `npm test` runs 293 assertions. The agents' own orchestration still has none.
+- **Coverage is the renderer, the design layer, both content sources and their merge policy, and the writer's brief, trust engine and testimonial grounding.** `npm test` runs 336 assertions. The agents' own orchestration still has none.
 - **Artifact migrations are manual.** `ARTIFACT_DEFAULTS` in `main.ts` backfills fields a contract gained after a run was written; forgetting an entry breaks `--from=<stage>` on every older run with a `TypeError` far from the cause. A contract change and its default are two edits that must not drift.
 - **Older suites still live outside the repo** — discovery parsers, normalizer primitives, merge/dedup/validation, analyst schema and analyst brief remain in a scratchpad rather than `test/`.
 - **No accessibility or HTML validation in CI.** The markup is checked by assertions about the string, not by axe or the W3C validator. A real audit would be worth one pass before the first deploy.

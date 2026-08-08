@@ -73,9 +73,18 @@ questionnaire are all the same shape of thing.
 
 So a source is a function returning `ListingHarvest`, not a branch inside the
 collector. The collector merges harvests and never learns how any of them were
-obtained, which is what makes the Places API a drop-in rather than a rewrite: it
-produces the same type from an HTTP call instead of a browser, and every stage
-downstream is unchanged.
+obtained. That is what made the Places API a drop-in rather than a rewrite: it
+produces the same type from an HTTP call instead of a browser, and no stage
+downstream of `lib/sources/` changed to gain customer reviews.
+
+**Merging is policy, and it lives in `merge.ts`.** Sources are passed in order
+of authority and earlier ones win, per *field* rather than per source — a source
+that answered first about accessibility must not cost the amenity list only the
+other one carries. Hours resolve day by day and attributes label by label, so a
+business whose API knows Sunday and whose pane knows Saturday ends up open on
+both. Authority means *how a source knows*: the API states accessibility as
+booleans and hours as structured periods, where the pane recovers the same facts
+from label text and is right most of the time.
 
 This is the first step of the multi-source direction in the product brief, taken
 where it paid for itself immediately rather than as an upfront refactor. Before
@@ -87,8 +96,42 @@ unauthenticated visitor a reduced pane and says so in the markup. Measured
 against two fingerprints, including a realistic user agent with the automation
 flag removed, that pane has no Reviews tab and no photo grid. `lib/sources`
 therefore does not attempt to scrape reviews — they are not there to scrape.
-Reviews and the full photo set come from the Places API, under a licence, when
-it lands.
+Reviews and the full photo set come from the Places API, under a licence.
+
+That source now exists (`lib/sources/placesApi.ts`, optional, keyed by
+`PLACES_API_KEY`; see [the runbook](runbooks/places-api-source.md)). Two of its
+decisions are worth carrying into any future source:
+
+- **A photo URL must never carry a credential.** The Places media endpoint takes
+  the key as a query parameter, so the source resolves each photograph to its
+  plain `googleusercontent` URL first. An artifact directory is a persistence
+  format and a committed one; a live key in `2-raw.json` would outlive the run.
+- **An identifier is not self-describing.** A Maps URL carries an `ftid`
+  (`0x…:0x…`); the Places API is keyed by a `ChIJ…` place id. `DiscoveryResult.placeId`
+  is honestly either, and the source exchanges one for the other. Passing the
+  field through unexamined would have 404'd on every business ever collected,
+  and looked exactly like a business with no reviews.
+
+## Facts a model is never asked for
+
+Hours, contact rows, the JSON-LD, the trust bar and now **testimonials** are
+built from the profile by code, after the model has answered. The schema has no
+field for any of them, so the model cannot offer one — a model never asked for a
+certification cannot invent one.
+
+Testimonials are the sharpest case and the reason the rule is structural rather
+than a prompt instruction. Every other section is prose about a business; a
+testimonial is a claim attributed to a *named human being*, and the failure mode
+is not a clumsy sentence but a fabricated endorsement under a real person's
+name, published on a paying customer's site. `groundTestimonials` therefore
+keeps the model's *position and heading* for the section — genuine editorial
+judgements — and replaces its bullets unread with quotations that came from a
+source. With no verified review the section is removed entirely. The prompt says
+the same thing, and the prompt is a request; this is the version that holds when
+a model misreads the brief or someone edits the prompt in a hurry.
+
+The writer's brief carries a review *count*, never the review text: a model
+cannot paraphrase a quotation it has not been shown.
 
 ## Why capabilities return errors instead of throwing
 

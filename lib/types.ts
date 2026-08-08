@@ -12,6 +12,15 @@ import type { AppConfig } from './config.js';
 import type { Logger } from './logger.js';
 import type { BrowserSession } from './browser.js';
 import type { Platform } from './platform/platform.js';
+import type { ListingReview } from './sources/types.js';
+
+/**
+ * A customer's words, defined with the source contracts and re-exported here.
+ *
+ * Same arrangement as `WebsiteDesign`: the type belongs beside the code that
+ * produces it, and every pipeline contract still reads in one file.
+ */
+export type { ListingReview } from './sources/types.js';
 
 /* ------------------------------------------------------------------ */
 /* Agent contract                                                      */
@@ -227,6 +236,20 @@ export interface CollectedBusiness {
    * only prose available at all for a business with no website.
    */
   readonly listingDescription: string | null;
+  /**
+   * Customer reviews, verbatim and attributed, from whichever source could
+   * quote them.
+   *
+   * Empty is the normal case and always has been: no source the platform had
+   * before the Places API could serve a single one.
+   */
+  readonly reviews: readonly ListingReview[];
+  /** Opening times a content source stated, which `identity.hours` may not have. */
+  readonly listingHours: readonly OpeningHours[];
+  /** Aggregate rating a content source stated, out of five. */
+  readonly listingRating: number | null;
+  /** How many ratings that average covers. A signed-out pane never says. */
+  readonly listingReviewCount: number | null;
   readonly logo: ImageAsset | null;
   readonly favicon: ImageAsset | null;
   readonly hero: ImageAsset | null;
@@ -334,6 +357,15 @@ export interface BusinessProfile {
   readonly attributes: readonly BusinessAttribute[];
   /** The listing's editorial description, verbatim, where one exists. */
   readonly description: Attributed<string> | null;
+  /**
+   * Customer reviews, verbatim, best first.
+   *
+   * Reaches the writer as data the model may read but has no schema field to
+   * answer with — testimonials are assembled from this list by code, exactly as
+   * hours and the JSON-LD are, because a fabricated quotation under a real
+   * person's name is the one defect a platform selling trust cannot ship.
+   */
+  readonly reviews: readonly ListingReview[];
   readonly images: RankedImages;
   readonly validation: ValidationReport;
   /** Every URL that contributed to this profile. */

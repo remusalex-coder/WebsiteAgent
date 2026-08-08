@@ -1322,8 +1322,33 @@ h4 {
  * business site can carry. Here the words take the h3 step in the heading face
  * and the box goes away; a rule and an attribution do the rest.
  */
+/*
+ * Aligning the bylines across a row of quotations.
+ *
+ * Three reviews are never the same length, and as plain grid items their
+ * attributions land wherever each quotation happened to stop — three names at
+ * three different heights, which reads as an unfinished layout rather than a
+ * considered one. The first page ever to render real testimonials showed this
+ * immediately.
+ *
+ * It takes both rules below, and the first attempt used only the second.
+ * The grid item is the *list item*; the quote is a figure inside it. Making
+ * only the figure a column achieves nothing — the item stretches to the row,
+ * the figure stops at its own content, and the auto margin further down has no
+ * leftover space to claim. Laying the item out as a grid hands the figure the
+ * item's full height, which is the height the alignment is measured against.
+ *
+ * Measured, not eyeballed: the three bylines sit within a pixel of each other
+ * in the DOM. A screenshot was what made the first fix look finished.
+ */
+.quote-list > li {
+  display: grid;
+}
+
 .quote {
   position: relative;
+  display: flex;
+  flex-direction: column;
   margin: 0;
   padding: var(--space-md) 0 0;
   /* Reset first: the base sheet draws a full box, and setting only the top
@@ -1364,7 +1389,11 @@ h4 {
   display: flex;
   align-items: center;
   gap: var(--space-2xs);
-  margin-top: var(--space-md);
+  /* An auto top margin aligns the bylines across the row; the padding keeps
+     the minimum gap a plain margin used to provide, for the quotation that is
+     tallest in its row and has no leftover space to claim. */
+  margin-top: auto;
+  padding-top: var(--space-md);
   font-style: normal;
   font-size: var(--text-caption-size);
   letter-spacing: 0.06em;

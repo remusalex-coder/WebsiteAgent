@@ -164,6 +164,27 @@ export interface LovableConfig {
   readonly deployTimeoutMs: number;
 }
 
+/**
+ * The Google Places API, used as a content source.
+ *
+ * **The key is the switch.** There is no separate enable flag, deliberately:
+ * two ways to be switched off is one way too many, and "I set the key and
+ * nothing happened" is a worse first hour than any flag is worth. A key present
+ * means the source runs; absent means it is skipped and the pipeline behaves
+ * exactly as it did before the source existed.
+ *
+ * This is the platform's first paid dependency, and it stays optional for that
+ * reason — the $0.00 baseline has to remain runnable, because it is what a
+ * contributor with no billing account gets.
+ */
+export interface PlacesConfig {
+  /** `PLACES_API_KEY`. Empty disables the source. */
+  readonly apiKey: string;
+  /** Language for the editorial summary and review text, e.g. `en`, `fr`. */
+  readonly languageCode: string;
+  readonly requestTimeoutMs: number;
+}
+
 export interface AppConfig {
   readonly logLevel: LogLevel;
   /** Absolute path to the artifact root. Per-run subfolders live beneath it. */
@@ -184,6 +205,7 @@ export interface AppConfig {
    * their values.
    */
   readonly credentials: Readonly<Record<string, string>>;
+  readonly places: PlacesConfig;
   readonly analyst: AnalystConfig;
   readonly writer: WriterConfig;
   readonly lovable: LovableConfig;
@@ -220,6 +242,13 @@ export const DEFAULTS = {
   telemetry: {
     enabled: true,
     sampleLimit: 100,
+  },
+  places: {
+    languageCode: 'en',
+    // Deliberately short. Places is a bonus source on the critical path of a
+    // run that already spent a browser session getting here — a slow answer is
+    // worth less than a fast empty one.
+    requestTimeoutMs: 15_000,
   },
   analyst: {
     effort: 'high',
@@ -537,6 +566,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     features: featureFlags(env),
     credentials: credentials(env),
+    places: {
+      apiKey: str(env, 'PLACES_API_KEY', ''),
+      languageCode: str(env, 'PLACES_LANGUAGE', DEFAULTS.places.languageCode),
+      requestTimeoutMs: int(env, 'PLACES_TIMEOUT_MS', DEFAULTS.places.requestTimeoutMs),
+    },
     analyst: {
       model: str(env, 'ANALYST_MODEL', defaultModelFor(providerName)),
       effort: effort(env, 'ANALYST_EFFORT', DEFAULTS.analyst.effort),

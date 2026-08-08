@@ -236,8 +236,15 @@ const ARTIFACT_KEYS = {
  */
 const ARTIFACT_DEFAULTS = {
   discovery: {},
-  collect: { attributes: [], listingDescription: null },
-  normalize: { attributes: [], description: null },
+  collect: {
+    attributes: [],
+    listingDescription: null,
+    reviews: [],
+    listingHours: [],
+    listingRating: null,
+    listingReviewCount: null,
+  },
+  normalize: { attributes: [], description: null, reviews: [] },
   analyze: {},
   write: { trust: [] },
   design: {},

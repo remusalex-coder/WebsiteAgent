@@ -29,6 +29,30 @@ describe('trustSignals', () => {
     assert.equal(signals[0]?.label, '4.9 on Google');
   });
 
+  it('states the review count once a source can supply one', () => {
+    // A signed-out pane serves a rating with no total behind it, so this line
+    // read "4.9 on Google" on every page the platform had ever produced.
+    // "from 812 reviews" is the half that persuades.
+    const signals = trustSignals(profileFixture({ rating: 4.9, reviewCount: 812 }));
+    assert.equal(signals[0]?.label, '4.9 on Google from 812 reviews');
+  });
+
+  it('does not promote a below-average rating to the first screen', () => {
+    // Suppresses a claim rather than making one: the true value still reaches
+    // the JSON-LD, and Google shows it beside the page regardless. This decides
+    // only what the business leads with.
+    const signals = trustSignals(profileFixture({ rating: 3.8, reviewCount: 1284 }));
+    assert.equal(
+      signals.some((signal) => signal.kind === 'rating'),
+      false,
+    );
+  });
+
+  it('promotes a rating exactly on the threshold', () => {
+    const signals = trustSignals(profileFixture({ rating: 4 }));
+    assert.equal(signals[0]?.kind, 'rating');
+  });
+
   it('is empty when the profile proved nothing', () => {
     // A short bar is the correct output for a thin listing. A padded one is not.
     assert.deepEqual(trustSignals(profileFixture({ category: null })), []);

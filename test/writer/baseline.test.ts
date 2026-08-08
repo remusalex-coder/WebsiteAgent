@@ -65,7 +65,11 @@ describe('composeBaseline', () => {
   it('drops a trust signal the hero headline already says', () => {
     // Eyebrow, headline and trust bar all read "3-star hotel in San Francisco"
     // in the first screen before this.
-    const profile = profileFixture({ category: '3-star hotel', rating: 3.8 });
+    //
+    // The rating is above the promotable threshold on purpose: this test is
+    // about the echo rule, and a rating suppressed for being weak would pass it
+    // for the wrong reason.
+    const profile = profileFixture({ category: '3-star hotel', rating: 4.6 });
     const withTown = {
       ...profile,
       address: {

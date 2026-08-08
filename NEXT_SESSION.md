@@ -1,158 +1,90 @@
 # Next Session
 
-_Written 2026-08-08, after the listing source and the trust engine._
+_Written 2026-08-08, after the Places API source and the testimonial rule._
 
 > **Canonical documentation is BusinessForge HQ in Notion.** This file is the
 > thirty-second version for whoever opens the repo first.
 
 ## Start here
 
-**Get a paid model key.** The Gemini free tier has now returned 429 on five
-attempts across three sessions. At roughly \$0.02 a site this has cost far more
-engineering time than it would ever cost in credit. Any provider works — set
-`AI_PROVIDER` and that vendor's key in `.env`; the analyst and writer name no
-vendor. Then:
+**Two keys, and they are different keys.**
+
+1. **A paid model key.** The Gemini free tier has now returned 429 on five
+   attempts across three sessions. Any provider works — set `AI_PROVIDER` and
+   that vendor's key; the analyst and writer name no vendor.
+2. **`PLACES_API_KEY`, on a project with Places API (New) enabled.** This is
+   the new one, and it is the higher-value one. Runbook:
+   [places-api-source](docs/runbooks/places-api-source.md).
+
+The Google key already in `.env` is **not** a Places key — it is scoped to the
+Generative Language API and returns `401 UNAUTHENTICATED`. That was measured,
+not assumed.
 
 ```bash
-node --import tsx --env-file=.env main.ts --from=analyze 216a1662
+node --import tsx --env-file=.env main.ts --from=collect 216a1662
 ```
 
-`216a1662` is a current Hotel Union Square run: corrected category, scoped
-photographs, trust bar.
+`216a1662` is a current Hotel Union Square run. Starting at `collect` is what
+re-runs the sources.
 
-**The platform no longer depends on that.** `--compose <runId>` builds a
-complete, truthful page from verified data with no model at all, and
-`scripts/shoot.ts` screenshots and measures it. Two runbooks:
-[offline-verification](docs/runbooks/offline-verification.md) and
-[visual-review](docs/runbooks/visual-review.md).
+**The platform still does not depend on either key.** `--compose <runId>` builds
+a complete, truthful page from verified data with no model at all.
 
-## Art direction now responds to context
+## What landed
 
-`chooseHero` received `imageReliance` from the beginning and used it **only to
-word the fallback message**. So a hotel with a photograph of its own building
-got the elegant theme's text-led `editorial` hero and the picture appeared
-beside the copy at a third of the width.
+**The `testimonials` section renders, for the first time.** The renderer has
+drawn it since the design layer landed and the industry tables rank it above
+`about` for six of nine industries. No run had ever filled it, because no source
+could quote a customer — signed-out Maps serves no reviews, which is a wall and
+was proven to be one. `lib/sources/placesApi.ts` is the source that can.
 
-Industry research on premium hospitality is unanimous — the hero is cinematic,
-because a guest is deciding whether they can picture themselves there. An
-industry whose `imageReliance` is `essential` and that has a usable photograph
-now leads with `full-bleed`. The theme still governs colour, type and spacing;
-only the hero's scale changes.
+Nothing downstream of `lib/sources/` changed to gain reviews. That was the whole
+point of defining `ListingHarvest` before there was a second source for it, and
+it is the strongest evidence so far that the source seam is the right shape.
 
-The same commit fixed a coupling of the DEC-018 family: `overlayOpacity` keyed
-off `theme.heroPreference[0]` — a *proxy* for the hero rather than the hero. Any
-other route to a full-bleed hero would have rendered white type on a photograph
-with no scrim. It now keys off the hero actually chosen.
+**The model may no longer write a testimonial.** `groundTestimonials` keeps the
+section's position and heading — real editorial judgements — and replaces its
+bullets *unread* with quotations that came from a source. With no verified
+review the section is deleted. The prompt has forbidden fabricated testimonials
+since the writer was built; a prompt is a request, and this is the version that
+holds when a model misreads the brief. The brief now carries a review **count**,
+never review text: a model cannot paraphrase a quotation it has not been shown.
 
-## The Creative Director exists as a vocabulary
+**The review count arrived, and with it `aggregateRating`.** A signed-out pane
+serves a rating with no total, so the trust bar had only ever said "4.9 on
+Google" and the JSON-LD had *never once* emitted an `aggregateRating` — schema.org
+requires the count and the platform does not print numbers it cannot prove.
 
-`npx tsx scripts/creative-review.ts <runId>` measures opening image, type
-hierarchy, layout rhythm and CTA hierarchy. Calibrated: the pre-art-direction
-hotel scores 2 weak, the current one 0.
+## Two judgement calls worth re-examining
 
-**Read it as a floor.** It does not score taste. Turning it into a real agent —
-a model judging memorability, given these observations — needs a provider.
+**A rating under 4.0 is no longer promoted to the trust bar.** The benchmark
+hotel is 3.8, which is below average on Google's distribution, and printing it
+under the headline is the page making the visitor's counter-argument for them.
+The true value still goes to the JSON-LD and still appears in the contact block,
+so nothing is hidden — this decides only what the business *leads with*.
 
-## Look at this first
+Consequence to look at: that hotel now renders an **empty** trust bar, because
+its category signal was already dropped as an echo of the headline. Arguably
+correct — the testimonials do the reassurance work instead — but it is the first
+page with no trust bar at all, and it deserves a second opinion.
 
-`output/shots/hotel-BEFORE-desktop.png` against
-`output/shots/hotel-CINEMATIC-desktop.png`. Same business, same pipeline, five
-sessions apart.
-
-## The design layer was switched off
-
-The biggest single visual gain this session was not new code. `composeDesign`
-required a whole `BusinessStrategy` for the **two category strings** it actually
-reads, so any page produced without a model call rendered with **no art
-direction at all** — and that is what shipped in the last screenshots.
-
-`strategy` is now an optional hint. The hotel immediately classified as
-`hotel` / `elegant` / editorial rhythm: serif display type, a considered
-palette, a numbered feature grid. **Check what else is gated behind a
-dependency it does not really have.**
-
-Related, found the same way: `split` accepted a section with no image if the
-body was long enough, so About rendered a teal gradient panel where a
-photograph should be. A media layout now requires media.
-
-## What changed and what it bought
-
-A business with no website is BusinessForge's ideal customer and was the case
-the platform served worst. The listing is now a **content** source, not just an
-identity one (`lib/sources/`). Measured live on Hotel Union Square, which has no
-website at all:
-
-| | Before | After |
-| --- | --- | --- |
-| Photographs | 0 | 1, at native resolution |
-| Prose available to the writer | 0 chars | 610 chars of Google's editorial description |
-| Stated attributes | 0 | 12, two of them correctly marked *not* available |
-
-> **This table said 11 photographs until visual review.** Ten of them were other
-> hotels, swept in from the "Similar hotels nearby" rail Maps renders in the
-> same pane — the generated page showed four named competitors in its gallery
-> while every metric read healthy. Photographs are now scoped to the business by
-> name. **One real photograph beats eleven that include a rival's front door.**
-
-Also landed: the crawl waits for content instead of a fixed 1.2s; bot walls that
-say "Access Denied" rather than "confirm you are human" are now caught.
-
-## The trust engine
-
-Trust scored lowest of the eight dimensions on all five benchmark sites, and the
-reason was never missing data — every profile carried a rating, a category and
-an address. They were never shown.
-
-`WebsiteContent.trust` is now a typed list of verified signals, built by code
-from the profile (never by the model, same rule as hours and the JSON-LD) and
-rendered as a bar directly under the hero's call to action. **5/5 benchmark
-sites render one, with no overflow at 390px.** It is the extension point:
-Places API review counts, certifications and years in business become entries
-here rather than new prose.
-
-## A defect the trust bar exposed
-
-Putting the category at the top of the page is what revealed that the benchmark
-hotel's category was **"Add website"** — a Maps UI button, scraped because a
-hotel pane renders no category line and the selector matched the next control
-along. It had already reached the profile, the schema.org type and the design
-layer's industry match, on both hotel runs, unnoticed.
-
-Fixed in two places: discovery rejects Maps control labels and degrades to
-`null`, and the normalizer recovers the real category from what the listing
-states about itself — the hotel now resolves to `3-star hotel`. `scripts/trust-audit.ts`
-carries a permanent check for the defect class.
-
-**The general lesson: a field nobody renders is a field nobody validates.**
-
-## Two findings that change the roadmap
-
-**1. Reviews cannot be scraped. Stop trying.** Signed-out Maps serves a reduced
-pane and says so in the markup. Verified against two fingerprints, including a
-realistic UA with `navigator.webdriver` deleted: no Reviews tab, no photo grid,
-`div[data-review-id]` matches nothing. This is a wall, not a selector problem.
-Reviews and the full photo set mean the **Places API** — and that is now a
-one-file job, because `lib/sources/types.ts` defines the contract and the
-collector merges harvests without knowing where they came from.
-
-**2. The salon was misdiagnosed.** Last session recorded it as JS-rendered,
-yielding 62 characters. It is not: `salondnahair.com` answers a headless request
-with `Access Denied: error code 4d1dbadd…`. Worse, that error page was being
-collected as the business's own website copy and fed to the writer. Fixed, but
-the lesson generalises — **read the collected text before believing the
-diagnosis of why it is short.**
+**`MIN_REVIEW_CHARS` / `MAX_REVIEW_CHARS` (40–400) drop reviews rather than
+trimming them.** A half-sentence in quotation marks misrepresents its author, so
+length is a reason to omit a review and never a reason to edit one. On a
+business whose reviews are all short, the section will be empty and vanish.
 
 ## Then, in order
 
-1. **Places API source** (PRD-002, now the highest-ROI item). Implements
-   `ListingHarvest` from an HTTP call: up to five reviews with author and
-   rating, ten photos, the full week's hours, the editorial summary. Costs cents
-   per site against a $0.00 baseline, which is irrelevant next to one paying
-   customer. This is what finally makes the `testimonials` section reachable —
-   the renderer has supported it since the design layer landed and no run has
-   ever filled it.
-2. **Re-run the five-industry batch** and rebuild the scorecards. The recurring
-   defect table in `output/review/index.html` is now stale in at least two rows.
+1. **Enable Places API (New) and run the five-industry batch.** Everything is
+   written and tested against a stub; the only unverified thing in the source is
+   the live wire format. The scorecards in `output/review/index.html` are stale
+   in at least two rows regardless.
+2. **Reviews are now a trust extension point, not just a section.** "Rated 4.8
+   by 812 guests" as a hero signal, review recency, and per-service proof are
+   all `TrustSignal` entries now that the count exists.
+3. **Stage 6 deploy.** Target **Cloudflare Pages**, not Vercel: Vercel's Hobby
+   tier prohibits commercial use and BusinessForge hosts customer sites
+   commercially.
 
 ## Repeatable commands
 
@@ -172,11 +104,26 @@ npx tsx main.ts --render output/<runId>/5-content.json
 
 ## Traps that will cost you an hour each
 
-**Screenshots lie about lazy images.** Playwright's `fullPage` capture resizes
-the viewport, which re-runs lazy-loading heuristics — a gallery captures as an
-empty white band and looks exactly like broken CSS. Measured in the DOM it was a
-correct 4×12 grid. Both harnesses strip `loading="lazy"` and await
-`img.decode()`. **Measure the DOM before believing a screenshot.**
+**A backtick in a CSS comment silently breaks the stylesheet.** `lib/render/css.ts`
+and `variants.ts` are TypeScript template literals, so `` `display: grid` `` in a
+comment closes the string. It cost twenty minutes this session *twice*, and the
+second time the error was hidden because the regeneration command redirected
+stderr to `/dev/null`. Never write a backtick in those files' comments, and never
+silence a build you are about to screenshot.
+
+**Screenshots lie, and they lie about alignment too.** The quote bylines were
+"fixed", screenshotted, and still ragged — the fix targeted the figure when the
+grid item is the `<li>` around it. `output/measure-quotes.mjs`-style DOM
+measurement is what settled it. The older form of this trap: `fullPage` capture
+resizes the viewport and re-runs lazy-loading, so a gallery captures as an empty
+white band. **Measure the DOM before believing a screenshot.**
+
+**Google publishes two identifiers and they are not interchangeable.** A Maps
+URL carries an `ftid` (`0x…:0x…`); the Places API is keyed by a place id
+(`ChIJ…`). `DiscoveryResult.placeId` is honestly either. Every run in the repo
+holds the hex form, so a source that passed it straight through would 404 on
+every business ever collected — and look exactly like a business with no
+reviews. `resolvePlaceId` exchanges one for the other.
 
 **The two stylesheets override each other silently.** `variants.ts` is emitted
 after the base sheet, and re-declaring a selector there wins at equal
@@ -184,8 +131,7 @@ specificity with no warning. Twice now. Tracked as INF-007.
 
 **Adding a field to a contract breaks every saved run.** An artifact directory is
 a persistence format and old files lack the new field. Add an entry to
-`ARTIFACT_DEFAULTS` in `main.ts` in the same commit, or `--from=<stage>` on any
-older run fails with a `TypeError` several stages from the cause.
+`ARTIFACT_DEFAULTS` in `main.ts` in the same commit — this session added four.
 
 **A `.ts` probe script outside the repo will not run.** No `type: module` and no
 `node_modules` above it. Put throwaway scripts in `output/` — gitignored, and
@@ -193,15 +139,14 @@ inside the package.
 
 ## Also true
 
-- 293 tests pass; `npm run typecheck && npm test`.
+- 336 tests pass; `npm run typecheck && npm test`.
+- A photo URL must never carry a credential. The Places media endpoint takes the
+  key as a query parameter, so the source resolves each photograph to a plain
+  `googleusercontent` URL first. A test asserts it.
 - Provider calls retry retryable failures (429/5xx/transport) with exponential
   backoff and full jitter. They do not rescue an exhausted daily quota.
 - Models: `gemini-3.6-flash` for both stages. The entire Gemini 2.5 family is
   404 for accounts created after mid-2026.
-- Stage 6 deploy is still a stub. When it lands, target **Cloudflare Pages**,
-  not Vercel: Vercel's Hobby tier prohibits commercial use, and BusinessForge
-  hosts customer sites commercially.
 - **WVBR LLP is unservable from public data** and that is a product answer, not
-  an engineering one. Its listing has no website, no hours, no rating, no
-  photos and two accessibility lines. Some businesses need an owner intake form;
-  no amount of extraction invents facts that were never published.
+  an engineering one. Some businesses need an owner intake form; no amount of
+  extraction invents facts that were never published.
