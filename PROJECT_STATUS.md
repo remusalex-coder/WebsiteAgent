@@ -1,6 +1,6 @@
 # Project Status
 
-_Last updated: 2026-08-07_
+_Last updated: 2026-08-08_
 
 > **Canonical status now lives in BusinessForge HQ (Notion) → Executive
 > Dashboard.** This file remains the in-repo technical reference: architecture,
@@ -12,8 +12,7 @@ Autonomous website builder: one Google Maps URL in, a deployed website out.
 **Validated across six real businesses in five industries** (restaurant, dentist,
 law firm, hotel, salon). Industry classification correct 5/5. See
 `output/review/index.html` for scorecards and the recurring-defect matrix.
-Stages 1–5b and the renderer implemented; stage 6 stubbed. **Stages 4 and 5 have
-never executed against a live model** — that is the current milestone.
+Stages 1–5b and the renderer implemented and verified live; stage 6 stubbed.
 
 ## Architecture
 
@@ -51,8 +50,8 @@ output/              artifacts (gitignored)
 | 1 | `discoveryAgent` | Maps URL → `DiscoveryResult` | ✅ verified live |
 | 2 | `collectorAgent` | identity → `CollectedBusiness` | ✅ verified live |
 | 3 | `normalizerAgent` | both → `BusinessProfile` | ✅ verified live |
-| 4 | `businessAnalystAgent` | profile → `BusinessStrategy` | ⚠️ built, **never executed** |
-| 5 | `writerAgent` | profile + strategy → `WebsiteContent` | ⚠️ built, **never executed** |
+| 4 | `businessAnalystAgent` | profile → `BusinessStrategy` | ✅ verified live |
+| 5 | `writerAgent` | profile + strategy → `WebsiteContent` | ✅ verified live |
 | 5b | `designAgent` | all three → `WebsiteDesign` | ✅ built and tested (no model call) |
 | — | `lib/render` | content + design → `index.html`, `styles.css`, assets | ✅ built and tested |
 | 6 | `lovableAgent` | content → `DeploymentResult` | ⛔ stub |
@@ -127,9 +126,9 @@ Run standalone with `npm run render -- output/<runId>/5-content.json`.
 unchanged; it uploads `RenderedFile[]` rather than rendering its own. **The only
 remaining stub.**
 
-**Live verification of stages 4 and 5.** Both are implemented and unit-tested;
-neither has made a model call. Their first execution is the current milestone and
-needs one credential. See `NEXT_SESSION.md` for the four gates.
+**Thin-profile strategy (PRD-007, P0).** Three of five real businesses had no
+crawlable website. The pipeline degrades honestly and produces 126–174 words with
+no images. This is the commercial blocker — see `NEXT_SESSION.md`.
 
 ## Known limitations
 
