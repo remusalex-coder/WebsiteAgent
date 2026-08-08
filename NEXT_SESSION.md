@@ -29,8 +29,24 @@ complete, truthful page from verified data with no model at all, and
 ## Look at this first
 
 `output/shots/hotel-BEFORE-desktop.png` against
-`output/shots/hotel-FINAL-desktop.png`. Same business, same pipeline, three
+`output/shots/hotel-PREMIUM-desktop.png`. Same business, same pipeline, four
 sessions apart.
+
+## The design layer was switched off
+
+The biggest single visual gain this session was not new code. `composeDesign`
+required a whole `BusinessStrategy` for the **two category strings** it actually
+reads, so any page produced without a model call rendered with **no art
+direction at all** — and that is what shipped in the last screenshots.
+
+`strategy` is now an optional hint. The hotel immediately classified as
+`hotel` / `elegant` / editorial rhythm: serif display type, a considered
+palette, a numbered feature grid. **Check what else is gated behind a
+dependency it does not really have.**
+
+Related, found the same way: `split` accepted a section with no image if the
+body was long enough, so About rendered a teal gradient panel where a
+photograph should be. A media layout now requires media.
 
 ## What changed and what it bought
 
@@ -150,7 +166,7 @@ inside the package.
 
 ## Also true
 
-- 289 tests pass; `npm run typecheck && npm test`.
+- 293 tests pass; `npm run typecheck && npm test`.
 - Provider calls retry retryable failures (429/5xx/transport) with exponential
   backoff and full jitter. They do not rescue an exhausted daily quota.
 - Models: `gemini-3.6-flash` for both stages. The entire Gemini 2.5 family is

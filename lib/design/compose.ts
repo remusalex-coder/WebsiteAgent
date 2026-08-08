@@ -53,8 +53,30 @@ import type {
 
 export interface ComposeInput {
   readonly profile: BusinessProfile;
-  readonly strategy: BusinessStrategy;
+  /**
+   * Optional, and narrower in practice than it looks.
+   *
+   * The whole design layer reads exactly two things from a strategy — the
+   * primary category and its secondaries — and both are a restatement of what
+   * the listing already said. Requiring the object anyway made design
+   * unreachable without a model call, which is how a page came to be generated
+   * with the design layer switched off entirely and nobody noticed.
+   *
+   * So it is a hint, not a dependency. Absent, the profile's own category is
+   * used and the classification is identical in every case where the analyst
+   * agreed with the listing.
+   */
+  readonly strategy?: BusinessStrategy;
   readonly content: WebsiteContent;
+}
+
+/** Category words for classification, from the strategy or the profile. */
+function categoriesOf(input: ComposeInput): readonly string[] {
+  if (input.strategy !== undefined) {
+    return [input.strategy.category.primary, ...input.strategy.category.secondary];
+  }
+  const listed = input.profile.category?.value;
+  return listed === undefined ? [] : [listed];
 }
 
 export interface ComposeOptions {
@@ -111,12 +133,12 @@ const DIRECTION_SIGNALS: Readonly<Record<string, readonly DesignDirection[]>> = 
   simple: ['minimal', 'friendly'],
 };
 
-function copyCorpus(content: WebsiteContent, strategy: BusinessStrategy): string {
+function copyCorpus(content: WebsiteContent, categories: readonly string[]): string {
   const parts: string[] = [content.tagline, content.voice.tone, content.seo.description];
   for (const section of content.sections) {
     parts.push(section.heading, section.subheading ?? '', section.body);
   }
-  parts.push(strategy.category.primary, ...strategy.category.secondary);
+  parts.push(...categories);
   return parts.join(' ').toLowerCase();
 }
 
@@ -131,7 +153,7 @@ function copyCorpus(content: WebsiteContent, strategy: BusinessStrategy): string
 function chooseDirection(
   industry: Industry,
   content: WebsiteContent,
-  strategy: BusinessStrategy,
+  categories: readonly string[],
   override: DesignDirection | undefined,
 ): { direction: DesignDirection; rationale: string; evidence: readonly string[] } {
   const preferences = defaultsFor(industry).directions;
@@ -144,7 +166,7 @@ function chooseDirection(
     };
   }
 
-  const corpus = copyCorpus(content, strategy);
+  const corpus = copyCorpus(content, categories);
   const votes = new Map<DesignDirection, number>();
   const matched: string[] = [];
 
@@ -322,12 +344,13 @@ function responsiveFor(theme: ThemeDefinition): ResponsiveSystem {
  * surface in the wrong place.
  */
 export function composeDesign(input: ComposeInput, options: ComposeOptions = {}): WebsiteDesign {
-  const { profile, strategy, content } = input;
+  const { profile, content } = input;
+  const categories = categoriesOf(input);
   const notes: string[] = [];
 
   const classification = classifyIndustry({
     listingCategory: profile.category?.value ?? null,
-    strategyCategories: [strategy.category.primary, ...strategy.category.secondary],
+    strategyCategories: categories,
     services: profile.services.map((service) => service.name),
     name: profile.name.value,
   });
@@ -343,7 +366,7 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
   }
 
   const defaults = defaultsFor(industry.id);
-  const chosen = chooseDirection(industry.id, content, strategy, options.direction);
+  const chosen = chooseDirection(industry.id, content, categories, options.direction);
   const theme = themeFor(chosen.direction);
 
   const density = densityFor(defaults.density, theme.density, content.sections.length);

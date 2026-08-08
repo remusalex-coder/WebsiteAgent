@@ -150,7 +150,19 @@ function supports(variant: SectionVariant, shape: SectionShape): boolean {
     case 'slider':
       return shape.images >= 4 || shape.bullets >= 4;
     case 'split':
-      return shape.images >= 1 || shape.bodyChars >= 120;
+      // An image, and nothing else will do.
+      //
+      // `|| bodyChars >= 120` used to stand here, and it is how the benchmark
+      // hotel's about section came to render a teal gradient panel the size of
+      // its copy: a split is a *media* layout, so choosing one for a section
+      // with no media leaves the renderer to fill half the row with
+      // `imagery.fallback`, which reads as a broken image rather than as a
+      // deliberate choice.
+      //
+      // The hero chooser has always vetoed media variants this way. This is the
+      // same veto, one level down. A long text section with no photograph gets
+      // `editorial` instead, which is what it should have had.
+      return shape.images >= 1;
     case 'editorial':
       return shape.bodyChars >= 160 || shape.bullets >= 2;
     case 'quotes':

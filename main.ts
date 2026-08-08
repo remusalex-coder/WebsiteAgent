@@ -29,6 +29,7 @@ import { createConsoleSink, createFileSink, createLogger, createMultiSink } from
 import { createBrowserSession } from './lib/browser.js';
 import { createPlatform } from './lib/platform/platform.js';
 import { renderSite, writeRenderedSite } from './lib/render/index.js';
+import { composeDesign } from './lib/design/compose.js';
 import { AgentError, InvalidInputError } from './lib/errors.js';
 
 import type { AppConfig } from './lib/config.js';
@@ -661,8 +662,24 @@ export async function composeStandalone(
     'utf8',
   );
 
-  const design = await loadDesignBeside(outputDir);
-  const site = renderSite(content, design === null ? {} : { design });
+  // Design is deterministic and needs no model, so a composed page gets the
+  // same art direction a model-written one does. It was previously unreachable
+  // here only because `composeDesign` demanded a whole `BusinessStrategy` for
+  // the two category strings it actually reads — which is how a page came to be
+  // generated with the design layer switched off and nobody noticed.
+  // Always recomposed, never loaded. The design is deterministic and free, so
+  // reusing a persisted one only means a change to the design layer silently
+  // does not apply — which is exactly what happened the first time this ran.
+  // `--render` still honours a saved design, because reproducing an old run is
+  // that command's whole purpose.
+  const design = composeDesign({ profile, content });
+  await fs.writeFile(
+    path.join(outputDir, `${ARTIFACTS.design}.json`),
+    `${JSON.stringify(design, null, 2)}\n`,
+    'utf8',
+  );
+
+  const site = renderSite(content, { design });
   const targetDir = path.join(outputDir, SITE_DIR_NAME);
   const { missingAssets } = await writeRenderedSite(site, { sourceDir: outputDir, targetDir });
 
