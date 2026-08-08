@@ -31,12 +31,17 @@ Beside it sits the **renderer**: a pure `WebsiteContent → static site` functio
 agent, because it needs nothing an agent gets — no model, no browser, no context. It
 runs after stage 5 and deployment will consume it unchanged.
 
+Beneath the collector sits **`lib/sources`**: one contract, `ListingHarvest`, and one
+implementation per place facts can be read from. The collector merges harvests and never
+learns how any were obtained, which is what makes the Places API a drop-in.
+
 ```
 main.ts              orchestration, CLI, run lifecycle
 agents/              one file per stage
 lib/                 browser · config · logger · errors · types
   ai/                AIProvider contract, factory, 4 vendor adapters
   platform/          capability vocabulary, telemetry, skills, MCP
+  sources/           ListingHarvest contract; the Maps listing as content
   render/            WebsiteContent → index.html + styles.css + assets
 test/                node:test suites, fixtures, snapshots
 docs/                architecture · providers · skills · mcp · renderer · config · dev guide
@@ -67,11 +72,23 @@ coordinates, rating, hours, place id, socials. Handles short links, place URLs, 
 search URLs (opens the first result). Declines the EU consent interstitial; never
 accepts. Canonicalises through a bare `ftid` URL to get a clean single-pane DOM.
 
-**2. Collection** — crawls the business website on the shared browser session.
-Logo, favicon, hero, gallery, visible text, navigation, services, emails, phones,
-social links. Images found in `<img>` (incl. lazy `srcset`/`data-src`) **and** CSS
-`background-image`. Bot-verification walls are detected and skipped, never solved.
-Writes `content.md`, `collector.json`, `assets/`.
+**2. Collection** — reads **every source available for the business**, not just its
+website. Two today, neither required:
+
+- **The website**, crawled on the shared browser session. Logo, favicon, hero, gallery,
+  visible text, navigation, services, emails, phones, social links. Images found in
+  `<img>` (incl. lazy `srcset`/`data-src`) **and** CSS `background-image`. The crawl now
+  waits for the page to *have content* rather than for a fixed delay, so a
+  client-rendered site is not read as an empty shell.
+- **The Maps listing, read as content** (`lib/sources/mapsListing.ts`): the stated
+  attributes from the About tab, the editorial description Google publishes, and the
+  listing photography at native resolution rather than as the rendered thumbnail. This
+  runs for every business — a rich profile gains from it too.
+
+Attributes carry their availability state, because a listing states what a business
+*lacks* alongside what it has and losing that turns "Pool unavailable" into a swimming
+pool. Bot walls and blocks are detected and skipped, never solved. Writes `content.md`,
+`collector.json`, `assets/`.
 
 **3. Normalization** — merges both sources into one attributed profile. Every field
 is `{ value, source, sourceUrl, alternatives[] }`. Dedup by meaning: phones on last
@@ -126,17 +143,29 @@ Run standalone with `npm run render -- output/<runId>/5-content.json`.
 unchanged; it uploads `RenderedFile[]` rather than rendering its own. **The only
 remaining stub.**
 
-**Thin-profile strategy (PRD-007, P0).** Three of five real businesses had no
-crawlable website. The pipeline degrades honestly and produces 126–174 words with
-no images. This is the commercial blocker — see `NEXT_SESSION.md`.
+**Thin-profile strategy (PRD-007, P0).** Substantially addressed 2026-08-08 by making
+the listing a content source. Measured on the benchmark hotel, which has no website:
+0 → 11 photographs, 0 → 610 characters of editorial prose, 0 → 12 stated attributes.
+**The model stages of that run could not be re-verified** — the Gemini free-tier daily
+quota was exhausted — so the rendered-page effect is not yet measured. See
+`NEXT_SESSION.md`.
 
 ## Known limitations
 
-**Google serves a reduced pane** to unauthenticated headless sessions: **no review
-count**, **only today's opening hours**, and **no social links** unless the listed
-website is itself a profile. The extraction strategies exist and will pick these up
-wherever Maps renders them; until then the fields are honestly `null`. Getting them
-reliably means the Places API, not scraping.
+**Google serves a reduced pane** to unauthenticated sessions, and says so in the
+markup: "You're seeing a limited view of Google Maps." Measured 2026-08-08 against two
+fingerprints, including a realistic user agent with `navigator.webdriver` removed, that
+pane has:
+
+- **no Reviews tab** — `div[data-review-id]` matches nothing, on any listing tried
+- **no photo grid** — the overview carries what it carries
+- **no review count**, **only today's opening hours**, and **no social links** unless
+  the listed website is itself a profile
+
+This is a wall, not a selector problem, and `lib/sources` deliberately does not try to
+climb it: code that hunted for reviews would be a maintenance burden reporting an honest
+zero every run. Reviews and the full photo set mean the **Places API**, which returns
+both under a licence. The `ListingHarvest` seam exists so that is one file.
 
 **Selectors are Google's to rotate.** Every field degrades to `null` rather than
 breaking the run, but `discoveryAgent.ts` is the file to expect maintenance in.
@@ -185,11 +214,12 @@ Also:
 
 - ~~**Everything after stage 3 is uncommitted.**~~ **Resolved 2026-08-07** — 158 files, 30,003 lines committed as `f078d4b` and pushed to `origin/main`.
 - ~~**No `.gitattributes`**~~ **Resolved 2026-08-07** — `* text=auto eol=lf` plus binary rules, added before the first large commit so the repository never needed a renormalisation pass.
-- **Thin profiles produce an unsellable page (PRD-007, P0).** 3 of 5 real businesses had no crawlable website — 126–174 words, zero images. The ideal customer is the worst-served case.
-- **No trust signals rendered anywhere (PRD-008).** Every profile carries a Maps star rating; none is shown.
+- ~~**Thin profiles produce an unsellable page (PRD-007, P0).**~~ **Largely resolved 2026-08-08** — the listing is now a content source. The rendered-page effect is unmeasured; see `NEXT_SESSION.md`.
+- ~~**No trust signals rendered anywhere (PRD-008).**~~ **Partly resolved 2026-08-08** — the rating renders as a code-owned contact row, `"3.8 on Google"`. It is not yet a hero badge, which is where trust is actually read.
+- **A hero trust badge is still missing (PRD-008b).** The rating in the contact block is the weakest possible placement. Doing it properly means one optional field on `WebsiteContent` and a branch in `renderHead`.
 - **The two stylesheets override each other silently (INF-007).** Twice now.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
-- **Only the renderer is tested.** `npm test` runs 110 assertions, all in `test/render/`. Nothing else in the repository has a committed test.
+- **Coverage is the renderer, the design layer, the listing source and the writer's brief.** `npm test` runs 272 assertions. The agents' own orchestration still has none.
 - **Older suites still live outside the repo** — discovery parsers, normalizer primitives, merge/dedup/validation, analyst schema and analyst brief remain in a scratchpad rather than `test/`.
 - **No accessibility or HTML validation in CI.** The markup is checked by assertions about the string, not by axe or the W3C validator. A real audit would be worth one pass before the first deploy.
 - **No retry/backoff** on transient Maps or site failures beyond Playwright's timeouts. The platform reports `retryable` honestly on every failure, but nothing acts on it yet.

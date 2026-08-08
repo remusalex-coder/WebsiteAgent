@@ -185,17 +185,48 @@ export interface PageText {
 }
 
 /**
- * Raw, unedited facts gathered from the business's own website.
+ * A property the listing states about the business — "Wheelchair-accessible
+ * entrance", "Free Wi-Fi", "Identifies as women-owned".
  *
- * Name, hours, rating and review count already live on `identity` — the
- * collector adds what only the site can supply. Nothing here is generated:
- * every string was present on a page, and every one carries its source.
+ * `group` is the heading it appeared under, so an amenity is never presented as
+ * a credential. `available` is the whole point of the type: a listing renders
+ * what a business *lacks* alongside what it has, and a harvester that dropped
+ * the distinction would turn "Pool unavailable" into a claimed swimming pool.
+ */
+export interface BusinessAttribute extends Sourced {
+  /** Heading the attribute sat under, e.g. "Accessibility", "Amenities". */
+  readonly group: string;
+  readonly label: string;
+  readonly available: boolean;
+}
+
+/**
+ * Raw, unedited facts gathered from the sources available for this business.
+ *
+ * Name, hours, rating and review count already live on `identity` — this is
+ * what the *content* sources add. Nothing here is generated: every string was
+ * present on a page, and every one carries its source.
+ *
+ * Two sources feed it today, and neither is required: the business's own
+ * website, and the Maps listing read as content rather than as identity. A
+ * business with no website is thin, not empty.
  */
 export interface CollectedBusiness {
   readonly identity: DiscoveryResult;
   /** The site actually crawled, or `null` when the listing had no website. */
   readonly siteUrl: string | null;
   readonly pages: readonly PageText[];
+  /**
+   * Properties the listing states, including the ones it states are absent.
+   * Nothing downstream may assert one without checking `available`.
+   */
+  readonly attributes: readonly BusinessAttribute[];
+  /**
+   * The listing's own description of the business, verbatim, when it carries
+   * one. Google writes these editorially; they are public, factual and are the
+   * only prose available at all for a business with no website.
+   */
+  readonly listingDescription: string | null;
   readonly logo: ImageAsset | null;
   readonly favicon: ImageAsset | null;
   readonly hero: ImageAsset | null;
@@ -296,6 +327,13 @@ export interface BusinessProfile {
   readonly services: readonly ServiceItem[];
   /** Page text, deduplicated; the same copy served on two URLs appears once. */
   readonly pages: readonly PageText[];
+  /**
+   * Stated properties, available ones first. Both states are kept: what a
+   * business does not offer is a fact the writer needs in order not to claim it.
+   */
+  readonly attributes: readonly BusinessAttribute[];
+  /** The listing's editorial description, verbatim, where one exists. */
+  readonly description: Attributed<string> | null;
   readonly images: RankedImages;
   readonly validation: ValidationReport;
   /** Every URL that contributed to this profile. */

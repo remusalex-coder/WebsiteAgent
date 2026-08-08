@@ -24,6 +24,7 @@ import type {
   AgentContext,
   Attributed,
   AttributedValue,
+  BusinessAttribute,
   BusinessProfile,
   CollectedBusiness,
   DiscoveryResult,
@@ -470,6 +471,28 @@ function dedupeNavigation(links: readonly NavigationLink[]): NavigationLink[] {
   return [...seen.values()];
 }
 
+/**
+ * Collapses attributes that say the same thing, available ones first.
+ *
+ * Ordering matters downstream: the writer reads a truncated list, and the
+ * facts a business *has* are worth more of that budget than the ones it has
+ * not. Nothing is dropped for being unavailable — a writer needs to see
+ * "Pool: no" in order not to write about the pool.
+ */
+function dedupeAttributes(attributes: readonly BusinessAttribute[]): BusinessAttribute[] {
+  const seen = new Map<string, BusinessAttribute>();
+  for (const attribute of attributes) {
+    const key = attribute.label.trim().toLowerCase();
+    const existing = seen.get(key);
+    // Where a listing states both, the negative wins: claiming an amenity that
+    // is not there is the more expensive mistake.
+    if (!existing || (existing.available && !attribute.available)) seen.set(key, attribute);
+  }
+  return [...seen.values()].sort(
+    (a, b) => Number(b.available) - Number(a.available) || a.group.localeCompare(b.group),
+  );
+}
+
 function dedupeServices(services: readonly ServiceItem[]): ServiceItem[] {
   const seen = new Map<string, ServiceItem>();
   for (const service of services) {
@@ -650,6 +673,11 @@ export const normalizerAgent: NormalizerAgent = {
       navigation: dedupeNavigation(collected.navigation),
       services: dedupeServices(collected.services),
       pages: dedupePages(collected.pages),
+      attributes: dedupeAttributes(collected.attributes),
+      description:
+        collected.listingDescription !== null
+          ? chooseBest([candidate(collected.listingDescription, 'maps', mapsUrl)], () => 0)
+          : null,
       images,
       sources: [...new Set([mapsUrl, ...(siteUrl ? [siteUrl] : []), ...collected.sources])],
       normalizedAt: new Date().toISOString(),

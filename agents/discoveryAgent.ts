@@ -16,6 +16,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { createBrowserSession, type BrowserSession, type PageHandle } from '../lib/browser.js';
+import { buildCleanPlaceUrl } from '../lib/sources/mapsUrl.js';
 import { createLogger } from '../lib/logger.js';
 import { loadConfig, type AppConfig } from '../lib/config.js';
 import { createPlatform } from '../lib/platform/platform.js';
@@ -82,20 +83,11 @@ export function normalizeMapsUrl(rawUrl: string): string {
 }
 
 /**
- * A bare listing URL for a resolved place.
- *
- * A Maps URL reached by clicking a search result keeps its search context, and
- * Maps then renders the results feed *and* the place pane in the same DOM —
- * two `role="main"` regions, where an unscoped selector can silently read the
- * wrong business. Re-navigating here yields a single-pane page.
+ * Re-exported so this agent's public surface is unchanged; the definition moved
+ * to `lib/sources` when the listing became a content source as well as an
+ * identity one, and both stages now navigate by the same rule.
  */
-export function buildCleanPlaceUrl(placeId: string | null): string | null {
-  if (!placeId) return null;
-  const query = placeId.startsWith('0x')
-    ? `ftid=${encodeURIComponent(placeId)}`
-    : `q=place_id:${encodeURIComponent(placeId)}`;
-  return `https://www.google.com/maps/place/?${query}&hl=en`;
-}
+export { buildCleanPlaceUrl } from '../lib/sources/mapsUrl.js';
 
 /**
  * Place coordinates. `!3d/!4d` is the marker itself; `@lat,lng` is only the

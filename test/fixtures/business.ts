@@ -9,6 +9,7 @@
 
 import type {
   Attributed,
+  BusinessAttribute,
   BusinessCategory,
   BusinessProfile,
   BusinessStrategy,
@@ -27,6 +28,19 @@ export interface ProfileOverrides {
   readonly category?: string | null;
   readonly services?: readonly string[];
   readonly pages?: readonly PageText[];
+  readonly attributes?: readonly BusinessAttribute[];
+  readonly description?: string | null;
+  readonly rating?: number | null;
+  readonly reviewCount?: number | null;
+}
+
+/** An attribute the listing states, available unless said otherwise. */
+export function attributeFixture(
+  label: string,
+  available = true,
+  group = 'Amenities',
+): BusinessAttribute {
+  return { group, label, available, sourceUrl: SOURCE };
 }
 
 export function profileFixture(overrides: ProfileOverrides = {}): BusinessProfile {
@@ -48,11 +62,19 @@ export function profileFixture(overrides: ProfileOverrides = {}): BusinessProfil
     emails: [],
     socialProfiles: [],
     hours: [],
-    rating: null,
-    reviewCount: null,
+    rating: overrides.rating === undefined || overrides.rating === null ? null : attributed(overrides.rating),
+    reviewCount:
+      overrides.reviewCount === undefined || overrides.reviewCount === null
+        ? null
+        : attributed(overrides.reviewCount),
     navigation: [],
     services,
     pages: overrides.pages ?? [],
+    attributes: overrides.attributes ?? [],
+    description:
+      overrides.description === undefined || overrides.description === null
+        ? null
+        : attributed(overrides.description),
     images: { logo: null, favicon: null, hero: null, gallery: [] },
     validation: { ok: true, issues: [] },
     sources: [SOURCE],

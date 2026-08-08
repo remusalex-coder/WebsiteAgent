@@ -233,9 +233,10 @@ THE ONE RULE: every claim you write must be supported by the brief. You are writ
 - prices, or anything about cost
 - how many staff, seats, locations or customers it has
 - certifications, memberships, guarantees or credentials
-- delivery, parking, booking, payment methods or accessibility features
 - testimonials, or anything in quotation marks attributed to a customer
 - opening hours or contact details in prose
+
+Amenities, accessibility, parking, payment and booking are a special case. The brief has a section called "Confirmed on the Google listing" which is a verified list, and it is the ONLY place those may come from. Two rules, both absolute: copy the wording from that list rather than paraphrasing it, and never mention anything the list marks "NOT available" — a listing that says a hotel has no pool is telling you not to write about the pool, not inviting you to explain its absence. If it is not in that list, it does not exist for you.
 
 If the page wants one of those and the brief does not have it, leave it out and put it in unresolvedGaps. A shorter honest page beats a fuller invented one. When the brief has thin material, write less rather than padding: two specific sentences drawn from what the business itself says are worth more than six general ones.
 
@@ -266,7 +267,15 @@ NEVER SAY THE SAME THING TWICE. The tagline, the hero heading, the hero subheadi
 
 Four slots, one fact, zero information after the first. Each slot must add something the previous did not. The heading should say what the business *does* or offers, never just its name — the name is already in the header and the browser tab.
 
-WHEN THE BRIEF IS THIN. Sometimes all you have is the category, the address, the phone and the hours — no website text, no services, no photographs. That is common and it is not your failure. Handle it like this:
+WHEN THE BUSINESS HAS NO WEBSITE. This is the most important case in the system, because a business with no website is the one most likely to want the page you are writing. It is not a thin brief — it is a brief from different sources. Read them properly:
+
+- "How Google describes this business" is editorial prose about a real place. It is the strongest material you have and it is usually the only prose that exists. Draw the about section from it. Do not copy it wholesale — it is source material, not the finished page — but every fact in it is available to you.
+- "Confirmed on the Google listing" is a verified feature list. A services or facilities section built from it is honest and useful.
+- The category, the street, the hours and the photographs are all real. Use them.
+
+A page built from these is a real page, not a placeholder. Write it like one.
+
+WHEN THE BRIEF IS GENUINELY THIN. Sometimes all you have is the category, the address, the phone and the hours — no website text, no description, no confirmed features, no photographs. That is common and it is not your failure. Handle it like this:
 
 - Write FEWER sections, not padded ones. Four good sections beat eight empty ones.
 - Make every section earn its place. If "about" would only restate the address, do not emit an about section.
@@ -331,6 +340,25 @@ export function buildWriterBrief(
     'Services named on the site',
     profile.services
       .map((service) => (service.description ? `- ${service.name}: ${service.description}` : `- ${service.name}`))
+      .join('\n'),
+  );
+
+  // Verbatim, and the only prose that exists at all for a business with no
+  // website. Labelled as Google's words rather than the business's, because the
+  // difference matters to how the writer is allowed to use it.
+  section('How Google describes this business (verbatim, from the listing)', profile.description?.value ?? '');
+
+  // Both states, and the absent ones marked loudly. A model that sees only the
+  // present ones cannot tell "not listed" from "listed as absent", and the
+  // second is the one that turns into a claimed swimming pool.
+  section(
+    'Confirmed on the Google listing',
+    profile.attributes
+      .map((attribute) =>
+        attribute.available
+          ? `- ${attribute.label} (${attribute.group})`
+          : `- ${attribute.label} — NOT available, never mention this`,
+      )
       .join('\n'),
   );
 
@@ -595,7 +623,33 @@ export function contactBullets(profile: BusinessProfile): readonly string[] {
 
   for (const email of rankEmails(profile)) bullets.push(`Email — ${email}`);
 
+  const rating = ratingLine(profile);
+  if (rating !== null) bullets.push(`Rating — ${rating}`);
+
   return bullets;
+}
+
+/**
+ * The star rating as a line a visitor can read, or `null`.
+ *
+ * Every benchmark profile carries a rating and no generated page has ever shown
+ * one, which is most of why trust scores lowest of the eight dimensions. It is
+ * built here rather than asked for, like every other verified fact.
+ *
+ * The count is usually absent: a signed-out Maps session is served a rating
+ * without a review total. That is why the source is named — "4.9 on Google"
+ * is checkable, "rated 4.9" by itself is a claim from nowhere — and why this
+ * string never reaches the JSON-LD, where schema.org requires the count.
+ */
+export function ratingLine(profile: BusinessProfile): string | null {
+  const rating = profile.rating?.value;
+  if (rating === undefined) return null;
+
+  const count = profile.reviewCount?.value;
+  const stars = Number.isInteger(rating) ? String(rating) : rating.toFixed(1);
+  return count === undefined
+    ? `${stars} on Google`
+    : `${stars} on Google from ${count} review${count === 1 ? '' : 's'}`;
 }
 
 /**
@@ -1135,7 +1189,7 @@ export const writerAgent: WriterAgent = {
     if (profile.address === null) derivedGaps.push('No street address was found for this business.');
     if (profile.rating !== null && profile.reviewCount === null) {
       derivedGaps.push(
-        'A star rating is available but the review count is not, so the rating is not shown or marked up — schema.org requires both.',
+        'The star rating is shown on the page but not marked up as structured data: the review count is missing and schema.org requires both.',
       );
     }
     for (const issue of profile.validation.issues) {

@@ -56,12 +56,39 @@ never a stage, never a JSON artifact.**
 | `lib/platform/skills/` | registry, loader, manager, 38 built-ins | the vocabulary; `lib/ai` for `ctx.ai` |
 | `lib/platform/mcp/` | connector contract, manager, transports | the vocabulary |
 | `lib/platform/platform.ts` | assembling all three from config | all of the above |
+| `lib/sources/` | one content source each, behind one contract | `lib/types.ts` and `lib/browser.ts` |
 | `lib/render/` | `WebsiteContent` → HTML, CSS, assets | `lib/types.ts` and nothing else |
 | `agents/` | one transform each | `lib/types.ts` and `Platform` |
 | `main.ts` | run lifecycle, stage order, artifacts | everything |
 
 The three subsystems do not import each other. `skills` reaches `ai` for one reason
 only — a skill may need a model — and `mcp` reaches neither.
+
+## Sources
+
+A *source* is somewhere facts about a business can be read from. The website
+crawl is one. The Maps listing, read as content rather than as identity, is
+another. Instagram, a PDF menu, a Places API response and an owner
+questionnaire are all the same shape of thing.
+
+So a source is a function returning `ListingHarvest`, not a branch inside the
+collector. The collector merges harvests and never learns how any of them were
+obtained, which is what makes the Places API a drop-in rather than a rewrite: it
+produces the same type from an HTTP call instead of a browser, and every stage
+downstream is unchanged.
+
+This is the first step of the multi-source direction in the product brief, taken
+where it paid for itself immediately rather than as an upfront refactor. Before
+it, a listing with no website produced a page of 126 words — for exactly the
+businesses most likely to buy one.
+
+**What a signed-out Maps session can actually see.** Google serves an
+unauthenticated visitor a reduced pane and says so in the markup. Measured
+against two fingerprints, including a realistic user agent with the automation
+flag removed, that pane has no Reviews tab and no photo grid. `lib/sources`
+therefore does not attempt to scrape reviews — they are not there to scrape.
+Reviews and the full photo set come from the Places API, under a licence, when
+it lands.
 
 ## Why capabilities return errors instead of throwing
 

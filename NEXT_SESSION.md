@@ -1,47 +1,71 @@
 # Next Session
 
-_Written 2026-08-08, after the five-industry validation batch (`47b040f`)._
+_Written 2026-08-08, after making the Maps listing a content source._
 
 > **Canonical documentation is BusinessForge HQ in Notion.** This file is the
 > thirty-second version for whoever opens the repo first.
 
-## Where the project actually is
+## Start here: one command is owed
 
-The pipeline works end to end and has been run on **six real businesses**. It
-costs **$0.00** per site and takes about 90 seconds. Industry classification was
-correct 5/5 across restaurant, dentist, law firm, hotel and salon.
+The hotel run `output/e6187d7d` has stages 1–3 on disk and **stages 4–6 never
+ran** — the Gemini free-tier daily quota was exhausted mid-session. The whole
+point of last session's work is unmeasured until this finishes:
 
-**Open the review dashboard first:** `output/review/index.html`. Scorecards,
-comparison matrix, recurring-defect table, side-by-side full pages.
+```bash
+node --import tsx --env-file=.env main.ts --from=analyze e6187d7d
+```
 
-## The one thing that matters now
+If the quota is still spent, put any other provider key in `.env` and set
+`AI_PROVIDER` — the analyst and writer name no vendor.
 
-The batch split in two, and the split is the whole story:
+## What changed and what it bought
 
-| Profile | Sites | Words | Images | Cause |
-| --- | --- | --- | --- | --- |
-| Rich | 2/5 | 355–554 | 16–17 | Business has a crawlable website |
-| Thin | 3/5 | 126–174 | 0 | No website on the listing (2), or JS-only (1) |
+A business with no website is BusinessForge's ideal customer and was the case
+the platform served worst. The listing is now a **content** source, not just an
+identity one (`lib/sources/`). Measured live on Hotel Union Square, which has no
+website at all:
 
-**A business with no website is BusinessForge's ideal customer, and it is the
-case the platform serves worst.** Two listings carried no website at all; one
-resolved to a JS-rendered page yielding 62 characters.
+| | Before | After |
+| --- | --- | --- |
+| Photographs | 0 | 11, at native resolution |
+| Prose available to the writer | 0 chars | 610 chars of Google's editorial description |
+| Stated attributes | 0 | 12, two of them correctly marked *not* available |
 
-That is backlog **PRD-007**, priority P0. Nothing else moves the business as
-much. Two of the three directions worth trying invent nothing:
+Also landed: the crawl waits for content instead of a fixed 1.2s; bot walls that
+say "Access Denied" rather than "confirm you are human" are now caught; the star
+rating renders for the first time.
 
-1. **Render JS sites properly** — the collector already drives Playwright.
-   Waiting for hydration would have rescued Salon DnA outright.
-2. **Use the Maps listing as a content source** — rating, reviews, category,
-   and the owner-uploaded photography the pipeline never touches. That alone
-   would give the hotel and the law firm images.
+## Two findings that change the roadmap
 
-## Then
+**1. Reviews cannot be scraped. Stop trying.** Signed-out Maps serves a reduced
+pane and says so in the markup. Verified against two fingerprints, including a
+realistic UA with `navigator.webdriver` deleted: no Reviews tab, no photo grid,
+`div[data-review-id]` matches nothing. This is a wall, not a selector problem.
+Reviews and the full photo set mean the **Places API** — and that is now a
+one-file job, because `lib/sources/types.ts` defines the contract and the
+collector merges harvests without knowing where they came from.
 
-- **PRD-008** — render the Maps star rating as a trust signal. Trust scored
-  3–6 on all five, the weakest category, and the rating is already in every
-  profile.
-- **PRD-002** — Places API. All five sites show one opening day of seven.
+**2. The salon was misdiagnosed.** Last session recorded it as JS-rendered,
+yielding 62 characters. It is not: `salondnahair.com` answers a headless request
+with `Access Denied: error code 4d1dbadd…`. Worse, that error page was being
+collected as the business's own website copy and fed to the writer. Fixed, but
+the lesson generalises — **read the collected text before believing the
+diagnosis of why it is short.**
+
+## Then, in order
+
+1. **Places API source** (PRD-002, now the highest-ROI item). Implements
+   `ListingHarvest` from an HTTP call: up to five reviews with author and
+   rating, ten photos, the full week's hours, the editorial summary. Costs cents
+   per site against a $0.00 baseline, which is irrelevant next to one paying
+   customer. This is what finally makes the `testimonials` section reachable —
+   the renderer has supported it since the design layer landed and no run has
+   ever filled it.
+2. **Hero trust badge** (PRD-008b). The rating currently renders as a contact
+   row, which is the weakest possible placement. One optional field on
+   `WebsiteContent`, one branch in `renderHead`, snapshots regenerated.
+3. **Re-run the five-industry batch** and rebuild the scorecards. The recurring
+   defect table in `output/review/index.html` is now stale in at least two rows.
 
 ## Repeatable commands
 
@@ -59,29 +83,33 @@ node --import tsx scripts/build-review.ts
 npx tsx main.ts --render output/<runId>/5-content.json
 ```
 
-## Two traps that will cost you an hour each
+## Traps that will cost you an hour each
 
 **Screenshots lie about lazy images.** Playwright's `fullPage` capture resizes
 the viewport, which re-runs lazy-loading heuristics — a gallery captures as an
 empty white band and looks exactly like broken CSS. Measured in the DOM it was a
-correct 4×12 grid. Both harnesses now strip `loading="lazy"` and await
+correct 4×12 grid. Both harnesses strip `loading="lazy"` and await
 `img.decode()`. **Measure the DOM before believing a screenshot.**
 
 **The two stylesheets override each other silently.** `variants.ts` is emitted
 after the base sheet, and re-declaring a selector there wins at equal
-specificity with no warning. This has now happened twice — the colour tokens in
-the twenty-site review, and `.section--hero h1` in this batch. Tracked as
-INF-007.
+specificity with no warning. Twice now. Tracked as INF-007.
+
+**A `.ts` probe script outside the repo will not run.** No `type: module` and no
+`node_modules` above it. Put throwaway scripts in `output/` — gitignored, and
+inside the package.
 
 ## Also true
 
-- 248 tests pass; `npm run typecheck && npm test`.
-- Provider calls now retry retryable failures (429/5xx/transport) with
-  exponential backoff and full jitter. Two of five generations died on a
-  transient 503 before this existed.
+- 272 tests pass; `npm run typecheck && npm test`.
+- Provider calls retry retryable failures (429/5xx/transport) with exponential
+  backoff and full jitter. They do not rescue an exhausted daily quota.
 - Models: `gemini-3.6-flash` for both stages. The entire Gemini 2.5 family is
-  404 for accounts created after mid-2026 — the model catalogue still lists it,
-  so only a real generation call reveals the truth.
+  404 for accounts created after mid-2026.
 - Stage 6 deploy is still a stub. When it lands, target **Cloudflare Pages**,
   not Vercel: Vercel's Hobby tier prohibits commercial use, and BusinessForge
   hosts customer sites commercially.
+- **WVBR LLP is unservable from public data** and that is a product answer, not
+  an engineering one. Its listing has no website, no hours, no rating, no
+  photos and two accessibility lines. Some businesses need an owner intake form;
+  no amount of extraction invents facts that were never published.

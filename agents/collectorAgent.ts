@@ -1,27 +1,38 @@
 /**
  * Stage 2 of 4.
  *
- * Single responsibility: gather raw facts from the business's own website.
- * It collects; it never interprets, summarises, or writes. Every string it
- * returns was present on a page verbatim, and every one carries the URL it
- * came from — a writer that cannot cite a fact must not use it.
+ * Single responsibility: gather raw facts about the business from every source
+ * available for it. It collects; it never interprets, summarises, or writes.
+ * Every string it returns was present on a page verbatim, and every one carries
+ * the URL it came from — a writer that cannot cite a fact must not use it.
+ *
+ * ## Two sources, neither required
+ *
+ * The business's **own website**, crawled here, and the **Maps listing** read
+ * as content by `lib/sources`. Until this stage was made multi-source, a
+ * listing with no website returned nothing at all and the pipeline produced a
+ * page of 126 words — for exactly the businesses most likely to buy a website.
+ * A missing source now thins the result instead of emptying it.
  *
  * Playwright only, on the session the orchestrator already opened; no LLM.
  * Partial failure is normal: a dead page, a blocked image or a site with no
- * contact details thins the result rather than failing the run. Only a listing
- * with no website at all short-circuits, and that is not an error either.
+ * contact details thins the result rather than failing the run.
  */
 
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { buildCleanPlaceUrl, harvestMapsListing, EMPTY_HARVEST } from '../lib/sources/index.js';
+
 import type { BrowserSession, PageHandle } from '../lib/browser.js';
 import type { Logger } from '../lib/logger.js';
 import type { CollectorConfig } from '../lib/config.js';
+import type { ListingHarvest } from '../lib/sources/index.js';
 import type {
   Agent,
   AgentContext,
+  BusinessAttribute,
   CollectedBusiness,
   ContactPoint,
   DiscoveryResult,
@@ -76,12 +87,28 @@ const IMAGE_EXTENSION = /\.(png|jpe?g|gif|webp|avif|svg|ico|bmp)(\?|#|$)/i;
 const SKIP_PATH = /\b(privacy|terms|cookie|legal|login|signin|sign-in|register|cart|checkout|account|wp-admin|feed|rss)\b/i;
 
 /**
- * Bot-check interstitials. These are recorded and skipped, never solved — the
- * point is to keep "Let's confirm you are human" out of the writer's input,
- * where it would become the business's website copy.
+ * Bot-check interstitials and outright blocks. These are recorded and skipped,
+ * never solved — the point is to keep "Let's confirm you are human" out of the
+ * writer's input, where it would become the business's website copy.
+ *
+ * The second half of this pattern was added after the benchmark salon. Its site
+ * answers a headless request with "Access Denied: error code 4d1dbadd…", which
+ * matched nothing here, so 62 characters of error page were collected as what
+ * the business says about itself. A challenge and a refusal look different and
+ * both have to be caught.
  */
 const VERIFICATION_WALL =
-  /\b(confirm you are (?:a )?human|verify you are (?:a )?human|human verification|checking your browser|attention required|enable javascript and cookies|complete the security check|unusual traffic|are you a robot)\b/i;
+  /\b(confirm you are (?:a )?human|verify you are (?:a )?human|human verification|checking your browser|attention required|enable javascript and cookies|complete the security check|unusual traffic|are you a robot|access denied|permission denied|403 forbidden|request blocked|you (?:have been|are) blocked|error code [0-9a-f]{8,})\b/i;
+
+/**
+ * Below this a page has no content, whatever its status code said.
+ *
+ * A server that answers a crawler with a stub still returns 200, and a stub
+ * that escapes the wall pattern above is worse than a missing page: it reaches
+ * the writer labelled as the business's own words. Nothing usable has ever come
+ * from a page this short, so the honest result is no page at all.
+ */
+const MIN_PAGE_CHARS = 120;
 
 const EMAIL_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 /** Deliberately conservative: 9+ digits, so dates and order numbers do not match. */
@@ -385,7 +412,16 @@ async function harvestPage(
   // The challenge page is not the business's site. Returning nothing here is
   // what stops it being written to content.md as though it were.
   if (VERIFICATION_WALL.test(`${title ?? ''}\n${visibleText.slice(0, 2_000)}`)) {
-    logger.warn('page is behind a bot-verification wall, skipping', { url: pageUrl, title });
+    logger.warn('page is behind a bot wall, skipping', { url: pageUrl, title });
+    return null;
+  }
+
+  if (visibleText.length < MIN_PAGE_CHARS) {
+    logger.warn('page rendered too little to be content, skipping', {
+      url: pageUrl,
+      title,
+      chars: visibleText.length,
+    });
     return null;
   }
 
@@ -419,6 +455,40 @@ async function harvestPage(
 /* ------------------------------------------------------------------ */
 /* Crawl                                                               */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Enough visible text that the page is showing something rather than booting.
+ *
+ * A client-rendered site serves an empty shell and fills it after its bundle
+ * runs, and `load` fires on the shell. The benchmark salon returned 62
+ * characters this way — a real site, correctly reached, read too early.
+ */
+const HYDRATED_CHARS = 400;
+
+/** How long to keep waiting for a client-rendered page to put something on screen. */
+const HYDRATION_ATTEMPTS = 10;
+const HYDRATION_INTERVAL_MS = 700;
+
+/**
+ * Waits for the page to have content, rather than for a fixed delay.
+ *
+ * Polling the rendered text is the only signal that works across every stack:
+ * a bundle can resolve long after `load`, `networkidle` never fires on a site
+ * holding a socket open, and a fixed sleep is either too short for a slow app
+ * or wasted on every static page. A page that stays empty is returned anyway —
+ * it may genuinely be a one-line site, and that is the harvester's call.
+ */
+async function waitForContent(page: PageHandle, url: string, logger: Logger): Promise<void> {
+  for (let attempt = 0; attempt < HYDRATION_ATTEMPTS; attempt += 1) {
+    const text = (await page.innerText('body')) ?? '';
+    if (text.length >= HYDRATED_CHARS) {
+      if (attempt > 0) logger.debug('page hydrated', { url, attempt, chars: text.length });
+      return;
+    }
+    await page.wait(HYDRATION_INTERVAL_MS);
+  }
+  logger.warn('page never rendered meaningful text', { url, waitedMs: HYDRATION_ATTEMPTS * HYDRATION_INTERVAL_MS });
+}
 
 /** Ranks candidate pages so the page budget is spent on content, not boilerplate. */
 function rankCandidate(url: string): number {
@@ -553,6 +623,54 @@ async function downloadImages(
 }
 
 /* ------------------------------------------------------------------ */
+/* Listing source                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Reads the Maps listing for content, on its own page.
+ *
+ * Runs for every business, not only the ones with no website: the listing's
+ * stated attributes and photography are facts about a business whether or not
+ * it also publishes a site, and a rich profile gains from them too.
+ *
+ * A failure here is logged and discarded. The listing is a bonus source, and
+ * losing it must never cost the website crawl that already succeeded.
+ */
+async function collectListing(
+  identity: DiscoveryResult,
+  session: BrowserSession,
+  logger: Logger,
+): Promise<ListingHarvest> {
+  const listingUrl = buildCleanPlaceUrl(identity.placeId) ?? identity.canonicalUrl;
+  if (!listingUrl) return EMPTY_HARVEST;
+
+  try {
+    return await session.withPage((page) => harvestMapsListing(page, { listingUrl }, logger));
+  } catch (error) {
+    logger.warn('listing could not be read for content', {
+      listingUrl,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return EMPTY_HARVEST;
+  }
+}
+
+/** Listing photographs enter the same ranking and download path as the site's. */
+function listingImages(harvest: ListingHarvest, listingUrl: string): RawImage[] {
+  return harvest.photos.map((photo) => ({
+    url: photo.url,
+    alt: photo.alt,
+    width: photo.width,
+    height: photo.height,
+    // Never `hero`: the role records where an image was found, and the
+    // normalizer already promotes the best gallery image when a site has no
+    // hero of its own. Claiming the role here would outrank a real one.
+    role: 'gallery' as const,
+    sourceUrl: listingUrl,
+  }));
+}
+
+/* ------------------------------------------------------------------ */
 /* Artifacts                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -574,6 +692,20 @@ async function writeContentMarkdown(
     `- Pages: ${result.pages.length}`,
     '',
   ];
+
+  if (result.listingDescription !== null) {
+    lines.push('---', '', '## Listing description (Google, verbatim)', '', result.listingDescription, '');
+  }
+
+  if (result.attributes.length > 0) {
+    lines.push('---', '', '## Stated on the listing', '');
+    for (const attribute of result.attributes) {
+      // The absent ones are written down too. A reader of this file has to be
+      // able to see what the business does *not* offer.
+      lines.push(`- ${attribute.group}: ${attribute.label}${attribute.available ? '' : ' (not available)'}`);
+    }
+    lines.push('');
+  }
 
   for (const page of result.pages) {
     lines.push(`---`, '', `## ${page.title ?? page.url}`, '', `Source: ${page.url}`, '', page.text, '');
@@ -647,90 +779,79 @@ export interface CollectorAgent extends Agent<DiscoveryResult, CollectedBusiness
 
 export const collectorAgent: CollectorAgent = {
   name: NAME,
-  description: 'Gathers raw facts, text and images from the business website.',
+  description: 'Gathers raw facts, text and images from every source available for the business.',
 
   async run(input: DiscoveryResult, ctx: AgentContext): Promise<CollectedBusiness> {
     const { logger, config } = ctx;
     const outputDir = ctx.outputDir;
     const siteUrl = input.website ? normalizeSiteUrl(input.website) : null;
 
-    const empty: CollectedBusiness = {
-      identity: input,
-      siteUrl,
-      pages: [],
-      logo: null,
-      favicon: null,
-      hero: null,
-      gallery: [],
-      navigation: [],
-      services: [],
-      emails: [],
-      phones: [],
-      socialProfiles: [],
-      sources: [],
-      collectedAt: new Date().toISOString(),
-    };
-
-    // A listing with no website is a normal outcome, not a failure: the writer
-    // still has the Maps identity to work from.
-    if (!siteUrl) {
-      logger.warn('listing has no website, nothing to collect', { business: input.name });
-      await fs.mkdir(outputDir, { recursive: true });
-      await writeContentMarkdown(empty, outputDir);
-      await writeCollectorJson(empty, outputDir);
-      return empty;
-    }
-
-    logger.info('collection started', { siteUrl, maxPages: config.collector.maxPages });
-
+    await fs.mkdir(outputDir, { recursive: true });
     const session = await ctx.getBrowser();
+
+    // Source one: the listing. It runs first and unconditionally, so a business
+    // with no website still reaches the writer with photography, stated
+    // attributes and whatever prose Google publishes about it.
+    const listing = await logger.time('read listing', () => collectListing(input, session, logger));
+    ctx.signal.throwIfAborted();
+
+    // Source two: the website, when there is one.
     const visited = new Set<string>();
     const harvests: PageHarvest[] = [];
 
-    const visit = async (url: string): Promise<void> => {
-      const key = dedupeKey(url);
-      if (visited.has(key)) return;
-      visited.add(key);
+    if (siteUrl === null) {
+      logger.warn('listing has no website; the listing is the only source', { business: input.name });
+    } else {
+      logger.info('collection started', { siteUrl, maxPages: config.collector.maxPages });
 
-      try {
-        await session.withPage(async (page) => {
-          // `load`, not `domcontentloaded`: on a client-rendered site the
-          // images and copy do not exist yet at DOMContentLoaded, and the
-          // harvest would read an empty shell.
-          await page.goto(url, { waitUntil: 'load' });
-          await page.wait(1_200);
-          // Scrolling makes lazy sections mount and deferred images resolve.
-          await page.scrollPage(4);
-          await page.wait(800);
-          const harvest = await harvestPage(page, page.url(), siteUrl, logger);
-          if (harvest) harvests.push(harvest);
-        });
-      } catch (error) {
-        // One unreachable page must not end the crawl.
-        logger.warn('page could not be read', {
-          url,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    };
+      const visit = async (url: string): Promise<void> => {
+        const key = dedupeKey(url);
+        if (visited.has(key)) return;
+        visited.add(key);
 
-    await logger.time('crawl site', async () => {
-      await visit(siteUrl);
-      ctx.signal.throwIfAborted();
+        try {
+          await session.withPage(async (page) => {
+            // `load`, not `domcontentloaded`: on a client-rendered site the
+            // images and copy do not exist yet at DOMContentLoaded, and the
+            // harvest would read an empty shell.
+            await page.goto(url, { waitUntil: 'load' });
+            await waitForContent(page, url, logger);
+            // Scrolling makes lazy sections mount and deferred images resolve.
+            await page.scrollPage(4);
+            await page.wait(800);
+            const harvest = await harvestPage(page, page.url(), siteUrl, logger);
+            if (harvest) harvests.push(harvest);
+          });
+        } catch (error) {
+          // One unreachable page must not end the crawl.
+          logger.warn('page could not be read', {
+            url,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      };
 
-      if (harvests.length === 0) {
-        logger.warn('homepage yielded nothing, no further pages attempted', { siteUrl });
-        return;
-      }
-
-      for (const url of planCrawl(siteUrl, harvests, visited, config.collector.maxPages - 1)) {
+      await logger.time('crawl site', async () => {
+        await visit(siteUrl);
         ctx.signal.throwIfAborted();
-        await visit(url);
-      }
-    });
 
+        if (harvests.length === 0) {
+          logger.warn('homepage yielded nothing, no further pages attempted', { siteUrl });
+          return;
+        }
+
+        for (const url of planCrawl(siteUrl, harvests, visited, config.collector.maxPages - 1)) {
+          ctx.signal.throwIfAborted();
+          await visit(url);
+        }
+      });
+    }
+
+    const listingUrl = listing.sources[0] ?? input.canonicalUrl;
     const images = await downloadImages(
-      mergeImages(harvests),
+      // Site images first: where the two sources hold the same photograph, the
+      // site's copy keeps its role, which is the more specific of the two.
+      [...mergeImages(harvests), ...listingImages(listing, listingUrl)],
       session,
       config.collector,
       outputDir,
@@ -741,6 +862,8 @@ export const collectorAgent: CollectorAgent = {
       identity: input,
       siteUrl,
       pages: harvests.map((harvest) => harvest.page),
+      attributes: listing.attributes,
+      listingDescription: listing.description,
       favicon: pickByRole(images, 'favicon'),
       logo: pickByRole(images, 'logo'),
       hero: pickByRole(images, 'hero'),
@@ -750,7 +873,7 @@ export const collectorAgent: CollectorAgent = {
       emails: mergeUnique(harvests, (h) => h.emails, (item) => item.value.toLowerCase()),
       phones: mergeUnique(harvests, (h) => h.phones, (item) => digitsOf(item.value)),
       socialProfiles: mergeUnique(harvests, (h) => h.socialProfiles, (item) => item.url),
-      sources: harvests.map((harvest) => harvest.page.url),
+      sources: [...harvests.map((harvest) => harvest.page.url), ...listing.sources],
       collectedAt: new Date().toISOString(),
     };
 
@@ -776,6 +899,8 @@ export const collectorAgent: CollectorAgent = {
 
     logger.info('collection finished', {
       pages: result.pages.length,
+      attributes: result.attributes.length,
+      listingDescriptionChars: result.listingDescription?.length ?? 0,
       gallery: result.gallery.length,
       services: result.services.length,
       emails: result.emails.length,
