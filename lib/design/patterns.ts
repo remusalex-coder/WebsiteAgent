@@ -297,8 +297,19 @@ export const PATTERNS: readonly DesignPattern[] = [
     id: 'type-grotesque-authority',
     family: 'typography',
     intent: 'Give a professional service a plain, confident voice with one well-cut sans.',
-    industries: ['law', 'medical', 'dental', 'professional-services', 'construction', 'automotive'],
-    directions: ['corporate', 'minimal', 'modern', 'premium'],
+    /*
+     * The general case, and it has to be, because a page must always get a type
+     * system. Scoping this to the professional categories left retail, beauty,
+     * spa, gym, bar and the general fallback with none at all — and because
+     * 'type-display-statement' matched everything, they silently took the
+     * poster treatment as their page-wide typography instead.
+     *
+     * It sits after 'type-editorial-serif' in the table, so a craft or
+     * hospitality business still takes the display face; everything else lands
+     * here, which is the correct default rather than an accident.
+     */
+    industries: ['*'],
+    directions: ['*'],
     composition: ['A single family across the page, differentiated by weight and size only.'],
     typography: [
       'Weight carries hierarchy where a second face would carry it elsewhere.',
@@ -317,7 +328,21 @@ export const PATTERNS: readonly DesignPattern[] = [
   },
   {
     id: 'type-display-statement',
-    family: 'typography',
+    /*
+     * A treatment, not a page typography system.
+     *
+     * This sat in the 'typography' family, which the selector treats as
+     * exclusive — one per page — and it matches every industry and every
+     * direction. So a dental practice on the friendly direction, which
+     * 'type-grotesque-authority' does not cover, fell through to *this* as its
+     * page-wide type system. The pattern that exists to set one line at poster
+     * size became the rule for every heading on the site.
+     *
+     * It belongs in 'break', which is cumulative: it describes how the
+     * statement band and the wordmark are set, and both of those already select
+     * it independently.
+     */
+    family: 'break',
     intent:
       'Set one line at a scale that makes it the loudest thing on the page, used once.',
     industries: ['*'],

@@ -530,6 +530,7 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     theme,
     density,
     imageReliance: defaults.imageReliance,
+    ground: defaults.ground,
   });
   notes.push(...layout.notes);
 

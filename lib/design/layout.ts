@@ -347,14 +347,46 @@ function assignFrames(
  * same. The CTA always inverts — it is the one section whose job is to
  * interrupt — and the hero paints its own ground.
  */
-function assignBackgrounds(designs: readonly Omit<SectionDesign, 'background' | 'frame'>[]): readonly SectionBackground[] {
+function assignBackgrounds(
+  designs: readonly Omit<SectionDesign, 'background' | 'frame'>[],
+  ground: 'clean' | 'warm' | 'atmospheric' = 'clean',
+): readonly SectionBackground[] {
   const out: SectionBackground[] = [];
   let previous: SectionBackground = 'canvas';
+
+  /*
+   * How much of the page is dark is the industry's decision, not the writer's.
+   *
+   * Three businesses generated from the same library came out as three
+   * near-white pages with one coloured band at the bottom, differing only in
+   * typeface and hue. Alternating canvas and subtle is a *rhythm*; it is not an
+   * identity, and on its own it makes every category look the same.
+   *
+   * An `atmospheric` category puts its photography on black, because a visitor
+   * choosing a hotel or a bar is trying to picture themselves inside it and
+   * darkness is what makes a photograph feel like a room. A `clean` category
+   * must not: a dark clinical page reads as a nightclub, and the one thing a
+   * dental practice cannot afford is for its site to feel like a night out.
+   */
+  const carriesDarkMedia = ground === 'atmospheric';
 
   for (const design of designs) {
     if (design.kind === 'hero') {
       out.push('subtle');
       previous = 'subtle';
+      continue;
+    }
+    /*
+     * The gallery inverts for an experience-led category.
+     *
+     * This is the single change that separates a hotel from a clinic at a
+     * glance, and it costs nothing: the photographs are the same photographs,
+     * sitting on a ground that makes them the subject rather than an
+     * illustration between two paragraphs.
+     */
+    if (carriesDarkMedia && (design.kind === 'gallery' || design.kind === 'menu')) {
+      out.push('inverted');
+      previous = 'canvas';
       continue;
     }
     if (design.kind === 'cta') {
@@ -510,6 +542,8 @@ export interface LayoutInput {
   readonly theme: ThemeDefinition;
   readonly density: VisualDensity;
   readonly imageReliance: 'essential' | 'supporting' | 'incidental';
+  /** What the page is made of. See IndustryDefaults.ground. */
+  readonly ground: 'clean' | 'warm' | 'atmospheric';
 }
 
 export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: readonly string[] } {
@@ -554,7 +588,7 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
     };
   });
 
-  const backgrounds = assignBackgrounds(partial);
+  const backgrounds = assignBackgrounds(partial, input.ground);
   const frames = assignFrames(partial.map((design) => {
     const section = content.sections[design.index];
     return {

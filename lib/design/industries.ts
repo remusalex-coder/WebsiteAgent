@@ -46,6 +46,40 @@ export interface IndustryDefaults {
   /** Preferred variant for a kind, where the industry has an opinion. */
   readonly variantHints: Readonly<Partial<Record<SectionKind, SectionVariant>>>;
   /**
+   * What the page is *made of* — the ground its content sits on.
+   *
+   * ## Why this axis had to exist
+   *
+   * Generating a hotel, a dental practice and a restaurant from the same
+   * library produced three pages that differed in typeface and hue and in
+   * almost nothing else. Every one of them was a near-white page with one
+   * brand-coloured band at the bottom, because the only ground decision the
+   * engine ever made was "alternate canvas and subtle, and invert the CTA".
+   *
+   * Colour was doing all the differentiating and it cannot carry that alone: a
+   * warm brown page and a teal page laid out identically are the same page.
+   * What separates a hotel from a clinic in print is not hue, it is *how much
+   * of the page is dark* — hospitality sells atmosphere and puts photography on
+   * black; a clinic sells calm competence and puts type on white.
+   *
+   * Three strategies, and each one is a claim about what the customer is
+   * deciding:
+   *
+   * - `clean` — light throughout, generous space, at most one inverted band.
+   *   For categories where a visitor is assessing competence and cleanliness.
+   *   A dark clinical page reads as a nightclub.
+   * - `warm` — a tinted canvas rather than white, editorial and appetising.
+   *   For food, craft and retail, where the page should feel like the room.
+   * - `atmospheric` — dark grounds carry the photography, and the page opens
+   *   and closes in the dark. For hospitality and anything selling an
+   *   experience the visitor is trying to picture themselves inside.
+   *
+   * This is a *composition* decision, not a palette one. The brand colour is
+   * still read from the business's own logo or photographs; this decides how
+   * much of the page that colour has to sit on.
+   */
+  readonly ground: 'clean' | 'warm' | 'atmospheric';
+  /**
    * OKLCH hue in degrees, used when the profile yields no brand colour.
    *
    * OKLCH, not HSL — the numbers do not transfer. Each value below was picked
@@ -111,6 +145,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     // to somewhere that sells food; the same items in a card grid read as a
     // services section and throw that signal away.
     variantHints: { services: 'cards', menu: 'list', gallery: 'collage' },
+    ground: 'warm',
     // Honey / baked-crust gold, from #c8860d (73.6°) and #d4a017 (84.3°).
     fallbackHue: 76,
     rationale: 'Product is visual and impulse-driven; visitors want to see the food and know when it is open.',
@@ -121,7 +156,8 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     density: 'balanced',
     imageReliance: 'essential',
     prioritySections: ['hero', 'menu', 'gallery', 'about', 'hours', 'location', 'testimonials', 'contact'],
-    variantHints: { menu: 'list', gallery: 'grid', testimonials: 'quotes' },
+    variantHints: { menu: 'list', gallery: 'collage', testimonials: 'quotes' },
+    ground: 'warm',
     // Brick / wine red, from #9c3b2e (30.2°) and #722f37 (15.1°). Appetite-warm
     // without tipping into the orange the bakery owns.
     fallbackHue: 28,
@@ -134,6 +170,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'essential',
     prioritySections: ['hero', 'menu', 'gallery', 'about', 'hours', 'location', 'contact'],
     variantHints: { menu: 'list', gallery: 'collage' },
+    ground: 'warm',
     // Roasted coffee / sienna, from #6f4e37 (55.6°) and #a0522d (44.6°).
     fallbackHue: 52,
     rationale: 'Atmosphere sells more than menu detail; keep it light and photographic.',
@@ -145,6 +182,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'essential',
     prioritySections: ['hero', 'menu', 'gallery', 'about', 'hours', 'location', 'contact'],
     variantHints: { menu: 'list', gallery: 'grid' },
+    ground: 'atmospheric',
     // Wine, from #7b2d43 (5.8°) and #722f37 (15.1°). Two earlier attempts are
     // worth recording: 300° rendered an electric violet that belonged to a
     // software product, and 330° — nominally plum — came out of the `bold`
@@ -161,6 +199,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'incidental',
     prioritySections: ['hero', 'services', 'about', 'testimonials', 'contact', 'location'],
     variantHints: { services: 'list', testimonials: 'quotes', about: 'split' },
+    ground: 'clean',
     // Navy, from #1a2b5f (267°) and #14213d (264°). Held clear of the medical
     // blue below so the two credibility categories do not converge.
     fallbackHue: 265,
@@ -173,6 +212,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'supporting',
     prioritySections: ['hero', 'services', 'about', 'hours', 'location', 'contact', 'faq'],
     variantHints: { services: 'cards', faq: 'list' },
+    ground: 'clean',
     // Clinical blue, from #2b6cb0 (252.3°), pushed a little cyan-ward to read
     // as clean rather than corporate. 225° rendered as a flat cyan.
     fallbackHue: 242,
@@ -185,6 +225,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'supporting',
     prioritySections: ['hero', 'services', 'about', 'testimonials', 'hours', 'contact'],
     variantHints: { services: 'cards', testimonials: 'cards' },
+    ground: 'clean',
     // Fresh aqua, from #00a3b4 (207.8°) — the category's own convention, and
     // deliberately not the medical blue, which reads colder than a practice
     // trying to reduce anxiety wants.
@@ -198,6 +239,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'essential',
     prioritySections: ['hero', 'services', 'gallery', 'testimonials', 'about', 'hours', 'contact'],
     variantHints: { services: 'list', gallery: 'collage', testimonials: 'cards' },
+    ground: 'atmospheric',
     // Rose, from #d99ab0 (356.5°). Far enough from the bar's plum that the two
     // do not read as the same pink at a glance.
     fallbackHue: 352,
@@ -210,6 +252,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'essential',
     prioritySections: ['hero', 'services', 'gallery', 'about', 'hours', 'contact'],
     variantHints: { services: 'list', gallery: 'grid' },
+    ground: 'atmospheric',
     // Eucalyptus / sage, from #7d9b76 (139.7°) and #9caf88 (128.9°).
     fallbackHue: 142,
     rationale: 'Calm is the promise. Slow motion, wide margins, muted imagery.',
@@ -221,6 +264,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'essential',
     prioritySections: ['hero', 'services', 'gallery', 'testimonials', 'about', 'hours', 'cta', 'contact'],
     variantHints: { services: 'feature-grid', testimonials: 'cards', gallery: 'grid' },
+    ground: 'atmospheric',
     // Electric orange, from #ff5a1f (37.7°). The `bold` direction's 0.22 chroma
     // takes this most of the way to the full-strength hue, which is the point.
     // Held clear of the bar's wine, which leads with the same direction.
@@ -234,6 +278,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'essential',
     prioritySections: ['hero', 'services', 'gallery', 'testimonials', 'about', 'contact'],
     variantHints: { services: 'cards', gallery: 'grid', testimonials: 'quotes' },
+    ground: 'clean',
     // Hard-hat amber, from #cc7722 (59.6°) pushed toward hazard yellow. The
     // corporate direction's 150° accent shift then lands on blue, which is the
     // amber-and-blue pairing the trade already uses on its own vans.
@@ -247,6 +292,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'supporting',
     prioritySections: ['hero', 'services', 'about', 'testimonials', 'hours', 'location', 'contact'],
     variantHints: { services: 'cards', testimonials: 'cards' },
+    ground: 'clean',
     // Steel blue, from #4682b4 (245.7°) — the workshop-signage convention.
     fallbackHue: 246,
     rationale: 'Competence and convenience. Service list and location do the work.',
@@ -257,7 +303,8 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     density: 'airy',
     imageReliance: 'essential',
     prioritySections: ['hero', 'gallery', 'services', 'about', 'location', 'testimonials', 'contact'],
-    variantHints: { gallery: 'grid', services: 'alternating', testimonials: 'quotes' },
+    variantHints: { gallery: 'collage', services: 'alternating', testimonials: 'quotes' },
+    ground: 'atmospheric',
     // Heritage petrol, from #0f5257 (202.6°) pulled green-ward. 240° made every
     // hotel a slate-blue corporate site; the deep green-teal is what the
     // category's own upscale end actually uses, and it keeps hospitality out of
@@ -272,6 +319,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'essential',
     prioritySections: ['hero', 'services', 'gallery', 'about', 'hours', 'location', 'contact'],
     variantHints: { services: 'cards', gallery: 'grid' },
+    ground: 'warm',
     // Boutique violet, from #7c3aed (293°).
     fallbackHue: 298,
     rationale: 'Product-led. Grid layouts and clear opening hours.',
@@ -283,6 +331,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'essential',
     prioritySections: ['hero', 'services', 'gallery', 'about', 'testimonials', 'contact'],
     variantHints: { services: 'cards', gallery: 'grid', testimonials: 'quotes' },
+    ground: 'clean',
     // Slate indigo — past navy, so a property brand does not read as a law firm.
     fallbackHue: 283,
     rationale: 'High-value, trust-led, image-heavy. Property imagery leads and credentials follow.',
@@ -294,6 +343,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'incidental',
     prioritySections: ['hero', 'services', 'about', 'testimonials', 'cta', 'contact'],
     variantHints: { services: 'feature-grid', testimonials: 'quotes' },
+    ground: 'clean',
     // Deep emerald, from #047857 (165.6°). The obvious choice was an indigo one
     // step from law's navy, and it was wrong: both categories lead with the
     // `corporate` direction, so the theme gives them identical type, spacing and
@@ -310,6 +360,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     imageReliance: 'supporting',
     prioritySections: ['hero', 'about', 'services', 'hours', 'location', 'contact'],
     variantHints: { services: 'cards' },
+    ground: 'clean',
     // A plain, unloaded blue. Nothing is known about the business, so the
     // colour should assert nothing either.
     fallbackHue: 258,

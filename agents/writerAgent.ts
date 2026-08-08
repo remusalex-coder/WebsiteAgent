@@ -1459,8 +1459,15 @@ function splitLead(passage: string): { lead: string; rest: string } {
  * statement band is a page that reads normally; a page with a limp one has a
  * hole in the middle of it with a small sentence in the hole.
  */
+/** The grammar of a facilities list, in any trade. */
+const SPECIFICATION_PHRASING = [
+  'available', 'on request', 'included', 'complimentary', 'equipped',
+  'featur', 'provided', 'access to', 'upon arrival', 'per night',
+];
+
 export function pullStatement(
   paragraphs: readonly string[],
+  amenityTerms: readonly string[] = [],
 ): { statement: string; remainder: readonly string[] } | null {
   const MIN = 18;
   const MAX = 130;
@@ -1503,6 +1510,49 @@ export function pullStatement(
        * fragment to display size.
        */
       if (/^(what|why|how|who|when|where|which)\b/i.test(value)) continue;
+      /*
+       * A sentence that restates an amenity is a fact, not a statement.
+       *
+       * Hotel Union Square's page opened its editorial break with **"Parking is
+       * available."** set at ninety points on black. Every word was true, the
+       * sentence came from the hotel's own prose, and it was the single most
+       * absurd thing the platform has rendered — because the band promises the
+       * reader that what follows is the *one thing* this business wants to say.
+       *
+       * The discriminator was already on the page. "Parking" is one of the
+       * hotel's verified attributes, and the facts marquee was carrying it
+       * thirty pixels above. A statement that repeats a fact is not a statement
+       * at all; it is the same information twice at two sizes, which is a
+       * composition error as well as an editorial one.
+       *
+       * So the amenity vocabulary is not guessed — it is the business's own
+       * attribute and service labels, and anything built on them is refused.
+       */
+      if (amenityTerms.some((term) => value.toLowerCase().includes(term))) continue;
+      /*
+       * A statement is a claim. A specification is not.
+       *
+       * Blocking the hotel's own attribute words moved the band from "Parking
+       * is available." to **"Minifridges are available on request."**, which is
+       * the same failure with a noun the listing happens not to carry. Chasing
+       * it with a longer list of nouns would never end, because the problem is
+       * not the noun — it is the *sentence shape*. Amenity copy announces that
+       * a thing exists and can be had; a statement says something about the
+       * business.
+       *
+       * Ten phrasings, all of them the grammar of a facilities list rather than
+       * a guess about any particular trade. They work the same way for a hotel
+       * describing minifridges, a gym describing lockers and a clinic
+       * describing parking.
+       *
+       * The consequence is deliberate: a business whose entire published prose
+       * is a specification gets **no statement band**, and its page is one
+       * section shorter. That is the correct outcome. An editorial break
+       * promises the reader that what follows is the one thing this business
+       * wants to say, and a page with nothing to say there should not make the
+       * promise.
+       */
+      if (SPECIFICATION_PHRASING.some((phrase) => value.toLowerCase().includes(phrase))) continue;
 
       const firstPerson = /\b(we|our|us|i'm|we're|it's our)\b/i.test(value);
       // Shorter is stronger at display size, so length counts against the score
@@ -1777,7 +1827,23 @@ export function composeBaseline(profile: BusinessProfile): WebsiteContent {
    * turn — the reader has seen the place and is told one thing about it before
    * being shown anything else — and the layout planner keeps it there.
    */
-  const pulled = pullStatement(aboutParagraphs);
+  /*
+   * The vocabulary the statement must not be built from: this business's own
+   * amenities and services, lowercased, single words only.
+   *
+   * Single words because the sentence will phrase them its own way — the
+   * listing says "Parking" and the prose says "Parking is available", so
+   * matching the whole label would miss it. Short tokens are dropped: a
+   * two-letter fragment matches everything.
+   */
+  const amenityTerms = [
+    ...profile.attributes.filter((attribute) => attribute.available).map((a) => a.label),
+    ...profile.services.map((service) => service.name),
+  ]
+    .flatMap((label) => label.toLowerCase().split(/[^a-z]+/))
+    .filter((term) => term.length >= 4);
+
+  const pulled = pullStatement(aboutParagraphs, amenityTerms);
   if (pulled !== null) {
     sections.push({
       kind: 'statement',
