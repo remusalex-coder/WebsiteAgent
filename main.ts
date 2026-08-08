@@ -29,6 +29,7 @@ import { createConsoleSink, createFileSink, createLogger, createMultiSink } from
 import { createBrowserSession } from './lib/browser.js';
 import { createPlatform } from './lib/platform/platform.js';
 import { renderSite, writeRenderedSite } from './lib/render/index.js';
+import { brandSeedFor } from './lib/art/seed.js';
 import { composeDesign } from './lib/design/compose.js';
 import { AgentError, InvalidInputError } from './lib/errors.js';
 
@@ -679,7 +680,12 @@ export async function composeStandalone(
   // does not apply — which is exactly what happened the first time this ran.
   // `--render` still honours a saved design, because reproducing an old run is
   // that command's whole purpose.
-  const design = composeDesign({ profile, content });
+  // Read once per run and cached beside the artifacts, so recomposing stays
+  // instant. A business with no downloaded photographs gets `null` here and the
+  // industry's colour, exactly as before.
+  const seed = await brandSeedFor(profile, outputDir);
+
+  const design = composeDesign({ profile, content }, { photographicSeed: seed.hex });
   await fs.writeFile(
     path.join(outputDir, `${ARTIFACTS.design}.json`),
     `${JSON.stringify(design, null, 2)}\n`,

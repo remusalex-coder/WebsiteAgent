@@ -1936,6 +1936,50 @@ h4 {
   max-width: none;
 }
 
+/*
+ * A headline over a full-bleed photograph is set to the picture, not to the
+ * document.
+ *
+ * The type scale governs a page of prose: the display token is the body
+ * size compounded by the theme's ratio five times, which on the friendlier
+ * themes lands around 48px. That is the right size for the largest heading in a
+ * *document*, and it is much too small for the only words on a 1440px
+ * photograph. Tartine's hero set "Bakery in San Francisco" at 45px across a
+ * full-width picture of falling sourdough, and it read as a caption that had
+ * been placed on the image rather than a title that owned it.
+ *
+ * A cinematic hero is a poster. Its headline is competing with a photograph for
+ * the first three seconds, and losing that competition is what makes a page
+ * read as a template with a picture in it.
+ *
+ * Applied only to the full-bleed treatment, and that restriction is the whole
+ * argument. The other treatments set their headline beside or above content
+ * that has to hold its own; only this one has an entire photograph behind it
+ * and nothing else on the screen to balance against.
+ *
+ * ## All three caps, again
+ *
+ * INF-007 has now cost this project three production defects, every one of them
+ * a hero headline that overrode a cap it did not restate. So this rule carries
+ * the viewport cap and the longest-word cap alongside the scaled display size,
+ * even though the multiplier is the only part that is new. A rule that raises a
+ * font size and drops a bound is the exact shape of that bug.
+ *
+ * The word cap is loosened from 1.8 to 1.9 rather than removed: a poster
+ * setting tolerates slightly tighter side bearings than a heading in text.
+ */
+.hero--full-bleed h1 {
+  font-size: min(
+    calc(var(--text-display-size) * 1.55),
+    13vw,
+    calc(100cqi / var(--headline-chars, 8) * 1.9)
+  );
+  /* A poster line closes up: the display leading that suits a heading inside a
+     document leaves a two-line hero looking like two separate statements. */
+  line-height: 1.04;
+  max-width: 16ch;
+}
+
 .hero--full-bleed .hero__support {
   max-width: min(var(--measure), 100%);
 }

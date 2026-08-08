@@ -33,6 +33,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { chooseForSection, curateGallery } from '../lib/art/direction.js';
 import { UpstreamError } from '../lib/errors.js';
 import { VENDORED_FACES } from '../lib/render/fontManifest.js';
 import { assignIds } from '../lib/render/site.js';
@@ -64,15 +65,6 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 
 /** Monday first: how a business writes its own opening hours. */
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
-
-/**
- * Upper bound on photographs handed to the gallery section.
- *
- * The collector routinely returns forty or more. A page showing all of them is
- * a contact sheet, not a gallery, and the images are already ranked best-first
- * by the normalizer — so the cut is from the tail.
- */
-const MAX_GALLERY_IMAGES = 12;
 
 /* ------------------------------------------------------------------ */
 /* Output schema                                                       */
@@ -545,6 +537,50 @@ export function hourBullets(hours: readonly OpeningHours[]): readonly string[] {
   return bullets;
 }
 
+/**
+ * What the page says when it only knows part of the week.
+ *
+ * ## The defect
+ *
+ * Tartine's listing publishes hours for **Thursday and nothing else** — the
+ * signed-out Maps pane returns only today's row, and the site states none. The
+ * generated page rendered that faithfully: a section headed "Opening hours"
+ * containing one line, `Thursday — 07:30–18:00`, ruled off across the full
+ * width of the page.
+ *
+ * Every word of it was true and it still read as broken. A timetable with one
+ * row in it does not look like a business that opens on Thursdays; it looks
+ * like a page that failed to load, and a visitor cannot tell which.
+ *
+ * ## Why the obvious repairs are both wrong
+ *
+ * Filling the other six days is fabrication, and the constitution forbids it —
+ * an invented opening time is the single most expensive lie a local business
+ * page can tell, because someone drives to a closed door.
+ *
+ * Hiding the section is quieter but no better: the one day we *do* know is a
+ * real fact a customer can use, and dropping it makes the page less useful in
+ * order to make it look tidier.
+ *
+ * ## The third answer
+ *
+ * Say what is known, say that it is partial, and offer the action that resolves
+ * it. A line of prose turns a broken-looking table into a deliberate one, and
+ * the phone number is the honest way to answer a question the data cannot.
+ *
+ * This is the general shape the constitution asks for — *design the uncertainty
+ * elegantly* — rather than a patch for one bakery. It fires for any business
+ * whose published hours cover fewer than seven days, which on the signed-out
+ * Maps pane is most of them.
+ */
+export function hoursDisclosure(hours: readonly OpeningHours[]): string {
+  const days = new Set(hours.map((entry) => entry.dayOfWeek));
+  if (days.size === 0 || days.size >= 7) return '';
+
+  const known = days.size === 1 ? 'one day' : `${days.size} days`;
+  return `Google publishes hours for ${known} of the week. Call ahead to confirm the rest.`;
+}
+
 /** Mailbox names a customer should never be routed to from a contact block. */
 const NON_CUSTOMER_MAILBOXES = [
   'press', 'media', 'jobs', 'careers', 'recruit', 'hiring', 'invoice',
@@ -890,28 +926,11 @@ function schemaTypeFor(category: string | null): string {
  * batch; `about` takes one, which is what lets the layout engine choose a split
  * or editorial treatment for it instead of a bare column of text.
  */
-/**
- * Words that mark an image as merchandise rather than the business itself.
- *
- * The first gallery Tartine produced was six Amazon cookbook covers with their
- * alt text showing — "Tartine bread on Amazon", "BREAD BOOK Cover" — because
- * the normalizer ranks by CDN path and byte size, and a 3D product mockup is a
- * big file. A book cover is a real photograph on the real site, so nothing was
- * invented; it is simply not a picture of the bakery.
- *
- * Matched against the alt text and the file name, both of which the collector
- * captured verbatim.
+/*
+ * The merchandise word list that used to live here now lives in
+ * `lib/art/direction.ts`, beside the relative-width rule that caught the three
+ * cookbooks it missed. Ranking images is art direction, not writing.
  */
-const NOT_PHOTOGRAPHY = [
-  'amazon', 'book', 'cover', 'cookbook', 'logo', 'icon', 'badge', 'sprite',
-  'placeholder', 'avatar', 'screenshot', 'banner-ad', 'gift card', 'giftcard',
-];
-
-/** True when an image looks like merchandise, packaging or chrome. */
-function looksLikeProductShot(image: ImageAsset): boolean {
-  const haystack = `${image.alt ?? ''} ${image.url}`.toLowerCase();
-  return NOT_PHOTOGRAPHY.some((needle) => haystack.includes(needle));
-}
 
 /** Hosts that only ever serve map tiles and static maps. */
 const MAP_HOSTS = [
@@ -979,7 +998,7 @@ const WIDGET_HOSTS = [
 /**
  * Whether an image can carry a section of a page.
  *
- * A hard exclusion, unlike `looksLikeProductShot` — these are never worth
+ * A hard exclusion, unlike the art-direction ranking — these are never worth
  * showing at any position. Paradise Dental's generated gallery contained **six
  * Google Maps tiles**, because an embedded map is a grid of `<img>` elements
  * and the normalizer ranks by CDN path and byte size, which cannot tell a
@@ -1020,17 +1039,27 @@ function assignImages(
   const { logo, favicon, hero, gallery } = profile.images;
   const assigned = new Map<number, readonly ImageAsset[]>();
 
-  // A site with no tagged hero still has a lead photograph: the best gallery
+  /*
+   * Curation happens before anything is placed.
+   *
+   * `isUsablePhotograph` answers "is this an image at all" — a map tile, a
+   * consent-widget logo, a tracking pixel. `curateGallery` answers the harder
+   * question of whether a real photograph *belongs*, and it is the pass that
+   * stopped Tartine's page leading with six cookbooks. See `lib/art/direction.ts`
+   * for why the rule is relative rather than a longer list of banned words.
+   */
+  const curated = curateGallery(gallery.filter(isUsablePhotograph));
+
+  // A site with no tagged hero still has a lead photograph: the best curated
   // image. Taking it here is what stops the gallery from opening the page.
-  //
-  // Product shots sort to the back rather than being dropped: on a business
-  // whose only imagery is packaging, a page with photographs of the packaging
-  // still beats a page with none.
-  const usable = gallery.filter(isUsablePhotograph);
-  const photographs = usable.filter((image) => !looksLikeProductShot(image));
-  const products = usable.filter((image) => looksLikeProductShot(image));
-  const pool = [...photographs, ...products];
-  const lead = hero ?? pool.shift() ?? null;
+  const galleryImages = [...curated.chosen];
+  const lead = hero ?? galleryImages.shift() ?? null;
+
+  // What the single-image sections may draw from: everything the gallery could
+  // not fit, plus everything it did not need. A section asking for a photograph
+  // of the premises should get the best one on the site, not the best one the
+  // gallery declined.
+  const pool = [...galleryImages, ...curated.rest];
 
   const indexOf = (kind: SectionKind): number => sections.findIndex((section) => section.kind === kind);
 
@@ -1047,28 +1076,37 @@ function assignImages(
   }
 
   const galleryIndex = indexOf('gallery');
-  if (galleryIndex !== -1) {
-    assigned.set(galleryIndex, pool.splice(0, MAX_GALLERY_IMAGES));
+  if (galleryIndex !== -1 && galleryImages.length > 0) {
+    assigned.set(galleryIndex, galleryImages);
   }
 
   /*
-   * Sections that carry one photograph each, in the order they get one.
+   * Sections that may carry one photograph each — if one of them is *about*
+   * what the section is about.
    *
-   * The first Tartine run put three images on a 4,500px page while forty-nine
-   * sat unused in the run directory, because only `hero`, `gallery` and `about`
-   * were ever fed — and that spec had no gallery. Worse, `location` was chosen
-   * as a `split` on body length, found no image, and rendered the design's
-   * gradient placeholder, which reads as a broken image rather than as a
-   * deliberately image-free section.
+   * This used to hand each section the next image in the pool, and that is how
+   * Tartine's `location` section came to illustrate the corner of 18th and
+   * Guerrero with a tray of pastries. Nothing was invented: the photograph was
+   * real and the address was real, and the page still told a stranger something
+   * untrue by putting them together.
    *
-   * Feeding the single-image sections fixes both: the page carries photography
-   * proportional to what the business actually has, and a `split` gets the
-   * media its layout was chosen for.
+   * `chooseForSection` returns `null` when the site has nothing appropriate,
+   * and `null` is honoured rather than worked around. A `location` section with
+   * no photograph of the premises renders as type and an address — which the
+   * layout planner already composes well, because a variant that needs media is
+   * vetoed when there is none.
    */
+  const taken = new Set<string>();
   for (const kind of ['about', 'location', 'services', 'menu', 'testimonials'] as const) {
-    if (pool.length === 0) break;
     const index = indexOf(kind);
-    if (index !== -1) assigned.set(index, pool.splice(0, 1));
+    if (index === -1) continue;
+
+    const available = pool.filter((image) => !taken.has(image.url));
+    const chosen = chooseForSection(kind, available);
+    if (chosen === null) continue;
+
+    taken.add(chosen.url);
+    assigned.set(index, [chosen]);
   }
 
   return assigned;
@@ -1907,11 +1945,29 @@ export function groundTestimonials(
 const CONVERSION_CARRIERS: readonly SectionKind[] = [
   'services',
   'menu',
-  'gallery',
   'testimonials',
   'about',
   'location',
 ];
+
+/*
+ * `gallery` was on this list and has been removed.
+ *
+ * It was chosen for Tartine, and the result is the clearest example of an
+ * orphan call to action the project has produced: a ghost button alone in white
+ * space under a twelve-image masonry, belonging to nothing above or below it.
+ *
+ * The reason is structural rather than aesthetic. Every other carrier ends in
+ * *prose* — a paragraph that has just made an argument — and a button under an
+ * argument reads as its conclusion. A gallery ends in pictures, so a button
+ * after it is the first element of a new thought with no thought attached. The
+ * layout cannot rescue it either: the grid is full-bleed and the button is not,
+ * so it cannot even align to anything.
+ *
+ * The general rule, now enforced by the shape of this list: a call to action
+ * must belong to the composition around it, and only a section that ends in
+ * words can hold one.
+ */
 
 /**
  * Roughly how many screens of scroll a section will occupy.
@@ -2128,11 +2184,30 @@ function assembleContent(
           ? contactBullets(profile)
           : section.bullets.map((bullet) => bullet.trim()).filter((bullet) => bullet !== '');
 
-    const label = section.ctaLabel.trim();
-    const href = label === '' ? null : resolveCta(section.ctaTarget, profile, anchors);
-    if (label !== '' && section.ctaTarget !== 'none' && href === null) {
+    /*
+     * Partial hours are disclosed, and the disclosure carries the phone.
+     *
+     * Both halves matter. The sentence stops a one-row timetable reading as a
+     * loading failure; the button is what makes the sentence useful rather than
+     * merely apologetic — "call ahead to confirm" with nothing to call is worse
+     * than saying nothing. `resolveCta` drops the button on a business with no
+     * number, and the sentence still stands on its own.
+     *
+     * It never overwrites the writer's own words: a model that already
+     * explained the gap keeps its explanation.
+     */
+    const disclosure = section.kind === 'hours' ? hoursDisclosure(profile.hours) : '';
+    const body = section.body.trim() === '' ? disclosure : section.body.trim();
+
+    const wantsCall = disclosure !== '' && section.ctaTarget === 'none';
+    const intent = wantsCall ? primaryCtaFor(profile) : section;
+    const label = (wantsCall ? 'Call to confirm' : intent.ctaLabel).trim();
+    const target = wantsCall && intent.ctaTarget === 'none' ? 'none' : intent.ctaTarget;
+
+    const href = label === '' ? null : resolveCta(target, profile, anchors);
+    if (label !== '' && target !== 'none' && href === null) {
       warn(
-        `section "${section.kind}" asked for a "${section.ctaTarget}" call to action, which the profile cannot support; the button was dropped`,
+        `section "${section.kind}" asked for a "${target}" call to action, which the profile cannot support; the button was dropped`,
       );
     }
 
@@ -2142,7 +2217,7 @@ function assembleContent(
       kind: section.kind,
       heading: section.heading.trim(),
       subheading: subheading === '' ? null : subheading,
-      body: section.body.trim(),
+      body,
       bullets,
       images: images.get(index) ?? [],
       callToAction: href === null ? null : { label, href },

@@ -92,6 +92,20 @@ export interface ComposeOptions {
   readonly direction?: DesignDirection | undefined;
   /** Raises the contrast floor from AA to AAA. */
   readonly accessibilityLevel?: 'AA' | 'AAA' | undefined;
+  /**
+   * A brand colour observed in the business's own photographs.
+   *
+   * Outranks every other source of a seed, because it is the only one that is
+   * *evidence* rather than inference: the writer's suggested palette is a
+   * model's taste, a hex found loose in the crawled page text is a guess about
+   * which of a stylesheet's colours is the brand, and the industry hue is a
+   * statement about the category rather than the business.
+   *
+   * Passed in rather than read here so the design layer stays pure — extracting
+   * it needs to decode image files, and `composeDesign` is a pure function of
+   * its inputs. See `lib/art/seed.ts`.
+   */
+  readonly photographicSeed?: string | null | undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -405,8 +419,22 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
 
   const accessibility = accessibilityFor(options.accessibilityLevel ?? 'AA');
 
+  /*
+   * A colour observed beats a colour inferred.
+   *
+   * The order matters more than it looks. `findBrandColor` reads the writer's
+   * suggestion first and a loose hex from the crawled page second — and the
+   * second of those is frequently a link blue or a border grey that happened to
+   * appear in the markup before the brand colour did. A hue averaged off the
+   * business's own photographs is the only candidate here that was measured.
+   */
+  const observed = options.photographicSeed ?? null;
+  if (observed !== null) {
+    notes.push(`Brand colour was read from the business's own photographs rather than assigned by category.`);
+  }
+
   const color = buildColorSystem({
-    seedHex: findBrandColor(content, profile),
+    seedHex: observed ?? findBrandColor(content, profile),
     fallbackHue: defaults.fallbackHue,
     theme,
     accessibility,
