@@ -414,7 +414,12 @@ export const THEMES: Readonly<Record<DesignDirection, ThemeDefinition>> = {
     imageTreatment: 'warm',
     heroPreference: ['split', 'centered', 'image-first'],
     footer: 'corporate',
-    avoidVariants: ['collage', 'masonry'],
+    // Masonry only. A collage leads with one photograph and arranges the rest
+    // around it, which is the right composition for any business whose product
+    // is visual — and `supports()` already refuses it when there are too few
+    // images to fill the cells. What this theme should avoid is a column-flow
+    // masonry, which has no lead and reads as a contact sheet.
+    avoidVariants: ['masonry'],
     containerMaxRem: 70,
   },
 };

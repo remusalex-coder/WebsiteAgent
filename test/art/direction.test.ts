@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  GALLERY_BUDGET,
   chooseForSection,
   curateGallery,
   dropUndersized,
@@ -160,7 +161,7 @@ describe('curateGallery', () => {
     );
     const { chosen, rest, notes } = curateGallery([...books, ...photographs(20, 1800)]);
 
-    assert.equal(chosen.length, 8, 'a gallery is an edit');
+    assert.equal(chosen.length, GALLERY_BUDGET, 'a gallery is an edit');
     assert.ok(chosen.every((entry) => subjectOf(entry) !== 'merchandise'));
     assert.ok(rest.length > 0, 'the remainder stays available to other sections');
     assert.ok(notes.length > 0, 'every cut is explained in the design notes');

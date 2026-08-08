@@ -386,13 +386,22 @@ export function chooseForSection(
 /**
  * How many photographs a gallery may show.
  *
- * Down from twelve, and the reduction is the point. Tartine's twelve-image
- * masonry ran 2,400px — over forty percent of the page — and read as a
- * scrapbook: every photograph the site had, at whatever crop it came in,
- * stacked until they ran out. A gallery is an edit. Eight is enough to show
- * range and few enough that each one can be large.
+ * Down from twelve, then from eight, and each cut made the page better.
+ *
+ * Tartine's twelve-image masonry ran 2,400px — over forty percent of the page —
+ * and read as a scrapbook: every photograph the site had, at whatever crop it
+ * came in, stacked until they ran out.
+ *
+ * Six rather than eight because the collage composition has exactly six roles:
+ * a lead, its partner, two details, the full-measure turn, and a coda. A
+ * seventh and eighth image do not extend that sequence, they *restart* it,
+ * because the item classes cycle every six. Tartine rendered the lead crop
+ * twice and the gallery grew to 3,572px — four screens, half the page.
+ *
+ * A gallery is an edit. Six photographs at four different scales say more about
+ * a business than twelve at two, and they say it in a third of the height.
  */
-export const GALLERY_BUDGET = 8;
+export const GALLERY_BUDGET = 6;
 
 /**
  * The most portraits a gallery will carry.
@@ -403,12 +412,77 @@ export const GALLERY_BUDGET = 8;
  */
 const MAX_PEOPLE_IN_GALLERY = 2;
 
+/**
+ * Puts the strongest photographs where the composition is loudest.
+ *
+ * The renderer's collage gives two cells far more weight than the other four:
+ * the **lead**, which is twice the height of anything beside it, and the
+ * **close**, which runs the full measure at a cinematic crop. Those two cells
+ * are what a visitor remembers, and handing them to whatever happened to sort
+ * first by width is how a bakery came to be represented by a beach.
+ *
+ * So the sequence is arranged rather than merely ranked: the two best images
+ * that actually show the business take the two positions that claim to
+ * represent it, and everything else fills the middle in rank order. A story
+ * photograph keeps its place in the sequence; it simply stops speaking for the
+ * business.
+ *
+ * Falls back to the given order whenever there is nothing to arrange — fewer
+ * than three images, or a business whose photography is *all* from its story
+ * page, in which case there is no better choice available and pretending
+ * otherwise would just be a different arbitrary order.
+ */
+export function arrangeSequence(images: readonly ImageAsset[]): readonly ImageAsset[] {
+  if (images.length < 3) return images;
+
+  const representative = images.filter((image) => !isStoryImage(image) && subjectOf(image) !== 'people');
+  if (representative.length < 2) return images;
+
+  const lead = representative[0];
+  const close = representative[1];
+  if (lead === undefined || close === undefined) return images;
+
+  const middle = images.filter((image) => image !== lead && image !== close);
+  return [lead, ...middle, close];
+}
+
 export interface Curation {
   readonly chosen: readonly ImageAsset[];
   /** Everything not chosen, in rank order — the pool other sections draw from. */
   readonly rest: readonly ImageAsset[];
   /** Human-readable decisions, for the design notes. */
   readonly notes: readonly string[];
+}
+
+/**
+ * Pages whose photography illustrates a story rather than showing the business.
+ *
+ * A history or founder's-story page carries pictures chosen to narrate: a field
+ * of wheat, a coastline, a portrait from twenty years ago. They are real, they
+ * belong to the business, and they are the wrong pictures to *lead* with —
+ * because a stranger looking at the top of a gallery is trying to find out what
+ * this place is like now.
+ *
+ * Tartine proved it the expensive way. Its strongest cells — the lead and the
+ * full-measure close — went to a wheat field and two people sitting on a beach,
+ * both from `/about/our-story`, because those images are wide and the sequence
+ * was ordered by width. The most prominent photograph on a bakery's page was a
+ * beach.
+ *
+ * This does not drop them. A story photograph in the middle of a sequence is
+ * texture and belongs there; it simply must not take a position that claims to
+ * represent the business.
+ */
+const STORY_PATHS = ['our-story', 'our_story', 'history', 'heritage', 'journey', 'about/story'];
+
+/** True when the page this came from was telling a story rather than showing the place. */
+function isStoryImage(image: ImageAsset): boolean {
+  try {
+    const path = new URL(image.sourceUrl).pathname.toLowerCase();
+    return STORY_PATHS.some((marker) => path.includes(marker));
+  } catch {
+    return false;
+  }
 }
 
 /** Rank within a subject, best first. Higher is better. */

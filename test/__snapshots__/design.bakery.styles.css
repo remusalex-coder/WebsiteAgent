@@ -1166,11 +1166,21 @@ h4 {
  * none, because a rule under a geometric sans is decoration pretending to be
  * typography.
  */
-[data-heading-character="serif"] .section__head::after {
+/*
+ * A hairline above the section head, not under it.
+ *
+ * Under a 31px heading it read as a divider; under a 36px serif display it read
+ * as an *underline*, which is the one thing a rule beneath type must never look
+ * like. Above the eyebrow it becomes what it was always meant to be — the line
+ * that opens a section in a printed page — and it does a second job the page
+ * needed anyway, marking where one band ends and the next begins without
+ * another change of ground.
+ */
+[data-heading-character="serif"] .section__head::before {
   content: "";
   display: block;
   width: 100%;
-  margin-top: var(--space-sm);
+  margin-bottom: var(--space-lg);
   border-top: 1px solid var(--color-border-strong);
 }
 
@@ -2636,11 +2646,57 @@ h4 {
   .gallery--masonry { columns: var(--columns, 3); }
 }
 
-/* Collage: one image leads and the rest fill around it. */
+/*
+ * Collage: an art-directed sequence, not a grid with one big cell.
+ *
+ * The masonry it replaces produced eight photographs at **two sizes** —
+ * 687x474 twice and 334x350 six times — which is a contact sheet. A sequence
+ * has a lead, a rest, and a change of pace, and it gets that from three things
+ * a uniform grid has none of: different footprints, different aspect ratios,
+ * and one image allowed to break the rhythm near the end.
+ *
+ * Three scales across six cells on a four-column grid, packed so no cell is
+ * left empty:
+ *
+ *   0  the lead    two columns, two rows — one photograph held longer
+ *   1  a detail    two columns, beside the lead
+ *   2  a detail    two columns, beside the lead
+ *   3  a detail    two columns
+ *   4  a detail    two columns, beside it
+ *   5  the close   four columns, cinematic
+ *
+ * The first arrangement gave the lead three columns of four and two rows, which
+ * left a single free column on its second row that nothing could fill. The grid
+ * pushed the rest down and the gallery grew to 3,572px — four screens, half the
+ * page. A composition that leaves holes is not more expressive, it is just
+ * taller.
+ *
+ * The close is the point. A grid that never changes width reads as a grid
+ * however good the photographs are; one image at the full measure, at the end,
+ * is what makes the set read as an edit somebody made — and putting it last
+ * gives the sequence somewhere to arrive instead of trailing off.
+ */
 @media (min-width: 48rem) {
+  .gallery--collage {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .gallery--collage .gallery__item--0 {
     grid-column: span 2;
     grid-row: span 2;
+  }
+
+  /*
+   * The figure has to stretch before the image inside it can.
+   *
+   * The grid item spans two rows and stretches by default, but the figure
+   * between it and the image does not, so height:100% on the image resolved
+   * against a box that was only as tall as one row. The lead measured 433px —
+   * exactly the height of the details it was supposed to tower over — and the
+   * whole point of the composition was lost to one missing declaration.
+   */
+  .gallery--collage .gallery__item--0 figure {
+    height: 100%;
   }
 
   .gallery--collage .gallery__item--0 img {
@@ -2648,8 +2704,57 @@ h4 {
     aspect-ratio: auto;
   }
 
-  .gallery--collage .gallery__item--3 {
+  .gallery--collage .gallery__item--1,
+  .gallery--collage .gallery__item--2,
+  .gallery--collage .gallery__item--3,
+  .gallery--collage .gallery__item--4 {
     grid-column: span 2;
+  }
+
+  /* 16/10 rather than 4/3: two of these stack beside the lead, and a taller
+     crop is what pushed the whole sequence past three screens. */
+  .gallery--collage .gallery__item--1 img,
+  .gallery--collage .gallery__item--2 img,
+  .gallery--collage .gallery__item--3 img,
+  .gallery--collage .gallery__item--4 img {
+    aspect-ratio: 16 / 10;
+  }
+
+  /* The close: full measure, cinematic crop. */
+  .gallery--collage .gallery__item--5 {
+    grid-column: 1 / -1;
+  }
+
+  .gallery--collage .gallery__item--5 img {
+    aspect-ratio: 21 / 9;
+  }
+}
+
+/*
+ * On a phone the sequence keeps its shape rather than becoming a stack.
+ *
+ * Eight photographs in a single column was 1.9 screens on desktop and far worse
+ * on a phone — the gallery simply became the page. Two columns with the lead
+ * and the turn spanning both preserves the rhythm at a third of the height,
+ * which is the mobile-first version of the same composition rather than the
+ * desktop one folded up.
+ */
+@media (max-width: 48rem) {
+  .gallery--collage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gallery--collage .gallery__item--0,
+  .gallery--collage .gallery__item--5 {
+    grid-column: 1 / -1;
+  }
+
+  .gallery--collage .gallery__item--0 img {
+    aspect-ratio: 4 / 3;
+  }
+
+  .gallery--collage .gallery__item--5 img {
+    aspect-ratio: 16 / 9;
   }
 }
 
@@ -3025,6 +3130,127 @@ a {
 }
 
 /* ------------------------------------------------------------------ */
+/* Composition — measure, scale and rhythm                             */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Every section used to start at the same x and run to the same width.
+ *
+ * Measured on Tartine: eight sections, all of them at x=160 and 1120 wide.
+ * That is the single loudest tell of generated work, and no amount of colour or
+ * typeface fixes it — a page where every band has the same measure reads as a
+ * document template with content poured into it, because that is exactly what
+ * it is.
+ *
+ * A designed page varies its measure with the *job* of the section. Prose wants
+ * a narrow column and photography wants the page. So the measure is assigned
+ * per kind rather than globally:
+ *
+ * - **gallery** runs wider than the text, because photographs are what the
+ *   visitor came to look at;
+ * - **about** runs narrow and offset, because it is the only part of the page
+ *   anybody actually reads;
+ * - **statement** takes the full width, because the sentence is the section;
+ * - **contact and hours** keep the standard measure, since they are scanned.
+ *
+ * These are overrides on the section, not on the container class itself, so the base
+ * sheet's cap still holds everywhere it was not deliberately changed.
+ */
+.section--gallery .container {
+  max-width: min(88rem, 100%);
+}
+
+/*
+ * A section head aligns with the thing it introduces.
+ *
+ * The stacked frame centres its head on a reading measure, which is right above
+ * a column of prose and wrong above a full-measure grid: the head sat at x=403
+ * over photographs starting at x=56, and the offset read as a mistake rather
+ * than as a decision. Left-aligned, and with the hairline running the full width
+ * of the grid, it becomes the rule that opens a section in a printed page.
+ */
+.section--gallery .section__head {
+  max-width: none;
+  margin-inline: 0;
+  text-align: left;
+}
+
+/*
+ * The about block reads, so it gets a reading measure — but not a cramped one.
+ *
+ * The first pass narrowed the whole container to 62rem and the prose landed in
+ * a 330px column beside its photograph, which is under 40 characters a line.
+ * That is narrower than a newspaper column and it made the best copy on the
+ * page look like a caption. The container stays generous and the *text* takes
+ * the measure, which is where a measure belongs.
+ */
+.section--about .container {
+  max-width: min(72rem, 100%);
+}
+
+.section--about .frame__content p,
+.section--about .split__copy p {
+  max-width: 38rem;
+}
+
+.section--statement .container {
+  max-width: 100%;
+}
+
+/*
+ * The type scale had two sizes on it, and a page needs a range.
+ *
+ * Measured: the hero at 76px and then every section heading at 25 to 31px, with
+ * nothing between. The reader's eye has no ladder to climb, so the page feels
+ * flat however good the typeface is.
+ *
+ * Section headings move up to a genuine display step — still well below the
+ * hero, so the opening keeps its primacy, but far enough above the body that
+ * each section announces itself. Capped by the longest word for the same reason
+ * the hero is: scale must never break the words.
+ */
+.section:not(.section--hero) .section__head h2 {
+  font-size: min(
+    calc(var(--text-h1-size) * 0.92),
+    7vw,
+    calc(100cqi / var(--headline-chars, 10) * 1.6)
+  );
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  max-width: 18ch;
+}
+
+/*
+ * The eyebrow was a small orange label above every heading, and it read as a
+ * content-management field rather than as typography. Set in the body face,
+ * widely tracked and muted, it becomes a caption — which is what it is.
+ */
+.section__head .eyebrow {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  opacity: 0.75;
+}
+
+/*
+ * Section bands vary in height with their weight.
+ *
+ * Uniform padding is the other half of the flatness problem: a contact block
+ * and an editorial passage were given the same air, so nothing on the page felt
+ * more important than anything else.
+ */
+.section--about {
+  padding-block: clamp(5rem, 11vw, 10rem);
+}
+
+.section--contact,
+.section--hours {
+  padding-block: clamp(3rem, 6vw, 5.5rem);
+}
+
+/* ------------------------------------------------------------------ */
 /* Statement band — editorial-statement-break                          */
 /* ------------------------------------------------------------------ */
 
@@ -3048,20 +3274,37 @@ a {
  * line settles near the ordinary h1 step, which is where a sentence that long
  * stops being a statement and starts being prose.
  */
+/*
+ * The band holds a screen, because a moment that scrolls past is not a moment.
+ *
+ * The first build gave it ordinary section padding and it measured **193px —
+ * 0.21 of a screen**. At that height a sentence on a dark ground is a coloured
+ * stripe with words in it, and the reader passes it without stopping. What
+ * makes an editorial break work is the *emptiness around the line*, not the
+ * line: the page has to visibly give up half a screen to say one thing.
+ *
+ * Under a full screen on purpose, so the band never behaves like a slide the
+ * reader has to get past, and so the section beneath it stays visible at the
+ * bottom edge.
+ */
 .section--statement {
-  padding-block: clamp(4rem, 12vw, 9rem);
+  display: grid;
+  align-content: center;
+  min-height: min(62vh, 34rem);
+  padding-block: clamp(5rem, 14vw, 11rem);
 }
 
 .pronouncement {
   margin: 0 auto;
-  max-width: 22ch;
+  max-width: 20ch;
+  text-align: center;
   font-family: var(--font-heading);
   font-size: min(
-    calc(100cqi / var(--statement-length, 40) * 3.2),
-    7rem,
-    9vw
+    calc(100cqi / var(--statement-length, 40) * 4.4),
+    9rem,
+    11vw
   );
-  line-height: 1.08;
+  line-height: 1.04;
   font-weight: var(--text-display-weight);
   letter-spacing: var(--text-display-tracking, normal);
   text-wrap: balance;
@@ -3174,17 +3417,62 @@ a {
 .wordmark {
   margin: var(--space-xl) 0 0;
   font-family: var(--font-heading);
-  font-size: min(calc(100cqi / var(--wordmark-length, 12) * 1.55), 12rem);
-  line-height: 0.92;
+  font-size: min(calc(100cqi / var(--wordmark-length, 12) * 1.42), 12rem);
+  line-height: 0.86;
   font-weight: var(--text-display-weight);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--color-brand-text, var(--color-primary));
-  opacity: 0.16;
+  /* Raised from 0.16: at that value it read as a printing fault rather than as
+     a deliberate mark, which is the difference between restraint and an error. */
+  opacity: 0.22;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: clip;
   /* Decorative: the name is already announced in the header and the colophon. */
   user-select: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Call to action hierarchy — closing-invitation                       */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Five identical buttons is not a hierarchy.
+ *
+ * Measured on Tartine: every call to action rendered as the same 112px pill, so
+ * the closing invitation — the one the whole page has been building toward —
+ * carried exactly the weight of a link in the middle of an about section.
+ *
+ * The closing action takes real size. The mid-page ones become text with a
+ * drawn rule under them: still obviously interactive, still a full touch
+ * target, but no longer competing with the close. That is the pattern's own
+ * rule — a mid-page action belongs to the argument above it, and a filled pill
+ * is a bigger claim than a paragraph can support.
+ */
+.section--cta .button {
+  min-height: 3.5rem;
+  padding-inline: clamp(2rem, 5vw, 3.5rem);
+  font-size: var(--text-bodyLarge-size, 1.125rem);
+}
+
+.section--about .button,
+.section--services .button,
+.section--menu .button {
+  min-height: 2.75rem;
+  padding-inline: 0;
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-brand-text, var(--color-primary));
+  border-radius: 0;
+  border-bottom: 2px solid currentColor;
+}
+
+.section--about .button:hover,
+.section--services .button:hover,
+.section--menu .button:hover {
+  background: transparent;
+  color: var(--color-accent);
+  border-bottom-color: currentColor;
 }
 
 /* ------------------------------------------------------------------ */

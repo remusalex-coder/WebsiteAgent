@@ -33,7 +33,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { GALLERY_BUDGET, chooseForSection, curateGallery, photoIdentity } from '../lib/art/direction.js';
+import { GALLERY_BUDGET, arrangeSequence, chooseForSection, curateGallery, photoIdentity } from '../lib/art/direction.js';
 import { UpstreamError } from '../lib/errors.js';
 import { VENDORED_FACES } from '../lib/render/fontManifest.js';
 import { assignIds } from '../lib/render/site.js';
@@ -1124,10 +1124,23 @@ function assignImages(
     assigned.set(index, [chosen]);
   }
 
-  // Whatever survived the sections above, capped at the gallery's own budget.
+  /*
+   * Whatever survived the sections above, arranged and capped.
+   *
+   * `arrangeSequence` runs *here* rather than inside `curateGallery`, and the
+   * order matters. Curation happens before the hero and the single-image
+   * sections have taken their photographs, so anything arranged there is
+   * immediately undone by those removals — which is exactly what happened: the
+   * gallery was arranged, three images were then spent elsewhere, and the
+   * cinematic closing cell went back to being whatever sorted last. On Tartine
+   * that was a photograph of two people on a beach.
+   *
+   * Arranging the final slice is the only point at which the sequence the
+   * visitor actually sees is known.
+   */
   const galleryIndex = indexOf('gallery');
   if (galleryIndex !== -1 && remaining.length > 0) {
-    assigned.set(galleryIndex, remaining.slice(0, GALLERY_BUDGET));
+    assigned.set(galleryIndex, arrangeSequence(remaining.slice(0, GALLERY_BUDGET)));
   }
 
   return assigned;

@@ -110,7 +110,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     // year old convention and the single strongest signal that a page belongs
     // to somewhere that sells food; the same items in a card grid read as a
     // services section and throw that signal away.
-    variantHints: { services: 'cards', menu: 'list', gallery: 'masonry' },
+    variantHints: { services: 'cards', menu: 'list', gallery: 'collage' },
     // Honey / baked-crust gold, from #c8860d (73.6°) and #d4a017 (84.3°).
     fallbackHue: 76,
     rationale: 'Product is visual and impulse-driven; visitors want to see the food and know when it is open.',
@@ -133,7 +133,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     density: 'airy',
     imageReliance: 'essential',
     prioritySections: ['hero', 'menu', 'gallery', 'about', 'hours', 'location', 'contact'],
-    variantHints: { menu: 'list', gallery: 'masonry' },
+    variantHints: { menu: 'list', gallery: 'collage' },
     // Roasted coffee / sienna, from #6f4e37 (55.6°) and #a0522d (44.6°).
     fallbackHue: 52,
     rationale: 'Atmosphere sells more than menu detail; keep it light and photographic.',
@@ -197,7 +197,7 @@ export const INDUSTRY_DEFAULTS: Readonly<Record<Industry, IndustryDefaults>> = {
     density: 'airy',
     imageReliance: 'essential',
     prioritySections: ['hero', 'services', 'gallery', 'testimonials', 'about', 'hours', 'contact'],
-    variantHints: { services: 'list', gallery: 'masonry', testimonials: 'cards' },
+    variantHints: { services: 'list', gallery: 'collage', testimonials: 'cards' },
     // Rose, from #d99ab0 (356.5°). Far enough from the bar's plum that the two
     // do not read as the same pink at a glance.
     fallbackHue: 352,
