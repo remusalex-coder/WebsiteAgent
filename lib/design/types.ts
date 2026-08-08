@@ -540,6 +540,13 @@ export interface WebsiteDesign {
   readonly version: 1;
   readonly personality: VisualPersonality;
   readonly industry: IndustryClassification;
+  /**
+   * The named compositions this page uses, from `lib/design/patterns.ts`.
+   *
+   * Ids rather than objects, so the artifact stays small and a diff between two
+   * runs reads as a list of design decisions that changed.
+   */
+  readonly patterns: readonly string[];
   readonly tokens: DesignTokens;
   readonly layout: LayoutPlan;
   readonly imagery: ImageStrategy;

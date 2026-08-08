@@ -22,6 +22,20 @@
     ],
     "rationale": "Maps lists the business as \"Law firm\", which matches \"law\"."
   },
+  "patterns": [
+    "hero-editorial-split",
+    "type-grotesque-authority",
+    "editorial-statement-break",
+    "marquee-verified-facts",
+    "marquee-wordmark",
+    "gallery-edited-grid",
+    "break-ground-shift",
+    "break-detail-rule",
+    "closing-invitation",
+    "closing-orphan-guard",
+    "motion-enter-rise",
+    "motion-hover-response"
+  ],
   "tokens": {
     "color": {
       "ramps": {

@@ -22,6 +22,20 @@
     ],
     "rationale": "Maps lists the business as \"Bakery\", which matches \"bakery\"."
   },
+  "patterns": [
+    "hero-cinematic",
+    "type-editorial-serif",
+    "editorial-statement-break",
+    "marquee-verified-facts",
+    "marquee-wordmark",
+    "gallery-edited-grid",
+    "break-ground-shift",
+    "break-detail-rule",
+    "closing-invitation",
+    "closing-orphan-guard",
+    "motion-enter-rise",
+    "motion-hover-response"
+  ],
   "tokens": {
     "color": {
       "ramps": {
@@ -184,12 +198,13 @@
     },
     "typography": {
       "heading": {
-        "family": "Nunito Sans",
-        "stack": "\"Nunito Sans\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-        "character": "sans",
+        "family": "Lora",
+        "stack": "\"Lora\", Georgia, \"Iowan Old Style\", \"Times New Roman\", Times, serif",
+        "character": "serif",
         "weights": [
-          600,
-          700
+          400,
+          500,
+          600
         ]
       },
       "body": {
@@ -211,7 +226,7 @@
           "maxRem": 3.052,
           "lineHeight": 1.05,
           "letterSpacing": -0.01,
-          "weight": 700
+          "weight": 600
         },
         "h1": {
           "name": "h1",
@@ -219,7 +234,7 @@
           "maxRem": 2.441,
           "lineHeight": 1.05,
           "letterSpacing": -0.01,
-          "weight": 700
+          "weight": 600
         },
         "h2": {
           "name": "h2",
@@ -227,7 +242,7 @@
           "maxRem": 1.953,
           "lineHeight": 1.15,
           "letterSpacing": -0.005,
-          "weight": 700
+          "weight": 600
         },
         "h3": {
           "name": "h3",
@@ -235,7 +250,7 @@
           "maxRem": 1.563,
           "lineHeight": 1.25,
           "letterSpacing": -0.005,
-          "weight": 600
+          "weight": 400
         },
         "h4": {
           "name": "h4",
@@ -243,7 +258,7 @@
           "maxRem": 1.25,
           "lineHeight": 1.35,
           "letterSpacing": 0,
-          "weight": 600
+          "weight": 400
         },
         "bodyLarge": {
           "name": "bodyLarge",
@@ -283,7 +298,7 @@
           "maxRem": 0.716,
           "lineHeight": 1.5,
           "letterSpacing": 0.12,
-          "weight": 600
+          "weight": 400
         }
       },
       "measureCh": 66,
@@ -581,6 +596,7 @@
     "semanticLandmarks": true
   },
   "notes": [
+    "Headings are set in Lora: the bakery category on the friendly direction earns a display face, and the theme pairs one sans for both roles.",
     "Sections were reordered for the bakery category; content itself is unchanged."
   ]
 }

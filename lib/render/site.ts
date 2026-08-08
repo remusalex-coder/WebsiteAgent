@@ -113,6 +113,8 @@ function renderOrder(plan: LayoutPlan | null, count: number): readonly number[] 
  */
 const NAV_LABELS: Readonly<Record<SectionKind, string>> = {
   hero: 'Top',
+  // Empty: a statement band is a moment in the page, not a destination in the nav.
+  statement: '',
   about: 'About',
   services: 'Services',
   menu: 'Menu',

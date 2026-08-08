@@ -48,6 +48,7 @@ type BulletLayout = 'cards' | 'quotes' | 'list';
 
 const BULLET_LAYOUTS: Readonly<Record<SectionKind, BulletLayout>> = {
   hero: 'list',
+  statement: 'list',
   about: 'list',
   services: 'cards',
   menu: 'cards',
@@ -825,6 +826,30 @@ const VARIANTS: Readonly<Record<SectionVariant, VariantRenderer>> = {
  * becomes a label and the sentence becomes the statement, which is the shape a
  * designer would have reached for.
  */
+/**
+ * The statement band: one sentence, alone, at display size.
+ *
+ * Deliberately the smallest renderer in this file. The pattern
+ * `editorial-statement-break` says the band carries one sentence and nothing
+ * else, and the temptation to add a label above it, a rule under it or a mark
+ * beside it is exactly what turns an interruption back into a heading.
+ *
+ * A `<p>` rather than a `<blockquote>`: the sentence is the business's own
+ * prose from its own site, not a quotation of somebody else, and marking it up
+ * as a quote would tell a screen reader it is attributed when it is not.
+ */
+function renderPronouncement(section: WebsiteSection): Html {
+  const line = section.body.trim();
+  if (line === '') return empty;
+  // The size is derived from the length, so a short line is enormous and a long
+  // one settles near the heading step instead of becoming a large paragraph.
+  return element(
+    'p',
+    { class: 'pronouncement', style: `--statement-length: ${Math.max(line.length, 14)}` },
+    text(line),
+  );
+}
+
 function renderStatement(section: WebsiteSection, ctx: SectionContext): Html {
   const line = section.body.trim() === ''
     ? (section.subheading ?? '').trim()
@@ -1116,9 +1141,11 @@ export function renderSection(section: WebsiteSection, ctx: SectionContext): Htm
 
   const inner = isHero
     ? HEROES[heroVariant](section, ctx, images)
-    : plan.frame === 'statement'
-      ? renderStatement(section, ctx)
-      : (() => {
+    : section.kind === 'statement'
+      ? renderPronouncement(section)
+      : plan.frame === 'statement'
+        ? renderStatement(section, ctx)
+        : (() => {
           const content = (VARIANTS[plan.variant] ?? VARIANTS.stack)(
             { section, ctx, images, columns: plan.columns },
           );
@@ -1147,7 +1174,16 @@ export function renderSection(section: WebsiteSection, ctx: SectionContext): Htm
     {
       id: ctx.id,
       class: classes.join(' '),
-      'aria-labelledby': ctx.headingId,
+      /*
+       * The statement band has no heading, on purpose — a label above the
+       * sentence would be a claim the business never made. So it cannot point
+       * `aria-labelledby` at one: that would name an element that is not in the
+       * document, and a landmark labelled by a missing id is announced as
+       * unlabelled with a console error behind it.
+       */
+      ...(section.kind === 'statement'
+        ? { 'aria-label': 'In their own words' }
+        : { 'aria-labelledby': ctx.headingId }),
       'data-variant': isHero ? heroVariant : plan.variant,
       'data-frame': isHero ? 'stacked' : plan.frame,
       'data-emphasis': plan.emphasis,

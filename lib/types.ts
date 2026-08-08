@@ -464,6 +464,15 @@ export interface BusinessStrategy {
 
 export type SectionKind =
   | 'hero'
+  /**
+   * One sentence of the business's own words, set large, alone in a band.
+   *
+   * A section rather than a renderer flourish, because the sentence is
+   * *content* and has to be chosen where the rest of the prose is chosen — so
+   * that it can be taken out of the passage it came from and never printed
+   * twice. See `editorial-statement-break` in `lib/design/patterns.ts`.
+   */
+  | 'statement'
   | 'about'
   | 'services'
   | 'menu'
@@ -541,6 +550,16 @@ export interface WebsiteContent {
    * offer one.
    */
   readonly trust: readonly TrustSignal[];
+  /**
+   * Short verified facts, for a rule across the page.
+   *
+   * Code-owned like `trust`, and for the same reason: a marquee is a band with
+   * room in it, and room is what a model fills with adjectives. Every entry is
+   * a fact the profile proved — the category, the locality, the rating, a
+   * stated attribute — and each also appears somewhere the reader can check, so
+   * nothing is stated only here.
+   */
+  readonly facts: readonly string[];
   readonly seo: SeoMetadata;
   /** Facts the writer could not verify — surfaced rather than invented. */
   readonly unresolvedGaps: readonly string[];

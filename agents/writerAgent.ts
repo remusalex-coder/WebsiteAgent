@@ -1405,6 +1405,114 @@ function splitLead(passage: string): { lead: string; rest: string } {
   return lead !== undefined && rest !== undefined ? { lead, rest } : { lead: trimmed, rest: '' };
 }
 
+/**
+ * One sentence worth setting large, taken out of the passage it came from.
+ *
+ * ## What this is for
+ *
+ * The Tartine benchmark scored storytelling 3/10, and the reason was structural
+ * rather than literary: the page had prose and no *moment*. Every word the
+ * business had said arrived in one grey column at one size, so nothing in the
+ * middle of the page was louder than anything else, and a reader scrolling past
+ * had nothing to catch on.
+ *
+ * A statement band fixes that with no new words. The business has already
+ * written the sentence; the page has simply never treated any sentence as more
+ * important than its neighbours.
+ *
+ * ## Why the candidates are only the edges of paragraphs
+ *
+ * The sentence has to be *removed* from where it was, or the page prints it
+ * twice — and lifting one out of the middle of a paragraph leaves a hole a
+ * reader can feel, because the sentences either side were written to touch.
+ *
+ * Taking only the first or last sentence of a paragraph means the remainder
+ * always still begins and ends at a boundary the author chose. It costs a few
+ * candidates and buys prose that survives the edit.
+ *
+ * ## What makes one sentence better than another
+ *
+ * A statement is a claim the business makes about itself, so first person is
+ * the strongest signal available without understanding the words: "It's our job
+ * as bakers to make it count" is a statement and "Open Thursday to Sunday" is
+ * not. Length does the rest of the work — long enough to say something, short
+ * enough to set at display size without becoming a paragraph in a large font.
+ *
+ * Anything carrying a digit is rejected outright. Prices, addresses, phone
+ * numbers and opening times are facts that belong in a detail list, and a fact
+ * set at 90px reads as a claim.
+ *
+ * Returns `null` rather than reaching for a weak sentence. A page with no
+ * statement band is a page that reads normally; a page with a limp one has a
+ * hole in the middle of it with a small sentence in the hole.
+ */
+export function pullStatement(
+  paragraphs: readonly string[],
+): { statement: string; remainder: readonly string[] } | null {
+  const MIN = 18;
+  const MAX = 130;
+
+  let best: { text: string; index: number; score: number } | null = null;
+
+  paragraphs.forEach((paragraph, index) => {
+    const sentences = paragraph
+      .split(/(?<=[.!?])\s+/)
+      .map((sentence) => sentence.trim())
+      .filter((sentence) => sentence !== '');
+    if (sentences.length < 2) return;
+
+    // Only the edges: whatever is taken, what is left still starts and ends
+    // where the author put a full stop.
+    const edges = [
+      { text: sentences[0] ?? '', at: 0 },
+      { text: sentences[sentences.length - 1] ?? '', at: sentences.length - 1 },
+    ];
+
+    for (const edge of edges) {
+      const value = edge.text;
+      if (value.length < MIN || value.length > MAX) continue;
+      if (value.endsWith('?')) continue;
+      if (/\d/.test(value)) continue;
+      /*
+       * A sentence that opens like a question and does not end as one is
+       * broken text, not a statement.
+       *
+       * Tartine's own about page contains **"What made us we make everyday."** —
+       * two clauses of a sentence that lost its middle somewhere between the
+       * CMS and the rendered page. It scored highest of every candidate,
+       * because it is short and first person, and the first run set it at 90px
+       * across the middle of the page.
+       *
+       * The signal is mechanical and general: crawled prose is full of
+       * fragments, and an interrogative opening with a full stop at the end is
+       * the most reliable shape of one. It costs the occasional legitimate
+       * rhetorical sentence, which is a fair price for never enlarging a
+       * fragment to display size.
+       */
+      if (/^(what|why|how|who|when|where|which)\b/i.test(value)) continue;
+
+      const firstPerson = /\b(we|our|us|i'm|we're|it's our)\b/i.test(value);
+      // Shorter is stronger at display size, so length counts against the score
+      // rather than for it, and first person outweighs it.
+      const score = (firstPerson ? 100 : 0) + Math.max(0, MAX - value.length);
+      if (best === null || score > best.score) {
+        best = { text: value, index, score };
+      }
+    }
+  });
+
+  if (best === null) return null;
+  const chosen: { text: string; index: number; score: number } = best;
+
+  const remainder = paragraphs
+    .map((paragraph, index) =>
+      index === chosen.index ? paragraph.replace(chosen.text, '').replace(/\s+/g, ' ').trim() : paragraph,
+    )
+    .filter((paragraph) => paragraph !== '');
+
+  return { statement: chosen.text, remainder };
+}
+
 /** Sentence case for a category Maps writes lower-case, e.g. "3-star hotel". */
 function asHeading(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -1636,12 +1744,42 @@ export function composeBaseline(profile: BusinessProfile): WebsiteContent {
   // About, from whichever source had prose. The listing's remainder if there
   // was one, otherwise the paragraphs following the narrative's opening line —
   // never both, and never the two interleaved.
-  const aboutBody =
+  const aboutParagraphs =
     rest !== ''
-      ? rest
-      : [narrativeLead?.rest ?? '', ...(narrative?.body ?? [])]
-          .filter((paragraph) => paragraph !== '')
-          .join('\n\n');
+      ? rest.split(/\n{2,}/)
+      : [narrativeLead?.rest ?? '', ...(narrative?.body ?? [])].filter(
+          (paragraph) => paragraph !== '',
+        );
+
+  /*
+   * One sentence is lifted out of the prose and set as its own band.
+   *
+   * Taken before `about` is built, so the sentence is removed from the passage
+   * rather than repeated after it — the same rule that already keeps the hero's
+   * opening line out of the about section. `pullStatement` returns `null` when
+   * nothing in the prose is worth the treatment, and the page then simply has
+   * no statement band.
+   *
+   * Emitted immediately after the hero. A statement works as the page's first
+   * turn — the reader has seen the place and is told one thing about it before
+   * being shown anything else — and the layout planner keeps it there.
+   */
+  const pulled = pullStatement(aboutParagraphs);
+  if (pulled !== null) {
+    sections.push({
+      kind: 'statement',
+      // No heading: the sentence is the whole section, and a label above it
+      // ("Our philosophy") would be a claim the business never made.
+      heading: '',
+      subheading: '',
+      body: pulled.statement,
+      bullets: [],
+      ctaLabel: '',
+      ctaTarget: 'none',
+    });
+  }
+
+  const aboutBody = (pulled?.remainder ?? aboutParagraphs).join('\n\n');
   if (aboutBody !== '') {
     sections.push({
       kind: 'about',
@@ -1946,6 +2084,68 @@ export function groundTestimonials(
   return at === -1
     ? [...sections, inserted]
     : [...sections.slice(0, at), inserted, ...sections.slice(at)];
+}
+
+/* ------------------------------------------------------------------ */
+/* Verified facts                                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The short facts a rule across the page may carry.
+ *
+ * Built by code from the profile, never by a model, for the same reason
+ * testimonials are: a marquee is a band with room in it, and room is what a
+ * model fills with adjectives. "Handcrafted daily", "Loved by locals" and
+ * "Since 1987" are all things a generated page has offered when asked to fill a
+ * strip, and not one of them was in the data.
+ *
+ * Everything here is a fact the profile proved, and each also appears somewhere
+ * a reader can check — the category and locality are in the hero heading, the
+ * rating is in the contact block and the JSON-LD, the attributes are in the
+ * offerings list. Nothing is stated only in the marquee, which is what makes
+ * the band safe to hide from assistive technology when it is duplicated for the
+ * loop.
+ *
+ * Order is fixed and meaningful: what the business *is*, where it is, how it is
+ * rated, then what it offers. Capped at eight, because a rule longer than that
+ * stops being scannable and starts being a list.
+ */
+export function verifiedFacts(profile: BusinessProfile): readonly string[] {
+  const facts: string[] = [];
+
+  const category = profile.category?.value?.trim();
+  if (category !== undefined && category !== '') facts.push(asHeading(category));
+
+  const locality = profile.address?.value.locality?.trim();
+  if (locality !== undefined && locality !== '') facts.push(locality);
+
+  const rating = profile.rating?.value;
+  // The same 4.0 floor the trust bar uses: a low rating is not promoted to a
+  // lead, though it still reaches the contact block and the structured data.
+  if (rating !== undefined && rating >= 4.0) facts.push(`${rating} on Google`);
+
+  for (const attribute of profile.attributes) {
+    if (!attribute.available) continue;
+    const label = attribute.label.trim();
+    // The category again is not a second fact — "Bakery · Bakery" reads as a bug.
+    if (label === '' || label.toLowerCase() === (category ?? '').toLowerCase()) continue;
+    facts.push(label);
+  }
+
+  for (const service of profile.services) {
+    const name = service.name.trim();
+    if (name !== '') facts.push(name);
+  }
+
+  const seen = new Set<string>();
+  return facts
+    .filter((fact) => {
+      const key = fact.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 8);
 }
 
 /* ------------------------------------------------------------------ */
@@ -2281,6 +2481,7 @@ function assembleContent(
     },
     sections,
     trust: withoutEcho(trustSignals(profile), sections),
+    facts: verifiedFacts(profile),
     seo: {
       title: written.seo.title.trim(),
       description: written.seo.description.trim(),

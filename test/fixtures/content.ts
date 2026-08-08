@@ -179,6 +179,7 @@ export const fullContent: WebsiteContent = {
     { kind: 'category', label: 'Bakery in Lisboa', source: 'maps' },
     { kind: 'credential', label: 'Identifies as women-owned', source: 'maps' },
   ],
+  facts: ['Bakery', 'Lisboa', '4.8 on Google', 'Wheelchair-accessible entrance', 'Takeaway'],
   seo: {
     title: 'Padaria Ana & Sons — bakery in Lisboa',
     description: 'Sourdough, pastel de nata & coffee on Rua da Prata. Open Tuesday to Sunday.',
@@ -223,6 +224,7 @@ export const minimalContent: WebsiteContent = {
   // A listing that proved nothing produces no bar at all, rather than an empty
   // one — the minimal snapshot is what holds that.
   trust: [],
+  facts: [],
   seo: {
     title: 'Corner Shop',
     description: '',

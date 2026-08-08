@@ -125,6 +125,8 @@ export function chooseHero(
 /** Candidate variants per kind, best first, before content and theme filtering. */
 const CANDIDATES: Readonly<Record<SectionKind, readonly SectionVariant[]>> = {
   hero: ['stack'],
+  // A statement is one sentence in a band; the frame does the work, not a variant.
+  statement: ['stack'],
   about: ['split', 'editorial', 'stack'],
   services: ['bento', 'feature-grid', 'cards', 'alternating', 'list'],
   menu: ['list', 'cards', 'grid'],
@@ -361,6 +363,20 @@ function assignBackgrounds(designs: readonly Omit<SectionDesign, 'background' | 
       previous = 'canvas';
       continue;
     }
+    /*
+     * The statement band inverts, and the change of ground is half the effect.
+     *
+     * A sentence set large on the same surface as the section above it is a big
+     * heading; the same sentence on a dark field is an interruption. Inverted
+     * rather than `brand`, which the closing CTA already owns — one committed
+     * brand field per page, per `break-ground-shift`, so the close keeps its
+     * emphasis.
+     */
+    if (design.kind === 'statement') {
+      out.push('inverted');
+      previous = 'canvas';
+      continue;
+    }
 
     const next: SectionBackground = previous === 'canvas' ? 'subtle' : 'canvas';
     out.push(next);
@@ -394,6 +410,11 @@ function assignBackgrounds(designs: readonly Omit<SectionDesign, 'background' | 
  */
 const DEFAULT_ORDER: readonly SectionKind[] = [
   'hero',
+  // Directly after the hero, and before anything the reader has to work at.
+  // A statement is the page's first turn: the reader has seen the place, and is
+  // told one thing about it before being shown anything else. No industry names
+  // it, so this rank is the one it always gets — inherited from `hero`.
+  'statement',
   'about',
   'services',
   'menu',

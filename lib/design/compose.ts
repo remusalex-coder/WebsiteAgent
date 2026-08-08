@@ -21,6 +21,7 @@
  */
 
 import { classifyIndustry, defaultsFor } from './industries.js';
+import { selectPatterns } from './patterns.js';
 import { planLayout } from './layout.js';
 import { themeFor } from './themes.js';
 import {
@@ -214,6 +215,23 @@ function chooseDirection(
 
   return { direction, rationale, evidence };
 }
+
+/**
+ * The display face `type-editorial-serif` reaches for.
+ *
+ * Lora rather than a higher-contrast face like Playfair. The businesses this
+ * pattern applies to are bakeries, restaurants, cafés and hotels, and their
+ * headings are short trade phrases set over photographs of food and rooms — a
+ * warm text serif holds that at 76px, where a fashion serif's hairlines
+ * disappear against a busy image. It is already vendored at three weights, so
+ * this costs no new download and keeps the offline guarantee.
+ */
+const EDITORIAL_DISPLAY = {
+  family: 'Lora',
+  character: 'serif',
+  fallback: 'serif',
+  weights: [400, 500, 600],
+} as const;
 
 /* ------------------------------------------------------------------ */
 /* Mood and density                                                    */
@@ -420,6 +438,27 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
   const accessibility = accessibilityFor(options.accessibilityLevel ?? 'AA');
 
   /*
+   * The vocabulary this page is allowed to speak.
+   *
+   * Chosen after the industry and the direction, because both narrow which
+   * compositions suit the business — and before the tokens, because a pattern
+   * may reach back into them. `type-editorial-serif` does exactly that below.
+   *
+   * Every gate is answered by something already decided or already composed. A
+   * pattern whose `requires` is not met is simply not chosen, which is how a
+   * thin business gets a plainer page rather than a richer-looking one with
+   * invented copy in it.
+   */
+  const patterns = selectPatterns({
+    industry: industry.id,
+    direction: chosen.direction,
+    images: content.sections.reduce((total, section) => total + section.images.length, 0),
+    facts: content.facts.length,
+    prose: content.sections.reduce((total, section) => total + section.body.length, 0),
+    sections: content.sections.length,
+  });
+
+  /*
    * A colour observed beats a colour inferred.
    *
    * The order matters more than it looks. `findBrandColor` reads the writer's
@@ -441,7 +480,42 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
   });
   notes.push(...color.notes);
 
-  const typography = buildTypography(theme, density);
+  /*
+   * A selected pattern has to change the page, or it is documentation.
+   *
+   * `type-editorial-serif` is the first pattern that reaches back into the
+   * tokens, and it is the one the benchmark most needs: typography scored 4/10,
+   * and the single largest reason was that a craft bakery rendered every word
+   * on the page in one humanist sans, because that is what the `friendly` theme
+   * specifies for both roles.
+   *
+   * The theme is not wrong — `friendly` is the right direction for a great many
+   * small businesses, and a plain page is the correct default. What was missing
+   * was a way for the *industry and the direction together* to say that this
+   * particular business earns a display face. That judgement now lives in the
+   * pattern's `industries` and `directions` lists, where it can be reviewed,
+   * rather than being buried in a theme that eleven categories share.
+   *
+   * Only the heading role changes. The body face is what the visitor actually
+   * reads, the theme chose it for legibility, and swapping it would be a
+   * different and much riskier decision.
+   */
+  const headingOverride = patterns.includes('type-editorial-serif')
+    && theme.headingFont.character === 'sans'
+    ? EDITORIAL_DISPLAY
+    : null;
+
+  if (headingOverride !== null) {
+    notes.push(
+      `Headings are set in ${headingOverride.family}: the ${industry.id} category on the `
+      + `${chosen.direction} direction earns a display face, and the theme pairs one sans for both roles.`,
+    );
+  }
+
+  const typography = buildTypography(
+    headingOverride === null ? theme : { ...theme, headingFont: headingOverride },
+    density,
+  );
   const spacing = buildSpacing(theme, density);
   const radius = buildRadius(theme);
   const elevation = buildElevation(
@@ -463,6 +537,7 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     version: 1,
     personality,
     industry,
+    patterns,
     tokens: { color: color.system, typography, spacing, radius, elevation, motion },
     layout: layout.plan,
     imagery: imageryFor(theme, defaults.imageReliance, layout.plan.hero),

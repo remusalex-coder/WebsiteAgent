@@ -7,11 +7,11 @@
  * nothing else, which is what keeps them independently testable.
  */
 
-import { element, join, jsonLd, raw, text } from './html.js';
+import { element, empty, join, jsonLd, raw, text } from './html.js';
 import { safeHref } from './assets.js';
 
 import type { Html } from './html.js';
-import type { ImageAsset, SectionKind, WebsiteContent } from '../types.js';
+import type { ImageAsset, SectionKind, TrustSignal, WebsiteContent } from '../types.js';
 import type { AssetPlan, ResolvedImage } from './assets.js';
 import type { WebsiteDesign } from '../design/types.js';
 import type { ResolvedRenderOptions } from './types.js';
@@ -271,7 +271,99 @@ function renderFooter(input: DocumentInput): Html {
     element('div', { class: 'container' }, [
       element('div', { class: 'site-footer__grid' }, columns),
       colophon,
+      renderWordmark(content.businessName),
     ]),
+  );
+}
+
+/**
+ * The business's name at the foot of the page, at a size nothing else reaches.
+ *
+ * `marquee-wordmark`. It invents nothing — the name is already in the header,
+ * the `<title>`, the colophon and the structured data — and it gives the page a
+ * full stop instead of letting it stop.
+ *
+ * `aria-hidden`, and that is the point rather than an oversight: the name has
+ * already been announced three times above this, and a screen reader hearing it
+ * a fourth time gains nothing. It is set as real text so it stays crisp and
+ * selectable-looking at any zoom, and marked decorative so it is silent.
+ *
+ * Sized by character count in CSS, which needs the count here.
+ */
+function renderWordmark(businessName: string): Html | null {
+  const name = businessName.trim();
+  if (name === '') return null;
+  return element(
+    'p',
+    {
+      class: 'wordmark',
+      'aria-hidden': 'true',
+      style: `--wordmark-length: ${Math.max(name.length, 6)}`,
+    },
+    text(name),
+  );
+}
+
+/**
+ * A rule of verified facts, directly under the hero.
+ *
+ * `marquee-verified-facts`. Every item is a `TrustSignal`, which code builds
+ * from the profile and a model may never write — so the band cannot contain a
+ * claim the business has not proved. Where fewer than three exist the band is
+ * not rendered at all, because a marquee with two items in it does not read as
+ * a rule, it reads as a mistake.
+ *
+ * The track is duplicated so the horizontal loop has no seam. The copy is
+ * `aria-hidden`, so the facts are announced once.
+ */
+function renderFactsBar(facts: readonly string[]): Html | null {
+  const labels = facts.map((fact) => fact.trim()).filter((label) => label !== '');
+  if (labels.length < 3) return null;
+
+  /*
+   * The facts are repeated until the track is wider than any viewport.
+   *
+   * A business with three verified facts produced a 496px track on a 1440px
+   * page, so the band was mostly empty and the loop showed a visible gap every
+   * few seconds. Repeating to a floor of twelve items fills the widest common
+   * desktop width whatever the business has, and costs a handful of spans.
+   *
+   * The repeats are inside each track rather than being more tracks, so the
+   * "shift by half" that makes the loop seamless still holds.
+   */
+  const REPEAT_FLOOR = 12;
+  const repeats = Math.max(1, Math.ceil(REPEAT_FLOOR / labels.length));
+  const items = Array.from({ length: repeats }, () => labels).flat();
+
+  const run = (): Html =>
+    element(
+      'div',
+      { class: 'facts-bar__track' },
+      items.map((label) => element('span', { class: 'facts-bar__item' }, text(label))),
+    );
+
+  /*
+   * The whole band is decorative, and that is the honest marking.
+   *
+   * The first version labelled it as a landmark and hid only the duplicate
+   * track. Once the facts were repeated to fill the width, that left a screen
+   * reader hearing "Bakery, San Francisco, 4.5 on Google" four times in a row —
+   * which is worse than not hearing it at all.
+   *
+   * Marking the band `aria-hidden` is correct rather than a workaround,
+   * because `verifiedFacts` only ever contains facts that are also stated
+   * somewhere a reader can act on: the category and locality are in the hero
+   * heading, the rating is in the contact block and the structured data, and
+   * the attributes are in the offerings list. Nothing is lost by silencing a
+   * band that says what the page has already said.
+   *
+   * The corollary is a rule the composer has to keep: **nothing may appear
+   * only in the marquee.**
+   */
+  return element(
+    'div',
+    { class: 'facts-bar', 'aria-hidden': 'true' },
+    element('div', { class: 'facts-bar__viewport' }, [run(), run()]),
   );
 }
 
@@ -295,7 +387,26 @@ export function renderDocument(input: DocumentInput): string {
     element('a', { class: 'skip-link', href: '#main' }, text('Skip to content')),
     renderHeader(input, logo),
     element('main', { id: 'main', class: 'site-main', tabindex: '-1' },
-      input.sections.length === 0 ? renderEmptyMain(content) : join(input.sections, '\n'),
+      input.sections.length === 0
+        ? renderEmptyMain(content)
+        : join(
+            /*
+             * The facts rule goes directly after the hero, which is the one
+             * place on the page where a visitor is already deciding. Inserted
+             * here rather than emitted as a section because it is not one — it
+             * has no heading, no landmark of its own and no place in the
+             * navigation, and making it a `WebsiteSection` would put it in all
+             * three.
+             */
+            design === null
+              ? input.sections
+              : [
+                  ...input.sections.slice(0, 1),
+                  renderFactsBar(content.facts) ?? empty,
+                  ...input.sections.slice(1),
+                ],
+            '\n',
+          ),
     ),
     renderFooter(input),
   ]);

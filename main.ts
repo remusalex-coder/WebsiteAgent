@@ -247,7 +247,7 @@ const ARTIFACT_DEFAULTS = {
   },
   normalize: { attributes: [], description: null, reviews: [] },
   analyze: {},
-  write: { trust: [] },
+  write: { trust: [], facts: [] },
   design: {},
   render: {},
   deploy: {},
