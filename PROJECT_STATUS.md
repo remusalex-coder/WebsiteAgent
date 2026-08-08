@@ -137,6 +137,21 @@ worked around and reported in `site.warnings`. See [docs/renderer.md](docs/rende
 
 Run standalone with `npm run render -- output/<runId>/5-content.json`.
 
+**Baseline composition (a second engine, not a stage)** — `composeBaseline` builds a
+complete, truthful `WebsiteContent` from `BusinessProfile` alone: the listing's
+description, the attributes it states, the services the site named, the photographs, the
+hours, the contacts. Every string was already in the profile, so nothing can be wrong.
+Headings are functional rather than distinctive, which is the honest limit of composing
+without writing and precisely the gap the model fills.
+
+Three reasons it exists: it is the floor the model must beat, it means an upstream rate
+limit produces a plainer page rather than **no** page, and it is the shape of guided
+completion — a draft plus an honest list of what the owner still needs to supply. It
+shares `assembleContent` with the writer, so both engines produce identical page
+furniture.
+
+    npx tsx main.ts --compose <runId>
+
 ## Pending
 
 **6. Deployment** — a rendered site → a live URL. Consumes `renderSite` output
@@ -145,10 +160,15 @@ remaining stub.**
 
 **Thin-profile strategy (PRD-007, P0).** Substantially addressed 2026-08-08 by making
 the listing a content source. Measured on the benchmark hotel, which has no website:
-0 → 11 photographs, 0 → 610 characters of editorial prose, 0 → 12 stated attributes.
-**The model stages of that run could not be re-verified** — the Gemini free-tier daily
-quota was exhausted — so the rendered-page effect is not yet measured. See
-`NEXT_SESSION.md`.
+0 → 610 characters of editorial prose, 0 → 12 stated attributes, 0 → 1 photograph.
+
+> **Correction.** An earlier note in this file claimed 11 photographs. That was wrong,
+> and visual review is what caught it: ten of the eleven were other hotels, swept in
+> from the "Similar hotels nearby" rail Maps renders in the same pane. The generated
+> page showed four named competitors in its gallery. Photographs are now scoped to the
+> business by name and the honest count is one.
+
+The page is now generated and reviewed — see `output/shots/`.
 
 ## Known limitations
 
@@ -218,7 +238,7 @@ Also:
 - ~~**No trust signals rendered anywhere (PRD-008).**~~ **Resolved 2026-08-08** — `TrustSignal[]` on `WebsiteContent`, built by code from verified profile data, rendered as a trust bar under the hero's call to action. 5/5 benchmark sites now show one, no overflow at 390px.
 - **The two stylesheets override each other silently (INF-007).** Twice now.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
-- **Coverage is the renderer, the design layer, the listing source, and the writer's brief and trust engine.** `npm test` runs 282 assertions. The agents' own orchestration still has none.
+- **Coverage is the renderer, the design layer, the listing source, and the writer's brief and trust engine.** `npm test` runs 289 assertions. The agents' own orchestration still has none.
 - **Artifact migrations are manual.** `ARTIFACT_DEFAULTS` in `main.ts` backfills fields a contract gained after a run was written; forgetting an entry breaks `--from=<stage>` on every older run with a `TypeError` far from the cause. A contract change and its default are two edits that must not drift.
 - **Older suites still live outside the repo** — discovery parsers, normalizer primitives, merge/dedup/validation, analyst schema and analyst brief remain in a scratchpad rather than `test/`.
 - **No accessibility or HTML validation in CI.** The markup is checked by assertions about the string, not by axe or the W3C validator. A real audit would be worth one pass before the first deploy.

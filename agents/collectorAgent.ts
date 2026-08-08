@@ -645,7 +645,9 @@ async function collectListing(
   if (!listingUrl) return EMPTY_HARVEST;
 
   try {
-    return await session.withPage((page) => harvestMapsListing(page, { listingUrl }, logger));
+    return await session.withPage((page) =>
+      harvestMapsListing(page, { listingUrl, businessName: identity.name }, logger),
+    );
   } catch (error) {
     logger.warn('listing could not be read for content', {
       listingUrl,

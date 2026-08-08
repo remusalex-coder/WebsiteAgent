@@ -20,7 +20,7 @@ import { discoveryAgent, discoverStandalone } from './agents/discoveryAgent.js';
 import { collectorAgent } from './agents/collectorAgent.js';
 import { normalizerAgent } from './agents/normalizerAgent.js';
 import { businessAnalystAgent } from './agents/businessAnalystAgent.js';
-import { writerAgent } from './agents/writerAgent.js';
+import { composeBaseline, writerAgent } from './agents/writerAgent.js';
 import { designAgent } from './agents/designAgent.js';
 import { lovableAgent } from './agents/lovableAgent.js';
 
@@ -37,6 +37,7 @@ import type { BrowserSession } from './lib/browser.js';
 import type { Platform } from './lib/platform/platform.js';
 import type {
   AgentContext,
+  BusinessProfile,
   DiscoveryInput,
   PipelineResult,
   WebsiteContent,
@@ -472,6 +473,8 @@ const USAGE = [
   '  website-agent --discovery-only <maps-url>    stage 1 only, JSON to stdout',
   '  website-agent --render [--out=<dir>] <content.json>',
   '                                               render a saved spec to a site',
+  '  website-agent --compose <runId>              build a page from verified data only,',
+  '                                               no model call, then render it',
   '',
   `Stages: ${STAGES.join(', ')}`,
 ].join('\n');
@@ -487,7 +490,8 @@ type CliArgs =
   | { readonly mode: 'pipeline'; readonly input: DiscoveryInput }
   | { readonly mode: 'resume'; readonly runId: string; readonly from: StageName }
   | { readonly mode: 'discovery'; readonly input: DiscoveryInput }
-  | { readonly mode: 'render'; readonly contentPath: string; readonly outDir: string | null };
+  | { readonly mode: 'render'; readonly contentPath: string; readonly outDir: string | null }
+  | { readonly mode: 'compose'; readonly runId: string };
 
 /** Reads `--name=value`, trimmed; `undefined` when the flag is absent. */
 function flagValue(flags: readonly string[], name: string): string | undefined {
@@ -516,6 +520,9 @@ function parseArgs(argv: readonly string[]): CliArgs {
       );
     }
     return { mode: 'resume', runId: positional, from };
+  }
+  if (flags.includes('--compose')) {
+    return { mode: 'compose', runId: positional };
   }
   if (flags.includes('--render')) {
     return { mode: 'render', contentPath: positional, outDir: out ? out : null };
@@ -622,9 +629,68 @@ export async function renderStandalone(
   return { targetDir, written, warnings };
 }
 
+/**
+ * Composes a run's page from its profile alone, then renders it.
+ *
+ * No provider, no key, no network. It reads `3-profile.json`, writes the same
+ * `5-content.json` the writer would have written, and renders beside it — so
+ * the artifact is a first-class spec that `--render` and the design stage
+ * treat identically to a model-written one.
+ *
+ * The point is that a business that has been collected always has a page.
+ * Before this, an upstream rate limit meant no output at all rather than a
+ * plainer one, and that is not a property a platform selling websites can have.
+ */
+export async function composeStandalone(
+  runId: string,
+  config: AppConfig,
+): Promise<{ targetDir: string; content: WebsiteContent; warnings: readonly string[] }> {
+  const outputDir = path.join(config.outputDir, runId);
+  try {
+    await fs.access(outputDir);
+  } catch (error) {
+    throw new InvalidInputError(`No run "${runId}" in ${config.outputDir}`, SOURCE, error);
+  }
+
+  const profile = await readArtifact<BusinessProfile>(outputDir, 'normalize');
+  const content = composeBaseline(profile);
+
+  await fs.writeFile(
+    path.join(outputDir, `${ARTIFACTS.write}.json`),
+    `${JSON.stringify(content, null, 2)}\n`,
+    'utf8',
+  );
+
+  const design = await loadDesignBeside(outputDir);
+  const site = renderSite(content, design === null ? {} : { design });
+  const targetDir = path.join(outputDir, SITE_DIR_NAME);
+  const { missingAssets } = await writeRenderedSite(site, { sourceDir: outputDir, targetDir });
+
+  return {
+    targetDir,
+    content,
+    warnings: [
+      ...site.warnings,
+      ...missingAssets.map((asset) => `asset not found in ${outputDir}: ${asset}`),
+    ],
+  };
+}
+
 async function main(): Promise<void> {
   const config = loadConfig();
   const args = parseArgs(process.argv.slice(2));
+
+  if (args.mode === 'compose') {
+    const { targetDir, content, warnings } = await composeStandalone(args.runId, config);
+    for (const warning of warnings) process.stderr.write(`warning: ${warning}\n`);
+    process.stdout.write(
+      `${content.sections.length} sections, ` +
+        `${content.sections.reduce((total, section) => total + section.images.length, 0)} images, ` +
+        `${content.trust.length} trust signals\n` +
+        `${path.join(targetDir, 'index.html')}\n`,
+    );
+    return;
+  }
 
   if (args.mode === 'render') {
     const { targetDir, warnings } = await renderStandalone(args.contentPath, args.outDir);

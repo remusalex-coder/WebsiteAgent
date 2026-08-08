@@ -1182,105 +1182,7 @@ export const writerAgent: WriterAgent = {
       warnings.push(message);
     };
 
-    const drafted = dedupeSections(written.sections, warn);
-    const images = assignImages(drafted, profile);
-
-    // Anchors are computed the way the renderer computes them, from the same
-    // function and in the same written order, so a link down the page always
-    // lands on a section that exists. The renderer reorders sections but never
-    // renames their ids, so this survives the design stage's reordering.
-    const ids = assignIds(
-      drafted.map((section) => ({
-        kind: section.kind,
-        heading: section.heading,
-        subheading: null,
-        body: '',
-        bullets: [],
-        images: [],
-        callToAction: null,
-      })),
-    );
-    const anchors = new Map<SectionKind, string>(
-      drafted.map((section, index) => [section.kind, ids[index] ?? '']),
-    );
-
-    const sections: readonly WebsiteSection[] = drafted.map((section, index) => {
-      // Hours and contact are data, not prose. Whatever the model put in their
-      // bullets is replaced with the profile's own values.
-      const bullets =
-        section.kind === 'hours'
-          ? hourBullets(profile.hours)
-          : section.kind === 'contact'
-            ? contactBullets(profile)
-            : section.bullets.map((bullet) => bullet.trim()).filter((bullet) => bullet !== '');
-
-      const label = section.ctaLabel.trim();
-      const href = label === '' ? null : resolveCta(section.ctaTarget, profile, anchors);
-      if (label !== '' && section.ctaTarget !== 'none' && href === null) {
-        warn(
-          `section "${section.kind}" asked for a "${section.ctaTarget}" call to action, which the profile cannot support; the button was dropped`,
-        );
-      }
-
-      const subheading = section.subheading.trim();
-
-      return {
-        kind: section.kind,
-        heading: section.heading.trim(),
-        subheading: subheading === '' ? null : subheading,
-        body: section.body.trim(),
-        bullets,
-        images: images.get(index) ?? [],
-        callToAction: href === null ? null : { label, href },
-      };
-    });
-
-    const heroImage = profile.images.hero ?? profile.images.gallery[0] ?? null;
-
-    // Gaps the profile itself proves, added to the ones the model reported. A
-    // model can only report a gap it noticed; these are the ones the data knows
-    // about, and they are the ones an owner can actually answer.
-    const derivedGaps: string[] = [];
-    if (profile.hours.length === 0) {
-      derivedGaps.push('No opening hours are published on the listing or the site.');
-    } else if (profile.hours.length < 7) {
-      derivedGaps.push(
-        `Opening hours are only known for ${profile.hours.length} of seven days; the rest were not published where the pipeline could read them.`,
-      );
-    }
-    if (profile.phones.length === 0) derivedGaps.push('No phone number was found for this business.');
-    if (profile.emails.length === 0) derivedGaps.push('No email address was found for this business.');
-    if (profile.address === null) derivedGaps.push('No street address was found for this business.');
-    if (profile.rating !== null && profile.reviewCount === null) {
-      derivedGaps.push(
-        'The star rating is shown on the page but not marked up as structured data: the review count is missing and schema.org requires both.',
-      );
-    }
-    for (const issue of profile.validation.issues) {
-      derivedGaps.push(`${issue.field}: ${issue.message}`);
-    }
-
-    const content: WebsiteContent = {
-      // The verified name, not the model's rendering of it.
-      businessName: profile.name.value,
-      tagline: written.tagline.trim(),
-      voice: {
-        tone: written.voice.tone.trim(),
-        palette: written.voice.palette,
-        typography: { heading: written.voice.headingFont, body: written.voice.bodyFont },
-      },
-      sections,
-      trust: trustSignals(profile),
-      seo: {
-        title: written.seo.title.trim(),
-        description: written.seo.description.trim(),
-        keywords: written.seo.keywords.map((keyword) => keyword.trim()).filter((keyword) => keyword !== ''),
-        structuredData: buildStructuredData(profile, heroImage?.url ?? null),
-      },
-      unresolvedGaps: Array.from(
-        new Set([...written.unresolvedGaps.map((gap) => gap.trim()).filter((gap) => gap !== ''), ...derivedGaps]),
-      ),
-    };
+    const content = assembleContent(written, profile, warn);
 
     for (const warning of [...warnings, ...groundingWarnings(content, profile)]) {
       logger.warn('writer output was corrected or is suspect', { warning });
@@ -1298,7 +1200,366 @@ export const writerAgent: WriterAgent = {
       unresolvedGaps: content.unresolvedGaps.length,
       artifact: filePath,
     });
-
     return content;
   },
 };
+
+/* ------------------------------------------------------------------ */
+/* Baseline composition                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The first sentence of a passage, and the rest.
+ *
+ * Splitting rather than summarising: both halves are the source's own words, so
+ * a hero line and the paragraphs under it can come from one description without
+ * either being written.
+ */
+function splitLead(passage: string): { lead: string; rest: string } {
+  const trimmed = passage.trim();
+  const match = /^(.{40,200}?[.!?])\s+([\s\S]+)$/.exec(trimmed);
+  const lead = match?.[1]?.trim();
+  const rest = match?.[2]?.trim();
+  return lead !== undefined && rest !== undefined ? { lead, rest } : { lead: trimmed, rest: '' };
+}
+
+/** Sentence case for a category Maps writes lower-case, e.g. "3-star hotel". */
+function asHeading(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/**
+ * A complete, truthful page composed from the profile alone — no model.
+ *
+ * ## Why this exists
+ *
+ * Three things, in order of how much they matter.
+ *
+ * **It is the floor.** Every string it emits was already in the profile: the
+ * listing's own description, the attributes it states, the services the site
+ * named, the photographs, the hours, the contact details. Nothing is written,
+ * so nothing can be wrong. The model's job is to beat this page, and having a
+ * floor is what makes "better" measurable.
+ *
+ * **It removes a single point of failure.** Until it existed, no provider meant
+ * no output at all — not a worse website, *nothing*. A platform that sells
+ * websites cannot have a dependency that turns an upstream rate limit into a
+ * blank page. The Gemini free-tier quota blocked every model stage across two
+ * sessions and four attempts, which is how the gap got noticed.
+ *
+ * **It is the shape of guided completion.** A deterministic draft plus an
+ * honest list of what is missing is exactly the flow the product needs for a
+ * business whose public information is exhausted: here is what we could build,
+ * here is what we still need from you. `unresolvedGaps` is already that list.
+ *
+ * ## What it deliberately does not do
+ *
+ * Headings are functional rather than distinctive — "What this place offers",
+ * not something only this business could say. That is the honest limit of
+ * composition without writing, and it is precisely the gap the model fills. A
+ * page from here is publishable in substance and plain in voice; it should read
+ * as a solid draft, never as a finished premium site.
+ */
+export function composeBaseline(profile: BusinessProfile): WebsiteContent {
+  const sections: DraftSection[] = [];
+  const warnings: string[] = [];
+
+  const category = profile.category?.value ?? null;
+  const locality = profile.address?.value.locality ?? null;
+  const description = profile.description?.value ?? '';
+  const { lead, rest } = splitLead(description);
+  const hasPhone = profile.phones.length > 0;
+
+  /** Phone first: a local business is called, not emailed. */
+  const primaryCta = hasPhone
+    ? { ctaLabel: 'Call us', ctaTarget: 'phone' as CtaTarget }
+    : profile.emails.length > 0
+      ? { ctaLabel: 'Email us', ctaTarget: 'email' as CtaTarget }
+      : { ctaLabel: '', ctaTarget: 'none' as CtaTarget };
+
+  // Hero. The heading says what the business is and where, which is the one
+  // thing a stranger needs first and the one thing the profile always proves.
+  const trade = category !== null ? asHeading(category) : profile.name.value;
+  sections.push({
+    kind: 'hero',
+    heading: locality !== null ? `${trade} in ${locality}` : trade,
+    subheading: '',
+    // The lead sentence sits here and the remainder goes to `about`, so the
+    // same passage is never printed twice.
+    body: lead,
+    bullets: [],
+    ...primaryCta,
+  });
+
+  if (rest !== '') {
+    sections.push({
+      kind: 'about',
+      heading: `About ${profile.name.value}`,
+      subheading: '',
+      body: rest,
+      bullets: [],
+      ctaLabel: '',
+      ctaTarget: 'none',
+    });
+  }
+
+  // What the business offers: its own service list where the site named one,
+  // otherwise the attributes the listing states. Never both — they overlap.
+  //
+  // The category is excluded even when it arrived as an attribute. "3-star
+  // hotel" is what this business *is*, and the normalizer may already have
+  // promoted it to the category; listing it again under "what this place
+  // offers" reads as a hotel offering hotels.
+  const stated = profile.attributes.filter(
+    (attribute) =>
+      attribute.available && attribute.label.toLowerCase() !== (category ?? '').toLowerCase(),
+  );
+  if (profile.services.length > 0) {
+    sections.push({
+      kind: 'services',
+      heading: 'What we offer',
+      subheading: '',
+      body: '',
+      bullets: profile.services
+        .slice(0, 8)
+        .map((service) => (service.description ? `${service.name} — ${service.description}` : service.name)),
+      ctaLabel: '',
+      ctaTarget: 'none',
+    });
+  } else if (stated.length > 0) {
+    sections.push({
+      kind: 'services',
+      heading: 'What this place offers',
+      subheading: '',
+      body: '',
+      // Verbatim labels. The unavailable ones were filtered above and must
+      // never reach a page, in either direction.
+      bullets: stated.slice(0, 10).map((attribute) => attribute.label),
+      ctaLabel: '',
+      ctaTarget: 'none',
+    });
+  }
+
+  // The gallery threshold matches the writer's: below four photographs a grid
+  // reads as an accident rather than a gallery.
+  if (profile.images.gallery.length >= 4) {
+    sections.push({
+      kind: 'gallery',
+      heading: 'Photographs',
+      subheading: '',
+      body: '',
+      bullets: [],
+      ctaLabel: '',
+      ctaTarget: 'none',
+    });
+  }
+
+  // Bullets left empty on purpose: `assembleContent` replaces them with the
+  // profile's own values, the same way it does for the model's draft.
+  if (profile.hours.length > 0) {
+    sections.push({
+      kind: 'hours',
+      heading: 'Opening hours',
+      subheading: '',
+      body: '',
+      bullets: [],
+      ctaLabel: '',
+      ctaTarget: 'none',
+    });
+  }
+
+  if (profile.address !== null || hasPhone || profile.emails.length > 0) {
+    sections.push({
+      kind: 'contact',
+      heading: 'Contact',
+      subheading: '',
+      body: '',
+      bullets: [],
+      ...primaryCta,
+    });
+  }
+
+  const seoTitle = [profile.name.value, category !== null && locality !== null ? `${category} in ${locality}` : null]
+    .filter((part): part is string => part !== null)
+    .join(' — ');
+
+  const draft: Draft = {
+    // Deliberately not a slogan. The eyebrow states the category, which is a
+    // fact; a tagline would be the first thing this function invented.
+    tagline: category !== null ? asHeading(category) : '',
+    // Left blank for the design stage to decide. A composed page has no voice
+    // to report, and guessing one would push the design somewhere the data
+    // does not support.
+    voice: { tone: '', headingFont: '', bodyFont: '', palette: [] },
+    sections,
+    seo: {
+      title: seoTitle,
+      // The listing's own first sentence is a better meta description than
+      // anything assembled from field names, and it is already public.
+      description: lead !== '' ? lead : seoTitle,
+      keywords: [category, locality].filter((part): part is string => part !== null),
+    },
+    unresolvedGaps: [
+      'This page was composed from verified data only, with no copywriting. Every line is a fact from the listing or the website; none of it was written for this business.',
+      ...(description === ''
+        ? ['No description of the business was available from any source, so the page has no narrative.']
+        : []),
+    ],
+  };
+
+  return assembleContent(draft, profile, (message) => warnings.push(message));
+}
+
+/**
+ * Drops a trust signal the hero already says.
+ *
+ * The bar sits immediately under the hero, so a signal repeating the headline
+ * is not reassurance — it is the same sentence twice, eight lines apart. The
+ * benchmark hotel rendered `3-star hotel` as its eyebrow, its `h1` and its
+ * trust bar, all in the first screen.
+ *
+ * Comparison is on the visible words rather than the exact string, so
+ * "3-star hotel in San Francisco" is caught by a headline reading
+ * "3-star hotel in San Francisco" whatever the punctuation and casing.
+ */
+function withoutEcho(
+  signals: readonly TrustSignal[],
+  sections: readonly WebsiteSection[],
+): readonly TrustSignal[] {
+  const hero = sections.find((section) => section.kind === 'hero');
+  if (hero === undefined) return signals;
+
+  const spoken = [hero.heading, hero.subheading ?? '']
+    .join(' ')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+  return signals.filter((signal) => {
+    const said = signal.label.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    return said === '' || !spoken.includes(said);
+  });
+}
+
+/**
+ * A draft plus the profile, assembled into the finished spec.
+ *
+ * Everything here is the part of a page the model does not get to decide:
+ * which photograph goes where, what the hours and contact rows say, where a
+ * call to action points, the trust bar, the JSON-LD, and the gaps the data
+ * itself proves. The model contributes prose and section order; this
+ * contributes every fact.
+ *
+ * It is a free function rather than inline in `run` because the model is not
+ * the only thing that can produce a draft — `composeBaseline` produces one from
+ * the profile alone, and the two must yield identical page furniture or the
+ * fallback would be a second, quietly different renderer.
+ */
+function assembleContent(
+  written: Draft,
+  profile: BusinessProfile,
+  warn: (message: string) => void,
+): WebsiteContent {
+  const drafted = dedupeSections(written.sections, warn);
+  const images = assignImages(drafted, profile);
+
+  // Anchors are computed the way the renderer computes them, from the same
+  // function and in the same written order, so a link down the page always
+  // lands on a section that exists. The renderer reorders sections but never
+  // renames their ids, so this survives the design stage's reordering.
+  const ids = assignIds(
+    drafted.map((section) => ({
+      kind: section.kind,
+      heading: section.heading,
+      subheading: null,
+      body: '',
+      bullets: [],
+      images: [],
+      callToAction: null,
+    })),
+  );
+
+  const anchors = new Map<SectionKind, string>(
+    drafted.map((section, index) => [section.kind, ids[index] ?? '']),
+  );
+
+  const sections: readonly WebsiteSection[] = drafted.map((section, index) => {
+    // Hours and contact are data, not prose. Whatever the model put in their
+    // bullets is replaced with the profile's own values.
+    const bullets =
+      section.kind === 'hours'
+        ? hourBullets(profile.hours)
+        : section.kind === 'contact'
+          ? contactBullets(profile)
+          : section.bullets.map((bullet) => bullet.trim()).filter((bullet) => bullet !== '');
+
+    const label = section.ctaLabel.trim();
+    const href = label === '' ? null : resolveCta(section.ctaTarget, profile, anchors);
+    if (label !== '' && section.ctaTarget !== 'none' && href === null) {
+      warn(
+        `section "${section.kind}" asked for a "${section.ctaTarget}" call to action, which the profile cannot support; the button was dropped`,
+      );
+    }
+
+    const subheading = section.subheading.trim();
+
+    return {
+      kind: section.kind,
+      heading: section.heading.trim(),
+      subheading: subheading === '' ? null : subheading,
+      body: section.body.trim(),
+      bullets,
+      images: images.get(index) ?? [],
+      callToAction: href === null ? null : { label, href },
+    };
+  });
+
+  const heroImage = profile.images.hero ?? profile.images.gallery[0] ?? null;
+
+  // Gaps the profile itself proves, added to the ones the model reported. A
+  // model can only report a gap it noticed; these are the ones the data knows
+  // about, and they are the ones an owner can actually answer.
+  const derivedGaps: string[] = [];
+  if (profile.hours.length === 0) {
+    derivedGaps.push('No opening hours are published on the listing or the site.');
+  } else if (profile.hours.length < 7) {
+    derivedGaps.push(
+      `Opening hours are only known for ${profile.hours.length} of seven days; the rest were not published where the pipeline could read them.`,
+    );
+  }
+  if (profile.phones.length === 0) derivedGaps.push('No phone number was found for this business.');
+  if (profile.emails.length === 0) derivedGaps.push('No email address was found for this business.');
+  if (profile.address === null) derivedGaps.push('No street address was found for this business.');
+  if (profile.rating !== null && profile.reviewCount === null) {
+    derivedGaps.push(
+      'The star rating is shown on the page but not marked up as structured data: the review count is missing and schema.org requires both.',
+    );
+  }
+  for (const issue of profile.validation.issues) {
+    derivedGaps.push(`${issue.field}: ${issue.message}`);
+  }
+
+  const content: WebsiteContent = {
+    // The verified name, not the model's rendering of it.
+    businessName: profile.name.value,
+    tagline: written.tagline.trim(),
+    voice: {
+      tone: written.voice.tone.trim(),
+      palette: written.voice.palette,
+      typography: { heading: written.voice.headingFont, body: written.voice.bodyFont },
+    },
+    sections,
+    trust: withoutEcho(trustSignals(profile), sections),
+    seo: {
+      title: written.seo.title.trim(),
+      description: written.seo.description.trim(),
+      keywords: written.seo.keywords.map((keyword) => keyword.trim()).filter((keyword) => keyword !== ''),
+      structuredData: buildStructuredData(profile, heroImage?.url ?? null),
+    },
+    unresolvedGaps: Array.from(
+      new Set([...written.unresolvedGaps.map((gap) => gap.trim()).filter((gap) => gap !== ''), ...derivedGaps]),
+    ),
+  };
+
+  return content;
+}

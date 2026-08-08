@@ -7,23 +7,30 @@ _Written 2026-08-08, after the listing source and the trust engine._
 
 ## Start here
 
-**The provider quota is the bottleneck, not the code.** The Gemini free-tier
-daily quota has now blocked stages 4–6 on two consecutive sessions. Try this
-first; if it 429s again, stop waiting and get a paid key — at roughly \$0.02 a
-site the cost is irrelevant next to one customer, and this has cost more
-engineering time than it would ever cost in credit:
+**Get a paid model key.** The Gemini free tier has now returned 429 on five
+attempts across three sessions. At roughly \$0.02 a site this has cost far more
+engineering time than it would ever cost in credit. Any provider works — set
+`AI_PROVIDER` and that vendor's key in `.env`; the analyst and writer name no
+vendor. Then:
 
 ```bash
-node --import tsx --env-file=.env main.ts --from=analyze f353c77b
+node --import tsx --env-file=.env main.ts --from=analyze 216a1662
 ```
 
-`f353c77b` is a fresh Hotel Union Square run with the corrected category. Any
-provider works — the analyst and writer name no vendor; set `AI_PROVIDER` and
-that vendor's key in `.env`.
+`216a1662` is a current Hotel Union Square run: corrected category, scoped
+photographs, trust bar.
 
-**Meanwhile, the platform is verifiable without a model.** See
-[docs/runbooks/offline-verification.md](docs/runbooks/offline-verification.md).
-That loop is what found the category defect below.
+**The platform no longer depends on that.** `--compose <runId>` builds a
+complete, truthful page from verified data with no model at all, and
+`scripts/shoot.ts` screenshots and measures it. Two runbooks:
+[offline-verification](docs/runbooks/offline-verification.md) and
+[visual-review](docs/runbooks/visual-review.md).
+
+## Look at this first
+
+`output/shots/hotel-BEFORE-desktop.png` against
+`output/shots/hotel-FINAL-desktop.png`. Same business, same pipeline, three
+sessions apart.
 
 ## What changed and what it bought
 
@@ -34,9 +41,15 @@ website at all:
 
 | | Before | After |
 | --- | --- | --- |
-| Photographs | 0 | 11, at native resolution |
+| Photographs | 0 | 1, at native resolution |
 | Prose available to the writer | 0 chars | 610 chars of Google's editorial description |
 | Stated attributes | 0 | 12, two of them correctly marked *not* available |
+
+> **This table said 11 photographs until visual review.** Ten of them were other
+> hotels, swept in from the "Similar hotels nearby" rail Maps renders in the
+> same pane — the generated page showed four named competitors in its gallery
+> while every metric read healthy. Photographs are now scoped to the business by
+> name. **One real photograph beats eleven that include a rival's front door.**
 
 Also landed: the crawl waits for content instead of a fixed 1.2s; bot walls that
 say "Access Denied" rather than "confirm you are human" are now caught.
@@ -137,7 +150,7 @@ inside the package.
 
 ## Also true
 
-- 282 tests pass; `npm run typecheck && npm test`.
+- 289 tests pass; `npm run typecheck && npm test`.
 - Provider calls retry retryable failures (429/5xx/transport) with exponential
   backoff and full jitter. They do not rescue an exhausted daily quota.
 - Models: `gemini-3.6-flash` for both stages. The entire Gemini 2.5 family is

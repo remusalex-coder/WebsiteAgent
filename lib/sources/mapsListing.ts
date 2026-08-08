@@ -126,13 +126,41 @@ function parseNumber(value: string | null | undefined): number | null {
   return Number.isFinite(size) && size > 0 ? size : null;
 }
 
-async function harvestPhotos(page: PageHandle, listingUrl: string): Promise<ListingPhoto[]> {
-  const records = await page.fieldsAll('img[src*="googleusercontent"], img[src*="ggpht"]', [
-    'src',
-    'alt',
-    'naturalWidth',
-    'naturalHeight',
-  ]);
+/** Escapes a value for use inside a CSS attribute selector's quoted string. */
+function cssAttributeValue(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+/**
+ * Photographs, scoped to *this* business by name.
+ *
+ * The scoping is the entire substance of this function, and it was learned the
+ * expensive way. Taking every Google-hosted image on the pane gave the
+ * benchmark hotel eleven photographs — of which **ten were other hotels**.
+ * Maps renders a "Similar hotels nearby" rail in the same pane, each card an
+ * `img` on the same CDN, and the generated website showed four named
+ * competitors in its gallery.
+ *
+ * The pane does distinguish them: the business's own photograph sits under a
+ * control labelled `"Photo of <business name>"`, while every rail card sits
+ * under a container naming a different place. So the rule is positive rather
+ * than exclusionary — an image counts only when the listing says whose it is.
+ *
+ * This yields fewer photographs, and that is the correct trade: a gallery of
+ * one real building beats a gallery containing four competitors, and a website
+ * that shows a rival's front door is not a truthful website. A fuller set comes
+ * from the Places API, which returns a place's own photographs by construction.
+ */
+async function harvestPhotos(
+  page: PageHandle,
+  listingUrl: string,
+  businessName: string,
+): Promise<ListingPhoto[]> {
+  const owner = `[aria-label^="Photo of ${cssAttributeValue(businessName)}"]`;
+  const records = await page.fieldsAll(
+    `${owner} img[src], ${owner} img[srcset]`,
+    ['src', 'alt', 'naturalWidth', 'naturalHeight'],
+  );
 
   const seen = new Set<string>();
   const photos: ListingPhoto[] = [];
@@ -315,6 +343,12 @@ async function openTab(page: PageHandle, word: string): Promise<boolean> {
 export interface MapsListingInput {
   /** A bare place URL, as built by `buildCleanPlaceUrl`. */
   readonly listingUrl: string;
+  /**
+   * The resolved business name. Not decoration: it is how a photograph is
+   * proved to belong to *this* business rather than to the "similar places"
+   * rail rendered in the same pane.
+   */
+  readonly businessName: string;
 }
 
 /**
@@ -329,7 +363,7 @@ export async function harvestMapsListing(
   input: MapsListingInput,
   logger: Logger,
 ): Promise<ListingHarvest> {
-  const { listingUrl } = input;
+  const { listingUrl, businessName } = input;
 
   try {
     await page.goto(listingUrl, { waitUntil: 'domcontentloaded' });
@@ -345,7 +379,7 @@ export async function harvestMapsListing(
   }
 
   // Photographs are on the overview, so they are read before navigating away.
-  const photos = await harvestPhotos(page, listingUrl);
+  const photos = await harvestPhotos(page, listingUrl, businessName);
 
   let attributes: readonly BusinessAttribute[] = [];
   let description: string | null = null;
