@@ -903,7 +903,22 @@ function heroContent(section: WebsiteSection, ctx: SectionContext): Html {
   return element('div', { class: 'hero__content' }, [
     element(
       'div',
-      { class: 'hero__headline', style: `--headline-chars: ${longestWord(section.heading)}` },
+      {
+        class: 'hero__headline',
+        /*
+         * Two measurements, and they cap different failures.
+         *
+         * `--headline-chars` is the longest word, and it stops a single long
+         * trade word being broken across lines. `--headline-length` is the
+         * whole headline, and it stops a *short-worded but long* headline being
+         * set at poster size: "Californian restaurant in San Francisco" has no
+         * word over eleven characters, so the word cap left it at 169px and
+         * four lines, and Zuni Café's hero ran to 151% of the first screen.
+         */
+        style:
+          `--headline-chars: ${longestWord(section.heading)}`
+          + `; --headline-length: ${Math.max(section.heading.trim().length, 8)}`,
+      },
       [renderEyebrow(section, ctx), renderHeading(section, ctx)],
     ),
     element('div', { class: 'hero__support' }, [

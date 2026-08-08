@@ -1191,6 +1191,20 @@ h4 {
  * setting tolerates slightly tighter side bearings than a heading in text.
  */
 .hero--full-bleed h1 {
+  /*
+   * Four bounds, and the last one is what keeps a long headline on the screen.
+   *
+   * A poster setting wants to be as large as the words allow, and "as large as
+   * the words allow" is two different questions: how wide the longest word is,
+   * and how much text there is in total. Zuni Café is the case that separated
+   * them — no word longer than "Californian", so the word cap was happy, and
+   * thirty-nine characters, which at 169px set four lines and pushed the hero
+   * to one and a half screens.
+   *
+   * The factor is deliberately loose. It binds only on headlines long enough to
+   * run past three lines: Tartine at twenty-three characters and the hotel at
+   * twenty-eight are both unaffected, and only Zuni is brought down.
+   */
   font-size: min(
     calc(var(--text-display-size) * 1.55),
     13vw,
@@ -1200,6 +1214,30 @@ h4 {
      document leaves a two-line hero looking like two separate statements. */
   line-height: 1.04;
   max-width: 16ch;
+}
+
+/*
+ * On a wide screen, a long headline also yields to its total length.
+ *
+ * Scoped to the desktop breakpoint because this is a *poster-scale* constraint
+ * and poster scale only exists where there is room for it. On a phone the 13vw
+ * cap already governs — Zuni sets at 51px there and reads well — and applying
+ * the length rule at that width drove the same headline down to 28px, which is
+ * barely larger than the body text beneath it.
+ *
+ * The factor is loose enough to bind only on headlines long enough to run past
+ * three lines: Tartine at twenty-three characters is untouched, and Zuni at
+ * thirty-nine comes down from 169px over four lines to 75px over two.
+ */
+@media (min-width: ${round(mdRem)}rem) {
+  .hero--full-bleed h1 {
+    font-size: min(
+      calc(var(--text-display-size) * 1.55),
+      13vw,
+      calc(100cqi / var(--headline-chars, 8) * 1.9),
+      calc(100cqi / var(--headline-length, 24) * 3)
+    );
+  }
 }
 
 .hero--full-bleed .hero__support {
