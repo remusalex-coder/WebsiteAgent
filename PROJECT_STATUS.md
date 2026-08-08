@@ -2,6 +2,45 @@
 
 _Last updated: 2026-08-08_
 
+## Design vocabulary engine (added 2026-08-08)
+
+`lib/design/patterns.ts` holds twenty named compositions — four hero archetypes,
+three typography systems, three editorial/storytelling layouts, two marquee
+patterns, two galleries, two visual breaks, two closing patterns and two motion
+primitives. Thirteen are `executable`; the rest are `declared`, which records a
+reviewed judgement whose component does not exist yet. `selectPatterns` filters
+on status first, so a `declared` pattern cannot reach a page.
+
+Each pattern carries intent, suitable industries and directions, composition,
+typography, ground, spacing, imagery, motion, responsive and accessibility
+rules, anti-patterns, sources, and a `requires` gate. The gate is the executable
+half of the truthfulness rule: **a pattern may compose facts and may never
+supply them.** A business that cannot fill a pattern honestly does not get it.
+
+Four components execute it:
+
+- **Statement band** — one sentence of the business's own prose on an inverted
+  ground. A real `SectionKind`, so the sentence is *removed* from the passage it
+  came from and never printed twice.
+- **Facts marquee** — verified facts under the hero, built by code from the
+  profile. `aria-hidden` by design, because every fact is stated elsewhere.
+- **Wordmark close** — the business name at the foot of the page.
+- **Motion** — scroll-driven CSS timelines, so a rendered site still needs no
+  JavaScript. Where the browser has no view timeline, content is simply visible.
+
+Typography is the first pattern to reach back into the tokens:
+`type-editorial-serif` overrides the theme's heading face for craft and
+hospitality categories on suitable directions.
+
+**Benchmark.** Tartine moved from **72/150 to 101/150** against a premium
+human-designed Framer reference at 127/150. The remaining gap is mostly
+*content* — menu prices, testimonials, multiple locations — which the platform
+may not invent.
+
+`lib/art/` (added the same day) owns photographic relevance: a relative
+served-width rule, subject tags, exclusive assignment so no photograph is used
+twice, and a brand seed read from the logo or the photography via Chromium.
+
 > **Canonical status now lives in BusinessForge HQ (Notion) → Executive
 > Dashboard.** This file remains the in-repo technical reference: architecture,
 > known limitations and engineering debt. For milestone, blockers and next

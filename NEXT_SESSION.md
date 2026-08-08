@@ -1,6 +1,6 @@
 # Next Session
 
-_Written 2026-08-08, after the composed page learned to speak._
+_Written 2026-08-08, after the engine learned a design vocabulary._
 
 > **Canonical documentation is BusinessForge HQ in Notion.** This file is the
 > thirty-second version for whoever opens the repo first.
@@ -10,102 +10,90 @@ _Written 2026-08-08, after the composed page learned to speak._
 **Look at a page before reading anything else.**
 
 ```bash
-npx tsx main.ts --compose 9d55de50 && npx tsx scripts/shoot.ts 9d55de50 zuni
+npx tsx main.ts --compose 25e648c7 && npx tsx scripts/shoot.ts 25e648c7 tartine
 ```
 
-Then open `output/shots/zuni-desktop.png`. That is Zuni Café, composed with no
-model and no paid API. At the start of this session the same command produced
-**47 words on a 4,937px page** whose gallery led with a domestic-violence
-crisis-hotline poster.
+Then open `output/shots/tartine-desktop.png`. That is Tartine Bakery, composed
+with no model and no paid API.
 
-## The state of the product, honestly
+## What happened this session
 
-| | Session start | Now |
-| --- | --- | --- |
-| Zuni Café | 47 words, 3 sections | 539 words, 5 sections |
-| Tartine | 4 sections | 6 sections |
-| Paradise Dental | 4 sections, gallery after contact | 6 sections, correct order |
-| Hero headline | "Californi / an / restauran / t" | wraps correctly, 5 industries × 2 viewports |
-| Page ending | a contact table | a closing invitation |
-| Tests | 336 | 354 |
+Three things, in order.
 
-**The deterministic path is the product right now.** There is no working model
-provider, so `--compose` is what a customer would actually receive. Judge the
-platform by that page, not by the model path nobody can run.
+**The art direction layer** (`lib/art/`). Tartine's gallery used to open on a
+cookbook — six Amazon packshots outranked forty-three photographs of bread. The
+rule that catches them is relative rather than a word list: a site serves its
+photography larger than its furniture, so the threshold is the set's own median.
+Colour is now read off the business's own logo, or its photographs where there
+is no logo, using the Chromium that Playwright already installs.
 
-## What is blocked, and on what
+**An external benchmark.** Tartine scored **72/150** against a premium
+human-designed Framer reference at **127/150**. Framer AI and Lovable could not
+be run directly — both require an account, and Lovable sits behind a bot
+challenge — so the comparison was against Framer's *marketplace templates*,
+which is a harder bar than its AI. Read that number as a ceiling comparison, not
+a like-for-like loss.
 
-Every P0 in the backlog is blocked on money, and none of them is blocked on
-engineering:
+**The design vocabulary engine** (`lib/design/patterns.ts`). Twenty patterns,
+thirteen of them executable, each with a `requires` gate that decides whether the
+page can fill it honestly. Tartine re-scored **101/150**.
 
-- **A model provider.** Gemini's free tier is exhausted; the key in `.env` is
-  scoped to the Generative Language API only.
-- **`PLACES_API_KEY`.** Code is written and tested; see DEC-024 (proposed).
-- **Stage 6 deploy.** Target Cloudflare Pages, not Vercel — Hobby prohibits
-  commercial use.
+## The one idea worth keeping
 
-**Ollama is installed (0.32.6) and has zero models.** Do not assume it is the
-answer: this machine is an i7-1165G7, 4 cores, 16 GB, Intel Iris Xe — **no
-discrete GPU**. At CPU-only speeds a 7B model runs roughly 2–4 tokens/second,
-and the writer stage is budgeted at 24,000 output tokens. That is over two hours
-for one site. Local inference is viable for **short bounded judgements**
-(classification, a creative verdict) and not for generation. If you want to test
-that thesis:
+**A pattern may compose facts. It may never supply them.**
 
-```bash
-ollama pull qwen3:4b
-```
+The marquee needs three verified facts before it renders. The statement band
+needs prose to quote and a page long enough to interrupt. A thin business gets a
+plainer page, never a richer-looking one with invented copy in it. That gate is
+what makes a pattern library safe to grow — see `test/design/patterns.test.ts`,
+which tests the gates and not the row count.
 
 ## Then, in order
 
-1. **Hero presence (PRD-013).** The creative review scores the dentist 3 weak,
-   and two of the three are the hero: it occupies 40% of the fold and its
-   photograph covers 13% of it. `imageReliance: 'supporting'` picks a split hero
-   that illustrates rather than immerses. This is the largest remaining gap
-   between the output and an agency page, and it needs no provider.
-2. **Conversion (PRD-010).** Now measurable: "one call to action per 2.1 screens
-   of scroll". The closing moment added one CTA; the middle of a 5,800px page
-   still has none.
-3. **Gallery art direction.** Eleven honest photographs in a masonry is a
-   scrapbook, not a portfolio. Aspect-ratio grouping and a hero image choice
-   would do more for perceived quality than anything else in the renderer.
+1. **Gallery art direction is the biggest remaining visual gap.** Tartine's grid
+   still carries a beach photograph and a wheat-texture macro, because ranking is
+   by served width and width is not a subject. Aspect grouping and one
+   hero-sized cell would do more than any other renderer change.
+2. **`gallery-immersive-band` and `editorial-alternating-story` are `declared`,
+   not built.** Both are the storytelling patterns; both need a renderer
+   component. That is the shortest path from 101 to the mid-110s.
+3. **Content is the ceiling, not design.** The Framer reference wins on menu
+   prices, testimonials, multiple locations and a news grid — none of which
+   BusinessForge may invent. The Places API (DEC-024, proposed) is the unlock,
+   and it is a money decision rather than an engineering one.
 
 ## Traps that will cost you an hour each
 
-**Screenshots lie, and `fullPage` is why.** It resizes the viewport *after*
-images decode, re-running lazy heuristics, so the top of a long page paints
-white. Zuni's gallery captured as a 2,900px blank band while the DOM held eleven
-images at `complete: true`. `scripts/shoot.ts` now grows the viewport to the
-document height instead — but **any new capture harness must do the same**, and
-the rule stands: measure the DOM before believing a screenshot.
-
 **A backtick in a CSS comment breaks the build silently.** `lib/render/css.ts`
-and `variants.ts` are TypeScript template literals. It cost time three times
-this session, and the third time the error was hidden because the regeneration
-command redirected stderr to `/dev/null`. Never silence a build you are about to
-screenshot.
+and `variants.ts` are TypeScript template literals. Cost time again this session
+inside the new hero comment. Never silence a build you are about to screenshot.
 
-**The two stylesheets override each other (INF-007).** Third occurrence, now
-guarded: `test/render/sheet-conflicts.test.ts` fails when the variants sheet
-restates a property and drops a bound the base sheet set. It is deliberately
-narrow — it ignores the design layer replacing a fallback with a token, which is
-that layer's job — because the first draft flagged twenty-one things and twenty
-were correct.
+**Screenshots lie, and `fullPage` is why.** `scripts/shoot.ts` grows the viewport
+instead. Any new capture harness must do the same. **Also: a downscaled
+screenshot lies about contrast** — the CTA button looked washed out and measured
+4.97:1. Measure the DOM before believing your eyes in either direction.
 
-**Adding a field to a contract breaks every saved run.** Add an entry to
-`ARTIFACT_DEFAULTS` in `main.ts` in the same commit.
+**The two stylesheets override each other (INF-007).** Fourth occurrence
+avoided this session by carrying all four caps into `.hero--full-bleed h1`.
+`test/render/sheet-conflicts.test.ts` guards it.
 
-**A `.ts` probe script outside the repo will not run.** Put throwaway scripts in
-`output/` — gitignored, and inside the package.
+**Adding a field to a contract breaks every saved run.** `WebsiteContent.facts`
+and `SectionKind: 'statement'` both landed this session; `ARTIFACT_DEFAULTS` in
+`main.ts` was updated in the same commit. Do the same next time.
+
+**A `declared` pattern must never be selectable.** `selectPatterns` filters on
+status first. If you build a component, flip the status in the same commit.
 
 ## Also true
 
-- 354 tests pass; `npm run typecheck && npm test`.
-- Testimonials are code-built and the model may never write one (DEC-022).
-- A rating below 4.0 is not promoted to the trust bar (DEC-023). It still
-  reaches the JSON-LD and the contact block; only the lead changes.
-- A photo URL must never carry a credential — the Places source resolves each
-  photograph to a plain `googleusercontent` URL first, and a test asserts it.
-- **WVBR LLP remains unservable from public data.** Composed, it is three
-  sections and no photographs. That is a product answer (owner intake, PRD-011),
-  not an engineering one.
+- 414 tests pass; `npm run typecheck && npm test`.
+- **Ollama is installed with `gemma4:26b`, and it is unusable for generation** —
+  measured at **1.6 tokens/second** with a 67-second load on this machine. It is
+  a 17 GB model on 16 GB of RAM with no discrete GPU. Viable only for very short
+  bounded judgements, and not for the writer.
+- There is still no working model provider. `--compose` is what a customer would
+  receive, so judge the platform by that page.
+- Testimonials are code-built (DEC-022); a rating below 4.0 is not promoted
+  (DEC-023); the facts marquee is code-built for the same reason.
+- The marquee is `aria-hidden` by design, because every fact in it is stated
+  somewhere else on the page. **Nothing may ever appear only in the marquee.**
