@@ -1,152 +1,111 @@
 # Next Session
 
-_Written 2026-08-08, after the Places API source and the testimonial rule._
+_Written 2026-08-08, after the composed page learned to speak._
 
 > **Canonical documentation is BusinessForge HQ in Notion.** This file is the
 > thirty-second version for whoever opens the repo first.
 
 ## Start here
 
-**Two keys, and they are different keys.**
-
-1. **A paid model key.** The Gemini free tier has now returned 429 on five
-   attempts across three sessions. Any provider works — set `AI_PROVIDER` and
-   that vendor's key; the analyst and writer name no vendor.
-2. **`PLACES_API_KEY`, on a project with Places API (New) enabled.** This is
-   the new one, and it is the higher-value one. Runbook:
-   [places-api-source](docs/runbooks/places-api-source.md).
-
-The Google key already in `.env` is **not** a Places key — it is scoped to the
-Generative Language API and returns `401 UNAUTHENTICATED`. That was measured,
-not assumed.
+**Look at a page before reading anything else.**
 
 ```bash
-node --import tsx --env-file=.env main.ts --from=collect 216a1662
+npx tsx main.ts --compose 9d55de50 && npx tsx scripts/shoot.ts 9d55de50 zuni
 ```
 
-`216a1662` is a current Hotel Union Square run. Starting at `collect` is what
-re-runs the sources.
+Then open `output/shots/zuni-desktop.png`. That is Zuni Café, composed with no
+model and no paid API. At the start of this session the same command produced
+**47 words on a 4,937px page** whose gallery led with a domestic-violence
+crisis-hotline poster.
 
-**The platform still does not depend on either key.** `--compose <runId>` builds
-a complete, truthful page from verified data with no model at all.
+## The state of the product, honestly
 
-## What landed
+| | Session start | Now |
+| --- | --- | --- |
+| Zuni Café | 47 words, 3 sections | 539 words, 5 sections |
+| Tartine | 4 sections | 6 sections |
+| Paradise Dental | 4 sections, gallery after contact | 6 sections, correct order |
+| Hero headline | "Californi / an / restauran / t" | wraps correctly, 5 industries × 2 viewports |
+| Page ending | a contact table | a closing invitation |
+| Tests | 336 | 354 |
 
-**The `testimonials` section renders, for the first time.** The renderer has
-drawn it since the design layer landed and the industry tables rank it above
-`about` for six of nine industries. No run had ever filled it, because no source
-could quote a customer — signed-out Maps serves no reviews, which is a wall and
-was proven to be one. `lib/sources/placesApi.ts` is the source that can.
+**The deterministic path is the product right now.** There is no working model
+provider, so `--compose` is what a customer would actually receive. Judge the
+platform by that page, not by the model path nobody can run.
 
-Nothing downstream of `lib/sources/` changed to gain reviews. That was the whole
-point of defining `ListingHarvest` before there was a second source for it, and
-it is the strongest evidence so far that the source seam is the right shape.
+## What is blocked, and on what
 
-**The model may no longer write a testimonial.** `groundTestimonials` keeps the
-section's position and heading — real editorial judgements — and replaces its
-bullets *unread* with quotations that came from a source. With no verified
-review the section is deleted. The prompt has forbidden fabricated testimonials
-since the writer was built; a prompt is a request, and this is the version that
-holds when a model misreads the brief. The brief now carries a review **count**,
-never review text: a model cannot paraphrase a quotation it has not been shown.
+Every P0 in the backlog is blocked on money, and none of them is blocked on
+engineering:
 
-**The review count arrived, and with it `aggregateRating`.** A signed-out pane
-serves a rating with no total, so the trust bar had only ever said "4.9 on
-Google" and the JSON-LD had *never once* emitted an `aggregateRating` — schema.org
-requires the count and the platform does not print numbers it cannot prove.
+- **A model provider.** Gemini's free tier is exhausted; the key in `.env` is
+  scoped to the Generative Language API only.
+- **`PLACES_API_KEY`.** Code is written and tested; see DEC-024 (proposed).
+- **Stage 6 deploy.** Target Cloudflare Pages, not Vercel — Hobby prohibits
+  commercial use.
 
-## Two judgement calls worth re-examining
+**Ollama is installed (0.32.6) and has zero models.** Do not assume it is the
+answer: this machine is an i7-1165G7, 4 cores, 16 GB, Intel Iris Xe — **no
+discrete GPU**. At CPU-only speeds a 7B model runs roughly 2–4 tokens/second,
+and the writer stage is budgeted at 24,000 output tokens. That is over two hours
+for one site. Local inference is viable for **short bounded judgements**
+(classification, a creative verdict) and not for generation. If you want to test
+that thesis:
 
-**A rating under 4.0 is no longer promoted to the trust bar.** The benchmark
-hotel is 3.8, which is below average on Google's distribution, and printing it
-under the headline is the page making the visitor's counter-argument for them.
-The true value still goes to the JSON-LD and still appears in the contact block,
-so nothing is hidden — this decides only what the business *leads with*.
-
-Consequence to look at: that hotel now renders an **empty** trust bar, because
-its category signal was already dropped as an echo of the headline. Arguably
-correct — the testimonials do the reassurance work instead — but it is the first
-page with no trust bar at all, and it deserves a second opinion.
-
-**`MIN_REVIEW_CHARS` / `MAX_REVIEW_CHARS` (40–400) drop reviews rather than
-trimming them.** A half-sentence in quotation marks misrepresents its author, so
-length is a reason to omit a review and never a reason to edit one. On a
-business whose reviews are all short, the section will be empty and vanish.
+```bash
+ollama pull qwen3:4b
+```
 
 ## Then, in order
 
-1. **Enable Places API (New) and run the five-industry batch.** Everything is
-   written and tested against a stub; the only unverified thing in the source is
-   the live wire format. The scorecards in `output/review/index.html` are stale
-   in at least two rows regardless.
-2. **Reviews are now a trust extension point, not just a section.** "Rated 4.8
-   by 812 guests" as a hero signal, review recency, and per-service proof are
-   all `TrustSignal` entries now that the count exists.
-3. **Stage 6 deploy.** Target **Cloudflare Pages**, not Vercel: Vercel's Hobby
-   tier prohibits commercial use and BusinessForge hosts customer sites
-   commercially.
-
-## Repeatable commands
-
-```bash
-# Generate + measure the five-industry set (needs .env)
-node --import tsx --env-file=.env scripts/batch-audit.ts
-
-# Re-measure existing runs without regenerating
-node --import tsx --env-file=.env scripts/batch-audit.ts --measure
-
-# Rebuild the review dashboard
-node --import tsx scripts/build-review.ts
-
-# Re-render one saved spec in milliseconds
-npx tsx main.ts --render output/<runId>/5-content.json
-```
+1. **Hero presence (PRD-013).** The creative review scores the dentist 3 weak,
+   and two of the three are the hero: it occupies 40% of the fold and its
+   photograph covers 13% of it. `imageReliance: 'supporting'` picks a split hero
+   that illustrates rather than immerses. This is the largest remaining gap
+   between the output and an agency page, and it needs no provider.
+2. **Conversion (PRD-010).** Now measurable: "one call to action per 2.1 screens
+   of scroll". The closing moment added one CTA; the middle of a 5,800px page
+   still has none.
+3. **Gallery art direction.** Eleven honest photographs in a masonry is a
+   scrapbook, not a portfolio. Aspect-ratio grouping and a hero image choice
+   would do more for perceived quality than anything else in the renderer.
 
 ## Traps that will cost you an hour each
 
-**A backtick in a CSS comment silently breaks the stylesheet.** `lib/render/css.ts`
-and `variants.ts` are TypeScript template literals, so `` `display: grid` `` in a
-comment closes the string. It cost twenty minutes this session *twice*, and the
-second time the error was hidden because the regeneration command redirected
-stderr to `/dev/null`. Never write a backtick in those files' comments, and never
-silence a build you are about to screenshot.
+**Screenshots lie, and `fullPage` is why.** It resizes the viewport *after*
+images decode, re-running lazy heuristics, so the top of a long page paints
+white. Zuni's gallery captured as a 2,900px blank band while the DOM held eleven
+images at `complete: true`. `scripts/shoot.ts` now grows the viewport to the
+document height instead — but **any new capture harness must do the same**, and
+the rule stands: measure the DOM before believing a screenshot.
 
-**Screenshots lie, and they lie about alignment too.** The quote bylines were
-"fixed", screenshotted, and still ragged — the fix targeted the figure when the
-grid item is the `<li>` around it. `output/measure-quotes.mjs`-style DOM
-measurement is what settled it. The older form of this trap: `fullPage` capture
-resizes the viewport and re-runs lazy-loading, so a gallery captures as an empty
-white band. **Measure the DOM before believing a screenshot.**
+**A backtick in a CSS comment breaks the build silently.** `lib/render/css.ts`
+and `variants.ts` are TypeScript template literals. It cost time three times
+this session, and the third time the error was hidden because the regeneration
+command redirected stderr to `/dev/null`. Never silence a build you are about to
+screenshot.
 
-**Google publishes two identifiers and they are not interchangeable.** A Maps
-URL carries an `ftid` (`0x…:0x…`); the Places API is keyed by a place id
-(`ChIJ…`). `DiscoveryResult.placeId` is honestly either. Every run in the repo
-holds the hex form, so a source that passed it straight through would 404 on
-every business ever collected — and look exactly like a business with no
-reviews. `resolvePlaceId` exchanges one for the other.
+**The two stylesheets override each other (INF-007).** Third occurrence, now
+guarded: `test/render/sheet-conflicts.test.ts` fails when the variants sheet
+restates a property and drops a bound the base sheet set. It is deliberately
+narrow — it ignores the design layer replacing a fallback with a token, which is
+that layer's job — because the first draft flagged twenty-one things and twenty
+were correct.
 
-**The two stylesheets override each other silently.** `variants.ts` is emitted
-after the base sheet, and re-declaring a selector there wins at equal
-specificity with no warning. Twice now. Tracked as INF-007.
+**Adding a field to a contract breaks every saved run.** Add an entry to
+`ARTIFACT_DEFAULTS` in `main.ts` in the same commit.
 
-**Adding a field to a contract breaks every saved run.** An artifact directory is
-a persistence format and old files lack the new field. Add an entry to
-`ARTIFACT_DEFAULTS` in `main.ts` in the same commit — this session added four.
-
-**A `.ts` probe script outside the repo will not run.** No `type: module` and no
-`node_modules` above it. Put throwaway scripts in `output/` — gitignored, and
-inside the package.
+**A `.ts` probe script outside the repo will not run.** Put throwaway scripts in
+`output/` — gitignored, and inside the package.
 
 ## Also true
 
-- 336 tests pass; `npm run typecheck && npm test`.
-- A photo URL must never carry a credential. The Places media endpoint takes the
-  key as a query parameter, so the source resolves each photograph to a plain
-  `googleusercontent` URL first. A test asserts it.
-- Provider calls retry retryable failures (429/5xx/transport) with exponential
-  backoff and full jitter. They do not rescue an exhausted daily quota.
-- Models: `gemini-3.6-flash` for both stages. The entire Gemini 2.5 family is
-  404 for accounts created after mid-2026.
-- **WVBR LLP is unservable from public data** and that is a product answer, not
-  an engineering one. Some businesses need an owner intake form; no amount of
-  extraction invents facts that were never published.
+- 354 tests pass; `npm run typecheck && npm test`.
+- Testimonials are code-built and the model may never write one (DEC-022).
+- A rating below 4.0 is not promoted to the trust bar (DEC-023). It still
+  reaches the JSON-LD and the contact block; only the lead changes.
+- A photo URL must never carry a credential — the Places source resolves each
+  photograph to a plain `googleusercontent` URL first, and a test asserts it.
+- **WVBR LLP remains unservable from public data.** Composed, it is three
+  sections and no photographs. That is a product answer (owner intake, PRD-011),
+  not an engineering one.

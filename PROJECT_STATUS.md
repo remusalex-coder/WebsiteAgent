@@ -264,7 +264,8 @@ Also:
   defines the observations a model will eventually be asked to judge. Turning it into an
   agent needs a provider.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
-- **Coverage is the renderer, the design layer, both content sources and their merge policy, and the writer's brief, trust engine and testimonial grounding.** `npm test` runs 336 assertions. The agents' own orchestration still has none.
+- **Coverage is the renderer, the design layer, both content sources and their merge policy, and the writer's brief, trust engine, prose extraction and testimonial grounding.** `npm test` runs 354 assertions. The agents' own orchestration still has none.
+- **The stylesheet guard is the one test that encodes a scar.** `test/render/sheet-conflicts.test.ts` fails when the variants sheet restates a property and drops a `min()`/`clamp()` or a viewport/container cap the base sheet set. Three production defects came from exactly that (colour tokens, the viewport cap, the column cap), each found by a human looking at a screenshot.
 - **Artifact migrations are manual.** `ARTIFACT_DEFAULTS` in `main.ts` backfills fields a contract gained after a run was written; forgetting an entry breaks `--from=<stage>` on every older run with a `TypeError` far from the cause. A contract change and its default are two edits that must not drift.
 - **Older suites still live outside the repo** — discovery parsers, normalizer primitives, merge/dedup/validation, analyst schema and analyst brief remain in a scratchpad rather than `test/`.
 - **No accessibility or HTML validation in CI.** The markup is checked by assertions about the string, not by axe or the W3C validator. A real audit would be worth one pass before the first deploy.
