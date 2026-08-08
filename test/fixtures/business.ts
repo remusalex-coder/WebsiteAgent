@@ -34,6 +34,8 @@ export interface ProfileOverrides {
   readonly rating?: number | null;
   readonly reviewCount?: number | null;
   readonly reviews?: readonly ListingReview[];
+  /** A contactable route, which is what makes a closing call to action possible. */
+  readonly phone?: string;
 }
 
 /**
@@ -79,7 +81,16 @@ export function profileFixture(overrides: ProfileOverrides = {}): BusinessProfil
     address: null,
     coordinates: null,
     website: attributed(SOURCE),
-    phones: [],
+    phones:
+      overrides.phone === undefined
+        ? []
+        : [
+            attributed({
+              formatted: overrides.phone,
+              e164: overrides.phone.replace(/[^\d+]/g, ''),
+              digits: overrides.phone.replace(/\D/g, ''),
+            }),
+          ],
     emails: [],
     socialProfiles: [],
     hours: [],

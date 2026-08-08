@@ -446,6 +446,30 @@
         "background": "canvas"
       },
       {
+        "index": 5,
+        "kind": "testimonials",
+        "variant": "quotes",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": 1,
+        "fullBleed": false,
+        "rationale": "Chose quotes for testimonials: the section has 1 item and 0 images.",
+        "frame": "aside",
+        "background": "subtle"
+      },
+      {
+        "index": 9,
+        "kind": "faq",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for faq: the section has 2 items and 0 images.",
+        "frame": "offset",
+        "background": "canvas"
+      },
+      {
         "index": 1,
         "kind": "about",
         "variant": "stack",
@@ -494,30 +518,6 @@
         "background": "canvas"
       },
       {
-        "index": 5,
-        "kind": "testimonials",
-        "variant": "quotes",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": 1,
-        "fullBleed": false,
-        "rationale": "Chose quotes for testimonials: the section has 1 item and 0 images.",
-        "frame": "offset",
-        "background": "subtle"
-      },
-      {
-        "index": 9,
-        "kind": "faq",
-        "variant": "list",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": null,
-        "fullBleed": false,
-        "rationale": "Chose list for faq: the section has 2 items and 0 images.",
-        "frame": "aside",
-        "background": "canvas"
-      },
-      {
         "index": 10,
         "kind": "cta",
         "variant": "banner",
@@ -535,12 +535,12 @@
       2,
       3,
       4,
+      5,
+      9,
       1,
       6,
       7,
       8,
-      5,
-      9,
       10
     ],
     "stickyHeader": true,

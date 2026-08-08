@@ -429,6 +429,30 @@
         "background": "canvas"
       },
       {
+        "index": 3,
+        "kind": "menu",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for menu: the section has 2 items and 0 images.",
+        "frame": "offset",
+        "background": "subtle"
+      },
+      {
+        "index": 4,
+        "kind": "gallery",
+        "variant": "grid",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": 2,
+        "fullBleed": false,
+        "rationale": "Chose grid for gallery: the section has 0 items and 2 images.",
+        "frame": "stacked",
+        "background": "canvas"
+      },
+      {
         "index": 1,
         "kind": "about",
         "variant": "stack",
@@ -449,6 +473,30 @@
         "columns": 1,
         "fullBleed": false,
         "rationale": "Chose quotes for testimonials: it is the law convention for a testimonials section.",
+        "frame": "aside",
+        "background": "canvas"
+      },
+      {
+        "index": 6,
+        "kind": "hours",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for hours: the section has 2 items and 0 images.",
+        "frame": "offset",
+        "background": "subtle"
+      },
+      {
+        "index": 9,
+        "kind": "faq",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for faq: the section has 2 items and 0 images.",
         "frame": "aside",
         "background": "canvas"
       },
@@ -477,54 +525,6 @@
         "background": "canvas"
       },
       {
-        "index": 3,
-        "kind": "menu",
-        "variant": "list",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": null,
-        "fullBleed": false,
-        "rationale": "Chose list for menu: the section has 2 items and 0 images.",
-        "frame": "aside",
-        "background": "subtle"
-      },
-      {
-        "index": 4,
-        "kind": "gallery",
-        "variant": "grid",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": 2,
-        "fullBleed": false,
-        "rationale": "Chose grid for gallery: the section has 0 items and 2 images.",
-        "frame": "stacked",
-        "background": "canvas"
-      },
-      {
-        "index": 9,
-        "kind": "faq",
-        "variant": "list",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": null,
-        "fullBleed": false,
-        "rationale": "Chose list for faq: the section has 2 items and 0 images.",
-        "frame": "aside",
-        "background": "subtle"
-      },
-      {
-        "index": 6,
-        "kind": "hours",
-        "variant": "list",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": null,
-        "fullBleed": false,
-        "rationale": "Chose list for hours: the section has 2 items and 0 images.",
-        "frame": "offset",
-        "background": "canvas"
-      },
-      {
         "index": 10,
         "kind": "cta",
         "variant": "banner",
@@ -540,14 +540,14 @@
     "order": [
       0,
       2,
-      1,
-      5,
-      8,
-      7,
       3,
       4,
-      9,
+      1,
+      5,
       6,
+      9,
+      8,
+      7,
       10
     ],
     "stickyHeader": true,

@@ -53,7 +53,27 @@ for (const [name, width, height] of [
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
   }));
 
-  await page.screenshot({ path: path.join(shotDir, `${label}-${name}.png`), fullPage: true });
+  /*
+   * Captured by growing the viewport, not with `fullPage: true`.
+   *
+   * `fullPage` resizes the viewport and re-runs the browser's lazy and
+   * intersection heuristics *after* the images were decoded, so the top of a
+   * long page can paint as white. Zuni Café's gallery captured as a 2,900px
+   * blank band while the DOM held eleven images, every one of them
+   * `complete: true` at its natural size — and it looked exactly like a broken
+   * layout. The previous fix (stripping `loading` and awaiting `decode()`)
+   * happens before the resize and therefore does not survive it.
+   *
+   * Setting the viewport to the document height means no resize happens at
+   * capture time at all. The measurements above are taken before this, at the
+   * real viewport, so responsive behaviour is still measured honestly.
+   */
+  const fullHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  await page.setViewportSize({ width, height: Math.min(fullHeight, 20_000) });
+  // One frame for the newly revealed content to paint.
+  await page.waitForTimeout(400);
+
+  await page.screenshot({ path: path.join(shotDir, `${label}-${name}.png`) });
   process.stdout.write(`${label} ${name}: ${JSON.stringify(measured)}\n`);
   await page.close();
 }

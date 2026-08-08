@@ -49,6 +49,7 @@ import type {
   OpeningHours,
   PhoneNumber,
   ListingReview,
+  PageText,
   SectionKind,
   TrustSignal,
   WebsiteContent,
@@ -392,7 +393,10 @@ export function buildWriterBrief(
     [
       `Logo: ${profile.images.logo ? 'yes' : 'none'}`,
       `Hero image: ${profile.images.hero ? 'yes' : 'none'}`,
-      `Gallery photographs: ${profile.images.gallery.length}`,
+      // The usable count, for the same reason the composer uses it: the writer
+      // is told to emit a gallery at four or more, and it must be four or more
+      // of the photographs that will actually survive to the page.
+      `Gallery photographs: ${profile.images.gallery.filter(isUsablePhotograph).length}`,
     ].join('\n'),
   );
 
@@ -916,6 +920,63 @@ const MAP_HOSTS = [
 ];
 
 /**
+ * A social feed embedded in the page, which is not the business's photography.
+ *
+ * ## What this caught
+ *
+ * Zuni Café's homepage runs the Smash Balloon Instagram plugin, which writes
+ * its thumbnails to `/wp-content/uploads/sb-instagram-feed-images/`. Nine of
+ * the twelve photographs on the generated page came from there, and among them
+ * were a **domestic-violence crisis-hotline poster** — phone numbers and all —
+ * and a photograph of a bookshop's magazine rack. Both were published as a
+ * restaurant's own imagery, on the page selling the restaurant.
+ *
+ * ## Why a feed is not a portfolio
+ *
+ * The images are on the business's own domain, so nothing was stolen and
+ * nothing was invented. They are still wrong, for three reasons that no amount
+ * of ranking fixes:
+ *
+ * - **A feed is chronological, not curated.** It shows whatever was posted most
+ *   recently. A designer choosing twelve photographs for a gallery would not
+ *   choose "the last twelve things they posted".
+ * - **The subject is frequently not the business.** A charity campaign, an
+ *   event flyer, a book signing, a repost of someone else's picture. The
+ *   restaurant is incidental.
+ * - **The crops are phone crops.** 640×1136, 640×800, 1080×1080. Dropped into a
+ *   designed grid they read as a scrapbook, which is exactly how the Zuni page
+ *   read.
+ *
+ * There is a rights argument too: a business reposting a supplier's or a
+ * customer's photograph to Instagram does not acquire the right to publish it
+ * on a commercial website, and the platform cannot tell the difference.
+ *
+ * Matched on the URL, because every one of these widgets writes a recognisable
+ * path or serves from a recognisable CDN. Same shape as `MAP_HOSTS`: a signal
+ * that is mechanical, not a judgement about the picture.
+ */
+const SOCIAL_EMBED_MARKERS = [
+  // Feed plugins, by the directory each writes its cache to.
+  'sb-instagram-feed-images', 'instagram-feed', 'insta-feed', 'instagram_feed',
+  'juicer.io', 'taggbox', 'elfsight', 'curator.io', 'sociablekit', 'lightwidget',
+  // The networks' own CDNs, where a feed is embedded rather than cached.
+  'cdninstagram.com', 'fbcdn.net', 'scontent.', 'pbs.twimg.com', 'tiktokcdn',
+];
+
+/**
+ * Third-party widget chrome served from a vendor CDN.
+ *
+ * Accessibility toolbars, consent banners and chat bubbles all inject `<img>`
+ * elements. Zuni's page contributed two from `cdn.userway.org`. They are
+ * interface, not photography, and no business wants its accessibility widget's
+ * logo in its gallery.
+ */
+const WIDGET_HOSTS = [
+  'cdn.userway.org', 'accessibe.com', 'acsbapp.com', 'cookiebot.com',
+  'onetrust.com', 'usercentrics.eu', 'widget.trustpilot', 'tawk.to',
+];
+
+/**
  * Whether an image can carry a section of a page.
  *
  * A hard exclusion, unlike `looksLikeProductShot` — these are never worth
@@ -924,14 +985,22 @@ const MAP_HOSTS = [
  * and the normalizer ranks by CDN path and byte size, which cannot tell a
  * photograph of a surgery from a 256×256 slice of a road.
  *
- * Three signals, in increasing generality:
+ * Five signals, in increasing generality:
  *  - the host only ever serves maps;
+ *  - the URL is a social feed widget's cache, or a social CDN;
+ *  - the host serves accessibility, consent or chat widget chrome;
  *  - the dimensions are an exact power-of-two tile;
  *  - the image is too small to be photography at any layout size.
+ *
+ * Each was added because a generated page shipped with the thing it excludes:
+ * six Google Maps tiles on the dentist, a crisis-hotline poster on the
+ * restaurant. The list grows by evidence, never by speculation.
  */
-function isUsablePhotograph(image: ImageAsset): boolean {
+export function isUsablePhotograph(image: ImageAsset): boolean {
   const url = image.url.toLowerCase();
   if (MAP_HOSTS.some((host) => url.includes(host))) return false;
+  if (SOCIAL_EMBED_MARKERS.some((marker) => url.includes(marker))) return false;
+  if (WIDGET_HOSTS.some((host) => url.includes(host))) return false;
 
   const { width, height } = image;
   if (width !== null && height !== null) {
@@ -1267,7 +1336,11 @@ export const writerAgent: WriterAgent = {
  */
 function splitLead(passage: string): { lead: string; rest: string } {
   const trimmed = passage.trim();
-  const match = /^(.{40,200}?[.!?])\s+([\s\S]+)$/.exec(trimmed);
+  // The closing quote or bracket is part of the sentence that ends inside it.
+  // Without it, Zuni's opening line — which ends on `dollars."` — was not
+  // recognised as a sentence at all, and the hero swallowed the whole
+  // paragraph looking for the next full stop.
+  const match = /^(.{40,200}?[.!?]["'”’)\]]?)\s+([\s\S]+)$/.exec(trimmed);
   const lead = match?.[1]?.trim();
   const rest = match?.[2]?.trim();
   return lead !== undefined && rest !== undefined ? { lead, rest } : { lead: trimmed, rest: '' };
@@ -1276,6 +1349,156 @@ function splitLead(passage: string): { lead: string; rest: string } {
 /** Sentence case for a category Maps writes lower-case, e.g. "3-star hotel". */
 function asHeading(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/* ------------------------------------------------------------------ */
+/* The business's own words                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Text that is on a page but is not the page's prose.
+ *
+ * Navigation, legal chrome, cookie notices and calls to subscribe. All of it is
+ * `innerText` because all of it is visible, and none of it says anything about
+ * the business.
+ */
+const BOILERPLATE =
+  /\b(cookies?|privacy policy|terms of (use|service)|all rights reserved|©|subscribe|newsletter|sign ?up|follow us|skip to (main )?content|accessibility statement|powered by)\b/i;
+
+/** A contact detail. It belongs in the contact section, never in prose. */
+const CONTACT_IN_TEXT = /[\w.+-]+@[\w-]+\.\w+|\+?\d[\d\s().-]{7,}\d|\bhttps?:\/\//;
+
+/**
+ * Paragraphs from one crawled page that could be published as they stand.
+ *
+ * ## Why this exists
+ *
+ * Zuni Café has 8,752 characters of its own copy across five crawled pages —
+ * including a history page opening "founded in 1979, by Billy West — with a
+ * huge heart and exactly ten thousand dollars" — and the composed page for it
+ * was **47 words**. The composer read the listing's editorial description and
+ * nothing else, so a business *with* a website produced less than one without.
+ *
+ * ## Why quoting is still not writing
+ *
+ * The composer's guarantee is that nothing on the page was written, so nothing
+ * on it can be wrong. Copying a paragraph the business published about itself
+ * keeps that guarantee exactly: it is the same rule the listing description
+ * already follows, applied to a better source. Nothing is summarised, joined,
+ * paraphrased or trimmed mid-sentence.
+ *
+ * ## What gets rejected
+ *
+ * `innerText` includes the navigation, the address line and the cookie banner,
+ * because a sighted visitor sees those too. A block survives only if it reads
+ * like prose: long enough to be a paragraph, punctuated like one, not
+ * boilerplate, and carrying no contact detail — a phone number belongs in the
+ * contact section, and a paragraph containing one would also trip the
+ * grounding check downstream.
+ */
+export function publishableParagraphs(text: string): readonly string[] {
+  return text
+    .split(/\n{2,}/)
+    .map((block) => block.replace(/\s+/g, ' ').trim())
+    .filter((block) => {
+      // A paragraph, not a heading and not a menu item.
+      //
+      // The upper bound is generous because a good opening paragraph is often
+      // a long one: Zuni's history opens with a 640-character paragraph about
+      // Billy West, ten thousand dollars and the cactus shop next door. A
+      // 700-character cap rejected it and the composer fell through to the
+      // paragraph after, so the page opened on the word "Nevertheless".
+      // `splitLead` shortens a long passage at a sentence boundary later, which
+      // is the honest way to do it.
+      if (block.length < 100 || block.length > 1400) return false;
+      // Punctuated like prose. A nav row of six links has no full stop in it.
+      if (!/[.!?]["'”’)]?$/.test(block)) return false;
+      if (block.split(/\s+/).length < 18) return false;
+      if (BOILERPLATE.test(block)) return false;
+      if (CONTACT_IN_TEXT.test(block)) return false;
+      // A pipe or a bullet run is a layout artefact of a list, not a sentence.
+      if (/[|•·]/.test(block)) return false;
+      return true;
+    });
+}
+
+/**
+ * Page titles that promise the business's story rather than its latest news.
+ *
+ * Order matters and recency deliberately does not. A homepage's first prose
+ * block is whatever was promoted this month — on Zuni's it is a collaboration
+ * on a cannabis edible, which is true, published, and a poor thing to open a
+ * restaurant's website with. A page a business titled "History" or "About" is
+ * the page it wrote to be read first, and it stays right for longer.
+ */
+const NARRATIVE_TITLE = /\b(about|history|our story|story|who we are|the practice)\b/i;
+
+/**
+ * A paragraph that continues an argument the reader has not been shown.
+ *
+ * "Nevertheless, the restaurant was an instant, improbable success" is a fine
+ * sentence in its place and a bad first line anywhere else — it answers an
+ * objection the page never raised. A opening connective is the cheapest
+ * available signal that a paragraph was written to sit in the middle, and it
+ * disqualifies a paragraph from *leading* without disqualifying it from the
+ * page.
+ */
+const CONTINUATION =
+  /^(nevertheless|however|but|so|then|meanwhile|moreover|furthermore|additionally|also|yet|still|therefore|thus|consequently|in addition|as a result|that said|of course)\b/i;
+
+export interface Narrative {
+  /** The opening line, verbatim. */
+  readonly lead: string;
+  /** Further paragraphs, verbatim and in the source's order. */
+  readonly body: readonly string[];
+  /** The page every line above came from. */
+  readonly sourceUrl: string;
+}
+
+/**
+ * The best narrative the business has published about itself, or `null`.
+ *
+ * One page only. Paragraphs from two different pages placed under one heading
+ * would be an edit — a claim that these things belong together, which is a
+ * judgement the composer is not allowed to make.
+ */
+export function narrativeFrom(
+  pages: readonly PageText[],
+  businessName: string,
+): Narrative | null {
+  const ranked = [...pages].sort((a, b) => {
+    const score = (page: PageText): number =>
+      NARRATIVE_TITLE.test(`${page.title ?? ''} ${page.url}`) ? 1 : 0;
+    return score(b) - score(a);
+  });
+
+  // The first word of the business's name, which is how a page refers to
+  // itself. "Zuni" matches "Zuni Café was founded in 1979"; the full string
+  // with its accent and suffix often does not.
+  const firstWord = businessName.trim().split(/\s+/)[0] ?? '';
+
+  for (const page of ranked) {
+    const paragraphs = publishableParagraphs(page.text);
+    if (paragraphs.length === 0) continue;
+
+    // A paragraph that names the business and does not open mid-argument. That
+    // is what an opening paragraph looks like, and picking it rather than the
+    // first surviving block is the difference between "Zuni Café was founded in
+    // 1979, by Billy West" and "Nevertheless, the restaurant was…".
+    const opensWell = (block: string): boolean =>
+      !CONTINUATION.test(block) && (firstWord === '' || block.includes(firstWord));
+
+    const leadIndex = paragraphs.findIndex(opensWell);
+    const chosen = leadIndex === -1 ? paragraphs.findIndex((b) => !CONTINUATION.test(b)) : leadIndex;
+    if (chosen === -1) continue;
+
+    const lead = paragraphs[chosen]!;
+    const body = paragraphs.filter((_, index) => index !== chosen);
+
+    return { lead, body: body.slice(0, 3), sourceUrl: page.url };
+  }
+
+  return null;
 }
 
 /**
@@ -1320,6 +1543,21 @@ export function composeBaseline(profile: BusinessProfile): WebsiteContent {
   const { lead, rest } = splitLead(description);
   const hasPhone = profile.phones.length > 0;
 
+  /*
+   * The business's own words, used where the listing has none.
+   *
+   * The listing description stays first: Google writes it as a summary, so it
+   * opens a page well, and it exists for businesses that publish nothing else.
+   * Where there is no listing description, the site's own prose is a strictly
+   * better source than silence — and silence is what the composer produced for
+   * Zuni Café, a restaurant with five crawled pages, a James Beard award and a
+   * history page, whose generated site ran to 47 words.
+   */
+  const narrative = description === '' ? narrativeFrom(profile.pages, profile.name.value) : null;
+  // Split the same way the listing description is: an opening sentence for the
+  // hero, the remainder for about, so no passage is printed twice.
+  const narrativeLead = narrative !== null ? splitLead(narrative.lead) : null;
+
   /** Phone first: a local business is called, not emailed. */
   const primaryCta = hasPhone
     ? { ctaLabel: 'Call us', ctaTarget: 'phone' as CtaTarget }
@@ -1336,17 +1574,26 @@ export function composeBaseline(profile: BusinessProfile): WebsiteContent {
     subheading: '',
     // The lead sentence sits here and the remainder goes to `about`, so the
     // same passage is never printed twice.
-    body: lead,
+    body: lead !== '' ? lead : (narrativeLead?.lead ?? ''),
     bullets: [],
     ...primaryCta,
   });
 
-  if (rest !== '') {
+  // About, from whichever source had prose. The listing's remainder if there
+  // was one, otherwise the paragraphs following the narrative's opening line —
+  // never both, and never the two interleaved.
+  const aboutBody =
+    rest !== ''
+      ? rest
+      : [narrativeLead?.rest ?? '', ...(narrative?.body ?? [])]
+          .filter((paragraph) => paragraph !== '')
+          .join('\n\n');
+  if (aboutBody !== '') {
     sections.push({
       kind: 'about',
       heading: `About ${profile.name.value}`,
       subheading: '',
-      body: rest,
+      body: aboutBody,
       bullets: [],
       ctaLabel: '',
       ctaTarget: 'none',
@@ -1392,7 +1639,14 @@ export function composeBaseline(profile: BusinessProfile): WebsiteContent {
 
   // The gallery threshold matches the writer's: below four photographs a grid
   // reads as an accident rather than a gallery.
-  if (profile.images.gallery.length >= 4) {
+  // Counted after filtering, not before.
+  //
+  // `assignImages` drops map tiles, social-feed thumbnails and widget chrome,
+  // so a business with five junk images used to get a gallery *section* that
+  // then rendered one photograph or none. The decision to have a gallery and
+  // the images that fill it must be the same set, or the page promises
+  // something the renderer cannot deliver.
+  if (profile.images.gallery.filter(isUsablePhotograph).length >= 4) {
     sections.push({
       kind: 'gallery',
       heading: 'Photographs',
@@ -1429,7 +1683,44 @@ export function composeBaseline(profile: BusinessProfile): WebsiteContent {
     });
   }
 
-  const seoTitle = [profile.name.value, category !== null && locality !== null ? `${category} in ${locality}` : null]
+  /*
+   * The closing moment.
+   *
+   * Every composed page used to end on the contact table and then a footer that
+   * does nothing. A page that stops is not the same as a page that closes: a
+   * premium site ends on a deliberate invitation — a line and one button — and
+   * the difference is the last thing a visitor feels before they leave or act.
+   *
+   * The heading is a functional label, not a claim. "Visit", "Call" and "Get in
+   * touch" say what the reader may do next; they assert nothing about the
+   * business that the profile has not already proved, which is the same footing
+   * "Contact" and "Opening hours" have always stood on. The verb is chosen from
+   * the action the profile can actually support, so a business with no phone is
+   * never invited to be called.
+   *
+   * `assembleContent` resolves the target and drops the button if the profile
+   * cannot back it; the design layer already centres a `cta` and sorts it last.
+   */
+  if (primaryCta.ctaTarget !== 'none') {
+    const invitation =
+      profile.address !== null && locality !== null
+        ? `Visit ${profile.name.value} in ${locality}`
+        : `Get in touch with ${profile.name.value}`;
+
+    sections.push({
+      kind: 'cta',
+      heading: invitation,
+      subheading: '',
+      // Deliberately empty. A closing section is a line and a button; a
+      // paragraph here would be the composer writing marketing copy, and
+      // repeating the address the contact block states two sections earlier.
+      body: '',
+      bullets: [],
+      ...primaryCta,
+    });
+  }
+
+  const seoTitle =[profile.name.value, category !== null && locality !== null ? `${category} in ${locality}` : null]
     .filter((part): part is string => part !== null)
     .join(' — ');
 

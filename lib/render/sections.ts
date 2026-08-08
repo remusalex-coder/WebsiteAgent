@@ -865,6 +865,30 @@ function renderFrame(frame: SectionFrame, head: Html, content: Html): Html {
 /* ------------------------------------------------------------------ */
 
 /**
+ * Characters in the headline's longest word.
+ *
+ * The one measurement that decides whether a display size is art direction or a
+ * defect. A display step is chosen for the viewport, but a headline is set in a
+ * *column*, and the longest word is what has to fit in it.
+ *
+ * Zuni Café's page opened on "Californian restaurant in San Francisco" at
+ * 143px in a 620px column. "Californian" measures about 950px at that size, so
+ * `overflow-wrap` — correctly there, to stop a long trade word overflowing a
+ * 390px phone — broke it mid-word, and the largest text on the site rendered as
+ * "Californi / an / restauran / t in San Francisc / o".
+ *
+ * Emitting the count lets the stylesheet cap the size at something that fits,
+ * with no measurement pass and no JavaScript. Floored at four so a one-word
+ * headline like "Zuni" cannot compute an absurd cap.
+ */
+function longestWord(heading: string): number {
+  const longest = heading
+    .split(/\s+/)
+    .reduce((max, word) => Math.max(max, word.length), 0);
+  return Math.max(longest, 4);
+}
+
+/**
  * The hero's copy block, shared by every treatment.
  *
  * Split into a headline group and a supporting group rather than emitted as one
@@ -877,10 +901,11 @@ function renderFrame(frame: SectionFrame, head: Html, content: Html): Html {
  */
 function heroContent(section: WebsiteSection, ctx: SectionContext): Html {
   return element('div', { class: 'hero__content' }, [
-    element('div', { class: 'hero__headline' }, [
-      renderEyebrow(section, ctx),
-      renderHeading(section, ctx),
-    ]),
+    element(
+      'div',
+      { class: 'hero__headline', style: `--headline-chars: ${longestWord(section.heading)}` },
+      [renderEyebrow(section, ctx), renderHeading(section, ctx)],
+    ),
     element('div', { class: 'hero__support' }, [
       renderSubheading(section),
       renderBody(section),

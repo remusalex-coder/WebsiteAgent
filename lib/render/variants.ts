@@ -808,8 +808,18 @@ h4 {
    * at the same specificity — which is how a 390px phone ended up with a 77px
    * headline nine lines deep, reading "Seaso / nal / organ / ic". The base rule
    * and this one have to agree; the colour tokens failed the same way once.
+   *
+   * It happened a second time, with the column cap. The base sheet learned to
+   * limit the display size to what the headline's longest word can occupy in
+   * its own column, this rule did not, and Zuni Café shipped a hero reading
+   * "Californi / an / restauran / t". Both caps belong in both places. Third
+   * occurrence of INF-007, and the reason the guard test now exists.
    */
-  font-size: min(var(--text-display-size), 11vw);
+  font-size: min(
+    var(--text-display-size),
+    11vw,
+    calc(100cqi / var(--headline-chars, 8) * 1.8)
+  );
   line-height: var(--text-display-height);
   font-weight: var(--text-display-weight);
   letter-spacing: var(--text-display-tracking, normal);

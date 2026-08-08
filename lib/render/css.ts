@@ -623,11 +623,43 @@ a:hover {
  * the token still wins — and stops it from exceeding what a narrow screen can
  * show. 11vw is about three words per line at 390px.
  */
+/*
+ * The headline is also capped by its own column, not only by the viewport.
+ *
+ * 100cqi is the width of the headline block, which declares itself a container
+ * below. The --headline-chars property is the longest word in the headline,
+ * emitted by the renderer, and is the only part of this the stylesheet cannot
+ * work out for itself.
+ *
+ * The 1.8 divisor converts characters to an em width: a display face averages
+ * roughly 0.55em per glyph, so a word of N characters occupies about 0.55·N·F
+ * and fits a column of width W when F ≤ 1.8·W/N. It is deliberately an
+ * approximation with headroom rather than a measurement — being a little
+ * conservative costs a few pixels of drama, and being wrong the other way
+ * shatters the largest words on the page.
+ *
+ * The viewport cap stays: it governs the short headlines this one does not
+ * bind, and it is what keeps a phone to about three words a line.
+ */
 .section--hero h1 {
-  font-size: min(var(--text-display-size, clamp(2rem, 1.4rem + 3vw, 3.5rem)), 11vw);
+  font-size: min(
+    var(--text-display-size, clamp(2rem, 1.4rem + 3vw, 3.5rem)),
+    11vw,
+    calc(100cqi / var(--headline-chars, 8) * 1.8)
+  );
   line-height: var(--text-display-height, 1.05);
   font-weight: var(--text-display-weight, 700);
   letter-spacing: var(--text-display-tracking, normal);
+}
+
+/*
+ * Declared a container so the rule above can measure it.
+ *
+ * Inline size only — a size container would need a fixed block size, and the
+ * headline's height is exactly what is being decided here.
+ */
+.hero__headline {
+  container-type: inline-size;
 }
 
 /* The column-hero cap lives in the variants sheet, which is emitted after this

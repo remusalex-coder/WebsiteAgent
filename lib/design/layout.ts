@@ -406,20 +406,49 @@ const DEFAULT_ORDER: readonly SectionKind[] = [
   'cta',
 ];
 
+/**
+ * Where a section the industry did not name belongs.
+ *
+ * Appending unlisted kinds after every listed one is the obvious rule and it is
+ * wrong, because the listed set usually ends with `contact`. The dental
+ * industry does not name `gallery`, so Paradise Dental Care rendered its
+ * photographs **after its contact details** — the page asked for the call and
+ * then showed the practice.
+ *
+ * An unnamed kind is not lower priority; it is simply unmentioned, and the
+ * default order already knows where it goes. So it inherits the rank of the
+ * nearest kind *before* it in `DEFAULT_ORDER` that the industry did name, plus
+ * a half step. Gallery follows services for a dentist, keeps its own place for
+ * a restaurant that names it, and in both cases lands before the closing
+ * sections rather than after them.
+ *
+ * `-0.5` when nothing precedes it: the kind belongs at the very front, which
+ * only `hero` outranks and `hero` is pinned separately.
+ */
+function rankOf(kind: SectionKind, priorities: readonly SectionKind[]): number {
+  const listed = priorities.indexOf(kind);
+  if (listed !== -1) return listed;
+
+  const position = DEFAULT_ORDER.indexOf(kind);
+  if (position === -1) return priorities.length;
+
+  for (let before = position - 1; before >= 0; before -= 1) {
+    const neighbour = DEFAULT_ORDER[before]!;
+    const neighbourRank = priorities.indexOf(neighbour);
+    if (neighbourRank !== -1) return neighbourRank + 0.5;
+  }
+
+  return -0.5;
+}
+
 export function orderSections(content: WebsiteContent, industry: Industry): readonly number[] {
   const priorities = defaultsFor(industry).prioritySections;
 
-  const indexed = content.sections.map((section, index) => {
-    const listed = priorities.indexOf(section.kind);
-    const fallback = DEFAULT_ORDER.indexOf(section.kind);
-    return {
-      index,
-      kind: section.kind,
-      // Named kinds always outrank unnamed ones; unnamed ones then order among
-      // themselves rather than tying.
-      rank: listed === -1 ? priorities.length + (fallback === -1 ? DEFAULT_ORDER.length : fallback) : listed,
-    };
-  });
+  const indexed = content.sections.map((section, index) => ({
+    index,
+    kind: section.kind,
+    rank: rankOf(section.kind, priorities),
+  }));
 
   return indexed
     .slice()
