@@ -6,8 +6,8 @@
  * Industry: bakery (listing, matched category:bakery)
  *   Maps lists the business as "Bakery", which matches "bakery".
  *
- * Layout: split hero, corporate footer, contrast target AA (body 4.5:1, large 3:1, measured 15.1:1)
- *   Chose the split hero because the friendly direction leads with imagery and the hero has 1 usable image.
+ * Layout: full-bleed hero, corporate footer, contrast target AA (body 4.5:1, large 3:1, measured 15.1:1)
+ *   Chose the full-bleed hero because this industry sells atmosphere and the hero has 1 usable image, so the photograph leads at full width.
  *     hero → stack (lead, subtle): Chose stack for hero: the section has 0 items and 1 image.
  *     services → cards (primary, canvas): Chose cards for services: it is the bakery convention for a services section.
  *     menu → list (primary, subtle): Chose list for menu: it is the bakery convention for a menu section.
@@ -900,9 +900,9 @@ a:hover {
   /* Imagery */
   --image-radius: var(--radius-md);
   --image-filter: saturate(1.08) sepia(0.14) hue-rotate(-6deg);
-  --hero-aspect: 4 / 3;
+  --hero-aspect: 16 / 9;
   --gallery-aspect: 4 / 3;
-  --overlay-opacity: 0;
+  --overlay-opacity: 0.45;
 
   /* Icons */
   --icon-size: 1.5rem;

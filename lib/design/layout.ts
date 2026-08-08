@@ -74,14 +74,37 @@ export function chooseHero(
 
   const needsImage: readonly HeroVariant[] = ['split', 'image-first', 'full-bleed', 'magazine'];
 
-  for (const candidate of theme.heroPreference) {
+  /*
+   * How much the industry leads with photography outranks the theme's default
+   * hero, when there is a photograph to lead with.
+   *
+   * `imageReliance` was passed into this function from the beginning and used
+   * only to word the fallback message — so a hotel with a real photograph of
+   * its own building got `editorial`, because that is what the elegant theme
+   * prefers, and the photograph appeared beside the copy at a third of the
+   * width. For a business whose product *is* atmosphere, that is the wrong
+   * decision: the industry research on premium hospitality sites is unanimous
+   * that the hero is cinematic and full-bleed, because a guest is deciding
+   * whether they can picture themselves there.
+   *
+   * The theme still governs colour, type, spacing and radius. Only the scale of
+   * the hero changes, and only when the business actually has an image.
+   */
+  const leadsWithImagery = imageReliance === 'essential' && shape.images > 0;
+  const preference: readonly HeroVariant[] = leadsWithImagery
+    ? ['full-bleed', ...theme.heroPreference.filter((variant) => variant !== 'full-bleed')]
+    : theme.heroPreference;
+
+  for (const candidate of preference) {
     if (needsImage.includes(candidate) && shape.images === 0) continue;
     if (candidate === 'magazine' && shape.images < 2) continue;
     if (candidate === 'editorial' && shape.bodyChars < 80) continue;
 
-    const why = needsImage.includes(candidate)
-      ? `the ${theme.id} direction leads with imagery and the hero has ${shape.images} usable image${shape.images === 1 ? '' : 's'}`
-      : `the ${theme.id} direction leads with type`;
+    const why = candidate === 'full-bleed' && leadsWithImagery
+      ? `this industry sells atmosphere and the hero has ${shape.images} usable image${shape.images === 1 ? '' : 's'}, so the photograph leads at full width`
+      : needsImage.includes(candidate)
+        ? `the ${theme.id} direction leads with imagery and the hero has ${shape.images} usable image${shape.images === 1 ? '' : 's'}`
+        : `the ${theme.id} direction leads with type`;
     return { variant: candidate, rationale: `Chose the ${candidate} hero because ${why}.` };
   }
 

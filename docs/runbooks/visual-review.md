@@ -33,10 +33,24 @@ looking.
    Writes `output/shots/<label>-desktop.png` and `-mobile.png`, and prints
    words, images, sections, trust items, CTAs, height and overflow.
 
-3. **Shoot the previous version under a different label** and compare the two
+3. **Run the creative review.** It measures the structural signatures of
+   generated-looking work — timid imagery, flat type hierarchy, uniform rhythm,
+   buried calls to action — in a real browser:
+
+   ```bash
+   npx tsx scripts/creative-review.ts <runId>
+   ```
+
+   Read it as a floor, not a verdict. It does not score taste, and a page can
+   pass every check and still be one nobody would be proud to send a client.
+   Calibrated against the pre-art-direction hotel, which it correctly marked
+   weak on opening image and hero presence while passing its rhythm and CTA
+   structure — because those genuinely were fine. Its problem was emptiness.
+
+4. **Shoot the previous version under a different label** and compare the two
    images side by side. A number moving is not evidence that a page improved.
 
-4. **Look for these five, in this order.** They are the ones that have actually
+5. **Look for these five, in this order.** They are the ones that have actually
    occurred:
    - **Is anything on the page not this business?** Photographs of neighbours,
      a competitor's name, a category that is really a UI control.

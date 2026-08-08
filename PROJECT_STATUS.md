@@ -243,11 +243,15 @@ Also:
 - ~~**Thin profiles produce an unsellable page (PRD-007, P0).**~~ **Largely resolved 2026-08-08** — the listing is now a content source. The rendered-page effect is unmeasured; see `NEXT_SESSION.md`.
 - ~~**No trust signals rendered anywhere (PRD-008).**~~ **Resolved 2026-08-08** — `TrustSignal[]` on `WebsiteContent`, built by code from verified profile data, rendered as a trust bar under the hero's call to action. 5/5 benchmark sites now show one, no overflow at 390px.
 - **The two stylesheets override each other silently (INF-007).** Twice now.
-- **Premium feel is the next quality frontier (PRD-013).** The generated page is now
-  correct, designed and truthful. It is not yet *memorable*: one photograph, no motion,
-  no editorial storytelling. Correct reads like a brochure; premium feels like an
-  experience, and the gap between them is the difference between a page an owner
-  accepts and a page an owner is proud of.
+- **Premium feel is the next quality frontier (PRD-013).** The hero is now cinematic
+  and the page passes every structural check in `scripts/creative-review.ts`. What is
+  still missing is *taste* — one photograph, no motion, no storytelling arc, a footer
+  that does nothing. The harness measures the signatures of generated work; it cannot
+  tell whether a page is beautiful, and a page can pass all four checks and still not be
+  one an agency would be proud to send.
+- **The Creative Director is a vocabulary, not yet an agent.** `creative-review.ts`
+  defines the observations a model will eventually be asked to judge. Turning it into an
+  agent needs a provider.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
 - **Coverage is the renderer, the design layer, the listing source, and the writer's brief and trust engine.** `npm test` runs 293 assertions. The agents' own orchestration still has none.
 - **Artifact migrations are manual.** `ARTIFACT_DEFAULTS` in `main.ts` backfills fields a contract gained after a run was written; forgetting an entry breaks `--from=<stage>` on every older run with a `TypeError` far from the cause. A contract change and its default are two edits that must not drift.

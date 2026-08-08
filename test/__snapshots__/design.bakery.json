@@ -394,7 +394,7 @@
     }
   },
   "layout": {
-    "hero": "split",
+    "hero": "full-bleed",
     "footer": "corporate",
     "sections": [
       {
@@ -545,14 +545,14 @@
     ],
     "stickyHeader": true,
     "showNavigation": true,
-    "rationale": "Chose the split hero because the friendly direction leads with imagery and the hero has 1 usable image."
+    "rationale": "Chose the full-bleed hero because this industry sells atmosphere and the hero has 1 usable image, so the photograph leads at full width."
   },
   "imagery": {
     "treatment": "warm",
-    "heroCrop": "landscape",
+    "heroCrop": "wide",
     "galleryCrop": "landscape",
     "radius": "md",
-    "overlayOpacity": null,
+    "overlayOpacity": 0.45,
     "fallback": "gradient"
   },
   "icons": {

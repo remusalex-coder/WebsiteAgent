@@ -26,10 +26,37 @@ complete, truthful page from verified data with no model at all, and
 [offline-verification](docs/runbooks/offline-verification.md) and
 [visual-review](docs/runbooks/visual-review.md).
 
+## Art direction now responds to context
+
+`chooseHero` received `imageReliance` from the beginning and used it **only to
+word the fallback message**. So a hotel with a photograph of its own building
+got the elegant theme's text-led `editorial` hero and the picture appeared
+beside the copy at a third of the width.
+
+Industry research on premium hospitality is unanimous — the hero is cinematic,
+because a guest is deciding whether they can picture themselves there. An
+industry whose `imageReliance` is `essential` and that has a usable photograph
+now leads with `full-bleed`. The theme still governs colour, type and spacing;
+only the hero's scale changes.
+
+The same commit fixed a coupling of the DEC-018 family: `overlayOpacity` keyed
+off `theme.heroPreference[0]` — a *proxy* for the hero rather than the hero. Any
+other route to a full-bleed hero would have rendered white type on a photograph
+with no scrim. It now keys off the hero actually chosen.
+
+## The Creative Director exists as a vocabulary
+
+`npx tsx scripts/creative-review.ts <runId>` measures opening image, type
+hierarchy, layout rhythm and CTA hierarchy. Calibrated: the pre-art-direction
+hotel scores 2 weak, the current one 0.
+
+**Read it as a floor.** It does not score taste. Turning it into a real agent —
+a model judging memorability, given these observations — needs a provider.
+
 ## Look at this first
 
 `output/shots/hotel-BEFORE-desktop.png` against
-`output/shots/hotel-PREMIUM-desktop.png`. Same business, same pipeline, four
+`output/shots/hotel-CINEMATIC-desktop.png`. Same business, same pipeline, five
 sessions apart.
 
 ## The design layer was switched off

@@ -41,6 +41,7 @@ import type {
   BrandMood,
   ContrastLevel,
   DesignDirection,
+  HeroVariant,
   IconSystem,
   ImageStrategy,
   Industry,
@@ -303,13 +304,29 @@ function accessibilityFor(level: 'AA' | 'AAA'): AccessibilityPreferences {
   };
 }
 
-function imageryFor(theme: ThemeDefinition, reliance: 'essential' | 'supporting' | 'incidental'): ImageStrategy {
+function imageryFor(
+  theme: ThemeDefinition,
+  reliance: 'essential' | 'supporting' | 'incidental',
+  hero: HeroVariant,
+): ImageStrategy {
+  /*
+   * Keyed on the hero that was actually chosen, not the one the theme prefers.
+   *
+   * These read `theme.heroPreference[0]` before, which is a proxy for the
+   * decision rather than the decision. The moment anything else could promote a
+   * full-bleed hero — as the industry's image reliance now does — that proxy
+   * goes stale and the page renders white text on a photograph with no scrim
+   * behind it. A contrast failure, from a value that was never asked the right
+   * question.
+   */
+  const immersive = hero === 'full-bleed';
+
   return {
     treatment: theme.imageTreatment,
-    heroCrop: theme.heroPreference[0] === 'full-bleed' ? 'wide' : 'landscape',
+    heroCrop: immersive ? 'wide' : 'landscape',
     galleryCrop: theme.id === 'editorial' || theme.id === 'creative' ? 'natural' : 'landscape',
     radius: theme.radius === 'sharp' ? 'none' : 'md',
-    overlayOpacity: theme.heroPreference[0] === 'full-bleed' ? 0.45 : null,
+    overlayOpacity: immersive ? 0.45 : null,
     // A category that leads with photography should show *something* rather
     // than a hole; one that does not is better with nothing than with filler.
     fallback: reliance === 'essential' ? 'gradient' : reliance === 'supporting' ? 'solid' : 'omit',
@@ -420,7 +437,7 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     industry,
     tokens: { color: color.system, typography, spacing, radius, elevation, motion },
     layout: layout.plan,
-    imagery: imageryFor(theme, defaults.imageReliance),
+    imagery: imageryFor(theme, defaults.imageReliance, layout.plan.hero),
     icons: iconsFor(theme),
     responsive: responsiveFor(theme),
     accessibility,
