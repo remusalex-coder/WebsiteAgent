@@ -493,6 +493,42 @@ function dedupeAttributes(attributes: readonly BusinessAttribute[]): BusinessAtt
   );
 }
 
+/**
+ * Attribute labels that are really a statement of what kind of place this is.
+ *
+ * Deliberately narrow. A hotel listing carries no category button — which is
+ * how "Add website" became the benchmark hotel's category — but its About tab
+ * says "3-star hotel", which is the category, stated by the listing, in the
+ * listing's own words.
+ *
+ * Anything that does not name a place type is left alone. The cost of missing
+ * one is a `null` category, which every consumer already handles; the cost of a
+ * false positive is a wrong trade on the front of a real business's website.
+ */
+const CATEGORY_ATTRIBUTE =
+  /\b(hotel|motel|inn|hostel|resort|guest house|restaurant|cafe|café|bakery|bar|pub|shop|store|boutique|clinic|dentist|salon|spa|barber|gym|garage)\b/i;
+
+/**
+ * The business category, from the listing's category line or — when it has none
+ * — from what the listing says about itself.
+ */
+function categoryFor(
+  discovery: DiscoveryResult,
+  collected: CollectedBusiness,
+  mapsUrl: string,
+): Attributed<string> | null {
+  if (discovery.category) {
+    return chooseBest([candidate(discovery.category, 'maps', mapsUrl)], () => 0);
+  }
+
+  const stated = collected.attributes.find(
+    (attribute) => attribute.available && CATEGORY_ATTRIBUTE.test(attribute.label),
+  );
+  if (stated === undefined) return null;
+
+  return chooseBest([candidate(stated.label, 'maps', stated.sourceUrl)], () => 0);
+}
+
 function dedupeServices(services: readonly ServiceItem[]): ServiceItem[] {
   const seen = new Map<string, ServiceItem>();
   for (const service of services) {
@@ -652,9 +688,7 @@ export const normalizerAgent: NormalizerAgent = {
     /* -- assemble --------------------------------------------------- */
     const draft: Omit<BusinessProfile, 'validation'> = {
       name: resolvedName,
-      category: discovery.category
-        ? chooseBest([candidate(discovery.category, 'maps', mapsUrl)], () => 0)
-        : null,
+      category: categoryFor(discovery, collected, mapsUrl),
       address,
       coordinates,
       website,

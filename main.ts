@@ -214,6 +214,35 @@ const ARTIFACT_KEYS = {
   deploy: ['projectId', 'status'],
 } as const satisfies Record<StageName, readonly string[]>;
 
+/**
+ * Fields added to a contract after artifacts had already been written.
+ *
+ * An artifact directory is a persistence format with a long life: runs from
+ * weeks ago are resumed, re-rendered and used as regression fixtures. Every
+ * field added to a contract therefore arrives as `undefined` from every file
+ * already on disk, and the failure is a `TypeError` several stages downstream
+ * rather than anything that names the cause.
+ *
+ * That is not hypothetical — `attributes` and `description` landed on
+ * `BusinessProfile` with the listing source, and `--from=analyze` on any older
+ * run crashed in the writer until this existed.
+ *
+ * Defaults only, and only ever the empty value. Filling a field with a *guess*
+ * would put an invented fact into a profile, which is the one thing this
+ * pipeline may not do. An old artifact is honestly missing what it never
+ * collected; re-run from the top to actually have it.
+ */
+const ARTIFACT_DEFAULTS = {
+  discovery: {},
+  collect: { attributes: [], listingDescription: null },
+  normalize: { attributes: [], description: null },
+  analyze: {},
+  write: { trust: [] },
+  design: {},
+  render: {},
+  deploy: {},
+} as const satisfies Record<StageName, Readonly<Record<string, unknown>>>;
+
 function isStageName(value: string): value is StageName {
   return (STAGES as readonly string[]).includes(value);
 }
@@ -257,7 +286,10 @@ async function readArtifact<T>(outputDir: string, stage: StageName): Promise<T> 
       SOURCE,
     );
   }
-  return record as T;
+
+  // Backfill fields the contract gained after this file was written. Spread
+  // first so anything the file does carry always wins.
+  return { ...ARTIFACT_DEFAULTS[stage], ...record } as T;
 }
 
 /**

@@ -172,6 +172,13 @@ export const fullContent: WebsiteContent = {
     typography: { heading: 'Playfair Display', body: 'Inter' },
   },
   sections,
+  // One of each kind the writer can produce, so the snapshot covers the
+  // separator, the weighted rating and a label long enough to wrap.
+  trust: [
+    { kind: 'rating', label: '4.8 on Google', source: 'maps' },
+    { kind: 'category', label: 'Bakery in Lisboa', source: 'maps' },
+    { kind: 'credential', label: 'Identifies as women-owned', source: 'maps' },
+  ],
   seo: {
     title: 'Padaria Ana & Sons — bakery in Lisboa',
     description: 'Sourdough, pastel de nata & coffee on Rua da Prata. Open Tuesday to Sunday.',
@@ -213,6 +220,9 @@ export const minimalContent: WebsiteContent = {
       callToAction: null,
     },
   ],
+  // A listing that proved nothing produces no bar at all, rather than an empty
+  // one — the minimal snapshot is what holds that.
+  trust: [],
   seo: {
     title: 'Corner Shop',
     description: '',

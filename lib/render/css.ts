@@ -527,6 +527,69 @@ a:hover {
   max-width: 62ch;
 }
 
+/*
+ * The trust bar.
+ *
+ * Verified facts under the hero's call to action: the rating, the trade and
+ * town, the credential. Trust scored lowest of the eight quality dimensions on
+ * every benchmark site while every profile already carried these facts — they
+ * were simply never on the page.
+ *
+ * Declared here and nowhere else. The variants sheet is emitted after this one
+ * and re-declaring a selector there wins silently at equal specificity, which
+ * has cost this project two debugging sessions (INF-007).
+ */
+.trust-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs) var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  /*
+   * Inherited, not --color-muted. The hero paints its own background and a
+   * fixed grey fails contrast against the brand and inverted treatments; the
+   * surrounding text colour is by construction already readable on whatever is
+   * behind it.
+   */
+  color: inherit;
+  opacity: 0.85;
+}
+
+.trust-bar__item {
+  display: inline-flex;
+  align-items: center;
+  /*
+   * A flex child defaults to min-width:auto, so its longest word sets a floor
+   * and "Wheelchair-accessible entrance" pushes a 390px viewport wider than the
+   * document. This is the same defect as D-03, one layout down.
+   */
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* Drawn, not written: a separator in generated content gets announced by some readers. */
+.trust-bar__item + .trust-bar__item::before {
+  content: "";
+  flex: none;
+  width: 3px;
+  height: 3px;
+  margin-right: var(--space-sm);
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+/* The strongest signal, weighted rather than decorated with an icon. */
+.trust-bar__item--rating {
+  font-weight: 600;
+  opacity: 1;
+}
+
 .section__actions {
   margin-top: var(--space-lg);
 }

@@ -27,7 +27,7 @@ import { element, empty, join, paragraphs, text } from './html.js';
 import { safeHref } from './assets.js';
 
 import type { Html } from './html.js';
-import type { SectionKind, WebsiteSection } from '../types.js';
+import type { SectionKind, TrustSignal, WebsiteSection } from '../types.js';
 import type { AssetPlan, ResolvedImage } from './assets.js';
 import type {
   HeroVariant,
@@ -71,6 +71,11 @@ export interface SectionContext {
   readonly alternate: boolean;
   /** The site tagline. Only the leading hero uses it. */
   readonly tagline: string | null;
+  /**
+   * Verified reassurance. Only the leading hero renders it — a trust bar in
+   * the footer is a trust bar nobody reads.
+   */
+  readonly trust: readonly TrustSignal[];
   readonly assets: AssetPlan;
   readonly warn: (message: string) => void;
   /** The design decision for this section, or `null` on the legacy path. */
@@ -326,6 +331,31 @@ function renderEyebrow(section: WebsiteSection, ctx: SectionContext): Html {
   }
   if (ctx.plan === null || ctx.plan.emphasis === 'quiet' || section.kind === 'cta') return empty;
   return element('p', { class: 'eyebrow' }, text(section.kind));
+}
+
+/**
+ * The trust bar: verified facts, set small, directly under the hero's call to
+ * action.
+ *
+ * Placement is the whole point. The same rating rendered in the contact block
+ * at the foot of the page is read by nobody — a visitor decides whether a
+ * business is real in the first screen, next to the button they are being
+ * asked to press.
+ *
+ * A list rather than a paragraph, because these are discrete claims and a
+ * screen reader should be able to count them. Separators are drawn in CSS, so
+ * they are never announced.
+ */
+function renderTrustBar(ctx: SectionContext): Html {
+  if (ctx.trust.length === 0) return empty;
+
+  return element(
+    'ul',
+    { class: 'trust-bar', role: 'list', 'aria-label': 'Verified details' },
+    ctx.trust.map((signal) =>
+      element('li', { class: `trust-bar__item trust-bar__item--${signal.kind}` }, text(signal.label)),
+    ),
+  );
 }
 
 /** Heading, subheading and eyebrow as one block. */
@@ -858,6 +888,7 @@ function heroContent(section: WebsiteSection, ctx: SectionContext): Html {
         ? renderPlainList(section.bullets)
         : renderDetailList(section.bullets, ctx, section.kind),
       renderCallToAction(section, ctx, 'button--primary'),
+      renderTrustBar(ctx),
     ]),
   ]);
 }
@@ -967,6 +998,7 @@ function legacyHero(section: WebsiteSection, ctx: SectionContext, images: readon
     renderBody(section),
     renderPlainList(section.bullets),
     renderCallToAction(section, ctx, 'button--primary'),
+    renderTrustBar(ctx),
   ]);
 
   const media = lead === undefined

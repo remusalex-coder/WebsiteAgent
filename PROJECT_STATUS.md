@@ -215,11 +215,11 @@ Also:
 - ~~**Everything after stage 3 is uncommitted.**~~ **Resolved 2026-08-07** — 158 files, 30,003 lines committed as `f078d4b` and pushed to `origin/main`.
 - ~~**No `.gitattributes`**~~ **Resolved 2026-08-07** — `* text=auto eol=lf` plus binary rules, added before the first large commit so the repository never needed a renormalisation pass.
 - ~~**Thin profiles produce an unsellable page (PRD-007, P0).**~~ **Largely resolved 2026-08-08** — the listing is now a content source. The rendered-page effect is unmeasured; see `NEXT_SESSION.md`.
-- ~~**No trust signals rendered anywhere (PRD-008).**~~ **Partly resolved 2026-08-08** — the rating renders as a code-owned contact row, `"3.8 on Google"`. It is not yet a hero badge, which is where trust is actually read.
-- **A hero trust badge is still missing (PRD-008b).** The rating in the contact block is the weakest possible placement. Doing it properly means one optional field on `WebsiteContent` and a branch in `renderHead`.
+- ~~**No trust signals rendered anywhere (PRD-008).**~~ **Resolved 2026-08-08** — `TrustSignal[]` on `WebsiteContent`, built by code from verified profile data, rendered as a trust bar under the hero's call to action. 5/5 benchmark sites now show one, no overflow at 390px.
 - **The two stylesheets override each other silently (INF-007).** Twice now.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
-- **Coverage is the renderer, the design layer, the listing source and the writer's brief.** `npm test` runs 272 assertions. The agents' own orchestration still has none.
+- **Coverage is the renderer, the design layer, the listing source, and the writer's brief and trust engine.** `npm test` runs 282 assertions. The agents' own orchestration still has none.
+- **Artifact migrations are manual.** `ARTIFACT_DEFAULTS` in `main.ts` backfills fields a contract gained after a run was written; forgetting an entry breaks `--from=<stage>` on every older run with a `TypeError` far from the cause. A contract change and its default are two edits that must not drift.
 - **Older suites still live outside the repo** — discovery parsers, normalizer primitives, merge/dedup/validation, analyst schema and analyst brief remain in a scratchpad rather than `test/`.
 - **No accessibility or HTML validation in CI.** The markup is checked by assertions about the string, not by axe or the W3C validator. A real audit would be worth one pass before the first deploy.
 - **No retry/backoff** on transient Maps or site failures beyond Playwright's timeouts. The platform reports `retryable` honestly on every failure, but nothing acts on it yet.

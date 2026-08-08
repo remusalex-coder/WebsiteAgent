@@ -1,22 +1,29 @@
 # Next Session
 
-_Written 2026-08-08, after making the Maps listing a content source._
+_Written 2026-08-08, after the listing source and the trust engine._
 
 > **Canonical documentation is BusinessForge HQ in Notion.** This file is the
 > thirty-second version for whoever opens the repo first.
 
-## Start here: one command is owed
+## Start here
 
-The hotel run `output/e6187d7d` has stages 1–3 on disk and **stages 4–6 never
-ran** — the Gemini free-tier daily quota was exhausted mid-session. The whole
-point of last session's work is unmeasured until this finishes:
+**The provider quota is the bottleneck, not the code.** The Gemini free-tier
+daily quota has now blocked stages 4–6 on two consecutive sessions. Try this
+first; if it 429s again, stop waiting and get a paid key — at roughly \$0.02 a
+site the cost is irrelevant next to one customer, and this has cost more
+engineering time than it would ever cost in credit:
 
 ```bash
-node --import tsx --env-file=.env main.ts --from=analyze e6187d7d
+node --import tsx --env-file=.env main.ts --from=analyze f353c77b
 ```
 
-If the quota is still spent, put any other provider key in `.env` and set
-`AI_PROVIDER` — the analyst and writer name no vendor.
+`f353c77b` is a fresh Hotel Union Square run with the corrected category. Any
+provider works — the analyst and writer name no vendor; set `AI_PROVIDER` and
+that vendor's key in `.env`.
+
+**Meanwhile, the platform is verifiable without a model.** See
+[docs/runbooks/offline-verification.md](docs/runbooks/offline-verification.md).
+That loop is what found the category defect below.
 
 ## What changed and what it bought
 
@@ -32,8 +39,35 @@ website at all:
 | Stated attributes | 0 | 12, two of them correctly marked *not* available |
 
 Also landed: the crawl waits for content instead of a fixed 1.2s; bot walls that
-say "Access Denied" rather than "confirm you are human" are now caught; the star
-rating renders for the first time.
+say "Access Denied" rather than "confirm you are human" are now caught.
+
+## The trust engine
+
+Trust scored lowest of the eight dimensions on all five benchmark sites, and the
+reason was never missing data — every profile carried a rating, a category and
+an address. They were never shown.
+
+`WebsiteContent.trust` is now a typed list of verified signals, built by code
+from the profile (never by the model, same rule as hours and the JSON-LD) and
+rendered as a bar directly under the hero's call to action. **5/5 benchmark
+sites render one, with no overflow at 390px.** It is the extension point:
+Places API review counts, certifications and years in business become entries
+here rather than new prose.
+
+## A defect the trust bar exposed
+
+Putting the category at the top of the page is what revealed that the benchmark
+hotel's category was **"Add website"** — a Maps UI button, scraped because a
+hotel pane renders no category line and the selector matched the next control
+along. It had already reached the profile, the schema.org type and the design
+layer's industry match, on both hotel runs, unnoticed.
+
+Fixed in two places: discovery rejects Maps control labels and degrades to
+`null`, and the normalizer recovers the real category from what the listing
+states about itself — the hotel now resolves to `3-star hotel`. `scripts/trust-audit.ts`
+carries a permanent check for the defect class.
+
+**The general lesson: a field nobody renders is a field nobody validates.**
 
 ## Two findings that change the roadmap
 
@@ -61,10 +95,7 @@ diagnosis of why it is short.**
    customer. This is what finally makes the `testimonials` section reachable —
    the renderer has supported it since the design layer landed and no run has
    ever filled it.
-2. **Hero trust badge** (PRD-008b). The rating currently renders as a contact
-   row, which is the weakest possible placement. One optional field on
-   `WebsiteContent`, one branch in `renderHead`, snapshots regenerated.
-3. **Re-run the five-industry batch** and rebuild the scorecards. The recurring
+2. **Re-run the five-industry batch** and rebuild the scorecards. The recurring
    defect table in `output/review/index.html` is now stale in at least two rows.
 
 ## Repeatable commands
@@ -95,13 +126,18 @@ correct 4×12 grid. Both harnesses strip `loading="lazy"` and await
 after the base sheet, and re-declaring a selector there wins at equal
 specificity with no warning. Twice now. Tracked as INF-007.
 
+**Adding a field to a contract breaks every saved run.** An artifact directory is
+a persistence format and old files lack the new field. Add an entry to
+`ARTIFACT_DEFAULTS` in `main.ts` in the same commit, or `--from=<stage>` on any
+older run fails with a `TypeError` several stages from the cause.
+
 **A `.ts` probe script outside the repo will not run.** No `type: module` and no
 `node_modules` above it. Put throwaway scripts in `output/` — gitignored, and
 inside the package.
 
 ## Also true
 
-- 272 tests pass; `npm run typecheck && npm test`.
+- 282 tests pass; `npm run typecheck && npm test`.
 - Provider calls retry retryable failures (429/5xx/transport) with exponential
   backoff and full jitter. They do not rescue an exhausted daily quota.
 - Models: `gemini-3.6-flash` for both stages. The entire Gemini 2.5 family is

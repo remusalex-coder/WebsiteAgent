@@ -468,12 +468,47 @@ export interface SeoMetadata {
   readonly structuredData: Record<string, unknown>;
 }
 
+/**
+ * What kind of reassurance a signal offers.
+ *
+ * A closed set, because the renderer orders and styles by it and because an
+ * open one would invite a `kind` that is really a marketing claim.
+ */
+export type TrustSignalKind = 'rating' | 'category' | 'hours' | 'credential';
+
+/**
+ * One checkable fact, shown to a stranger deciding whether this business is
+ * real.
+ *
+ * Trust scored lowest of the eight quality dimensions on every benchmark site,
+ * and the reason was never that the facts were missing — every profile carried
+ * a rating, a category and an address. They were simply never shown.
+ *
+ * The type exists so that stays honest as sources multiply. A signal is built
+ * from `BusinessProfile` by code, never by the model, and `source` records
+ * which stage proved it. Places API review counts, certifications and years in
+ * business all become new entries here rather than new prose.
+ */
+export interface TrustSignal {
+  readonly kind: TrustSignalKind;
+  /** The line a visitor reads, e.g. "4.9 on Google". */
+  readonly label: string;
+  /** Which source proved it, so any claim on the page stays auditable. */
+  readonly source: FieldSource;
+}
+
 /** A complete, buildable spec for the site. Still design-tool agnostic. */
 export interface WebsiteContent {
   readonly businessName: string;
   readonly tagline: string;
   readonly voice: BrandVoice;
   readonly sections: readonly WebsiteSection[];
+  /**
+   * Verified reassurance, best first. Assembled from the profile after the
+   * model has answered — the schema has no field for it, so the model cannot
+   * offer one.
+   */
+  readonly trust: readonly TrustSignal[];
   readonly seo: SeoMetadata;
   /** Facts the writer could not verify — surfaced rather than invented. */
   readonly unresolvedGaps: readonly string[];

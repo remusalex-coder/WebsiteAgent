@@ -347,13 +347,37 @@ async function extractName(page: PageHandle): Promise<string | null> {
   return cleaned && cleaned.toLowerCase() !== 'results' ? cleaned : null;
 }
 
+/**
+ * Maps' own action buttons, which sit in the same part of the pane as the
+ * category and are styled like it.
+ *
+ * A listing with no category renders none, and the selectors below then match
+ * the next button along. Both benchmark hotel runs came back with the category
+ * **"Add website"**, which reached the profile, the schema.org type, the design
+ * layer's industry match and — once the trust bar existed — the top of the
+ * page, as "Add website in San Francisco".
+ *
+ * A wrong category is worse than no category: `null` degrades honestly through
+ * every one of those, and a plausible-looking string does not.
+ */
+const MAPS_ACTION_LABEL =
+  /^(add|suggest|claim|write|edit|share|save|send|report|update|verify|upload)\b|^(directions|nearby|overview|about|reviews|photos|prices|menu|order online|book|website)$/i;
+
+/** True for a Maps control label that has been mistaken for a category. */
+export function isMapsActionLabel(value: string): boolean {
+  return MAPS_ACTION_LABEL.test(value.trim());
+}
+
 async function extractCategory(page: PageHandle): Promise<string | null> {
   const category = await firstOf([
     () => page.text('button[jsaction*="category"]'),
     () => page.text('button.DkEaL'),
     () => page.text('.DkEaL'),
   ]);
-  return category ? normalizeSpaces(category) : null;
+  if (!category) return null;
+
+  const cleaned = normalizeSpaces(category);
+  return cleaned && !isMapsActionLabel(cleaned) ? cleaned : null;
 }
 
 async function extractAddress(page: PageHandle): Promise<string | null> {

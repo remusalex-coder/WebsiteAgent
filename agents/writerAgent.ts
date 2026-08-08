@@ -49,6 +49,7 @@ import type {
   OpeningHours,
   PhoneNumber,
   SectionKind,
+  TrustSignal,
   WebsiteContent,
   WebsiteSection,
 } from '../lib/types.js';
@@ -630,6 +631,69 @@ export function contactBullets(profile: BusinessProfile): readonly string[] {
 }
 
 /**
+ * Ownership and community credentials, which read as reassurance rather than
+ * as amenities.
+ *
+ * "Identifies as women-owned" is a different kind of fact from "Free Wi-Fi":
+ * one tells a visitor who they are dealing with, the other what they get. Only
+ * the first belongs in a trust bar, so this is an allowlist rather than a
+ * ranking — an attribute nobody anticipated stays out of the hero instead of
+ * appearing there unreviewed.
+ */
+const CREDENTIAL_ATTRIBUTE =
+  /\b(identifies as|women-owned|woman-owned|veteran-owned|black-owned|latino-owned|lgbtq|family-owned|family-run)\b/i;
+
+/** How many signals a visitor will actually read before the headline. */
+const MAX_TRUST_SIGNALS = 3;
+
+/**
+ * The verified reassurance for this business, best first.
+ *
+ * Built here rather than asked for, which is the same rule that governs hours,
+ * contact details and the JSON-LD: a model that is never asked for a
+ * certification cannot invent one. Every branch below is a fact the profile
+ * already proved, and a fact it cannot prove produces no signal at all —
+ * a shorter bar is the correct output, never a padded one.
+ */
+export function trustSignals(profile: BusinessProfile): readonly TrustSignal[] {
+  const signals: TrustSignal[] = [];
+
+  const rating = ratingLine(profile);
+  if (rating !== null && profile.rating !== null) {
+    signals.push({ kind: 'rating', label: rating, source: profile.rating.source });
+  }
+
+  // Both halves or neither. "Dentist" alone reassures nobody, and a town with
+  // no trade is not a claim about the business at all.
+  const category = profile.category?.value;
+  const locality = profile.address?.value.locality;
+  if (category !== undefined && locality !== undefined && locality !== null) {
+    signals.push({
+      kind: 'category',
+      label: `${category} in ${locality}`,
+      source: profile.category?.source ?? 'maps',
+    });
+  }
+
+  // Seven distinct days means seven days with opening times, because a closed
+  // day produces no entry. Anything less is not a claim that can be made — and
+  // the reduced Maps pane usually yields one day, so this rarely fires.
+  const days = new Set(profile.hours.map((entry) => entry.dayOfWeek));
+  if (days.size === 7) {
+    signals.push({ kind: 'hours', label: 'Open seven days a week', source: 'maps' });
+  }
+
+  const credential = profile.attributes.find(
+    (attribute) => attribute.available && CREDENTIAL_ATTRIBUTE.test(attribute.label),
+  );
+  if (credential !== undefined) {
+    signals.push({ kind: 'credential', label: credential.label, source: 'maps' });
+  }
+
+  return signals.slice(0, MAX_TRUST_SIGNALS);
+}
+
+/**
  * The star rating as a line a visitor can read, or `null`.
  *
  * Every benchmark profile carries a rating and no generated page has ever shown
@@ -1206,6 +1270,7 @@ export const writerAgent: WriterAgent = {
         typography: { heading: written.voice.headingFont, body: written.voice.bodyFont },
       },
       sections,
+      trust: trustSignals(profile),
       seo: {
         title: written.seo.title.trim(),
         description: written.seo.description.trim(),

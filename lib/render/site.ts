@@ -210,6 +210,11 @@ export function renderSite(content: WebsiteContent, options: RenderOptions = {})
       headingId: `${ids[index] ?? `section-${index + 1}`}-heading`,
       alternate,
       tagline: position === 0 && section.kind === 'hero' ? content.tagline : null,
+      // `?? []` is not defensive noise. Every spec persisted before the trust
+      // bar existed is still on disk and still re-renderable, and `--render`
+      // validates structurally rather than against the full type — so a field
+      // added later arrives as `undefined` from a file that is otherwise valid.
+      trust: position === 0 && section.kind === 'hero' ? (content.trust ?? []) : [],
       assets,
       warn,
       plan: plans.get(index) ?? null,
