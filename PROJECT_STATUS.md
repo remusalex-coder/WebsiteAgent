@@ -8,6 +8,10 @@ _Last updated: 2026-08-07_
 > action, read the Dashboard.
 
 Autonomous website builder: one Google Maps URL in, a deployed website out.
+
+**Validated across six real businesses in five industries** (restaurant, dentist,
+law firm, hotel, salon). Industry classification correct 5/5. See
+`output/review/index.html` for scorecards and the recurring-defect matrix.
 Stages 1–5b and the renderer implemented; stage 6 stubbed. **Stages 4 and 5 have
 never executed against a live model** — that is the current milestone.
 
@@ -182,6 +186,9 @@ Also:
 
 - ~~**Everything after stage 3 is uncommitted.**~~ **Resolved 2026-08-07** — 158 files, 30,003 lines committed as `f078d4b` and pushed to `origin/main`.
 - ~~**No `.gitattributes`**~~ **Resolved 2026-08-07** — `* text=auto eol=lf` plus binary rules, added before the first large commit so the repository never needed a renormalisation pass.
+- **Thin profiles produce an unsellable page (PRD-007, P0).** 3 of 5 real businesses had no crawlable website — 126–174 words, zero images. The ideal customer is the worst-served case.
+- **No trust signals rendered anywhere (PRD-008).** Every profile carries a Maps star rating; none is shown.
+- **The two stylesheets override each other silently (INF-007).** Twice now.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
 - **Only the renderer is tested.** `npm test` runs 110 assertions, all in `test/render/`. Nothing else in the repository has a committed test.
 - **Older suites still live outside the repo** — discovery parsers, normalizer primitives, merge/dedup/validation, analyst schema and analyst brief remain in a scratchpad rather than `test/`.

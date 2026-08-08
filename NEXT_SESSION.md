@@ -1,88 +1,87 @@
 # Next Session
 
-_Written 2026-08-07, after Milestone 1 (repository secured)._
+_Written 2026-08-08, after the five-industry validation batch (`47b040f`)._
 
 > **Canonical documentation is BusinessForge HQ in Notion.** This file is the
-> thirty-second version for whoever opens the repo first. The HQ has the
-> Executive Dashboard, Decision Log, Master Backlog and one page per subsystem.
+> thirty-second version for whoever opens the repo first.
 
-## The one thing blocking everything
+## Where the project actually is
 
-Stages 4 and 5 need an AI provider credential. There is none on this machine.
+The pipeline works end to end and has been run on **six real businesses**. It
+costs **$0.00** per site and takes about 90 seconds. Industry classification was
+correct 5/5 across restaurant, dentist, law firm, hotel and salon.
+
+**Open the review dashboard first:** `output/review/index.html`. Scorecards,
+comparison matrix, recurring-defect table, side-by-side full pages.
+
+## The one thing that matters now
+
+The batch split in two, and the split is the whole story:
+
+| Profile | Sites | Words | Images | Cause |
+| --- | --- | --- | --- | --- |
+| Rich | 2/5 | 355–554 | 16–17 | Business has a crawlable website |
+| Thin | 3/5 | 126–174 | 0 | No website on the listing (2), or JS-only (1) |
+
+**A business with no website is BusinessForge's ideal customer, and it is the
+case the platform serves worst.** Two listings carried no website at all; one
+resolved to a JS-rendered page yielding 62 characters.
+
+That is backlog **PRD-007**, priority P0. Nothing else moves the business as
+much. Two of the three directions worth trying invent nothing:
+
+1. **Render JS sites properly** — the collector already drives Playwright.
+   Waiting for hydration would have rescued Salon DnA outright.
+2. **Use the Maps listing as a content source** — rating, reviews, category,
+   and the owner-uploaded photography the pipeline never touches. That alone
+   would give the hotel and the law firm images.
+
+## Then
+
+- **PRD-008** — render the Maps star rating as a trust signal. Trust scored
+  3–6 on all five, the weakest category, and the rating is already in every
+  profile.
+- **PRD-002** — Places API. All five sites show one opening day of seven.
+
+## Repeatable commands
 
 ```bash
-printf 'AI_PROVIDER=gemini\nGEMINI_API_KEY=<key>\nANALYST_MODEL=gemini-2.5-flash\nWRITER_MODEL=gemini-2.5-flash\n' > .env
+# Generate + measure the five-industry set (needs .env)
+node --import tsx --env-file=.env scripts/batch-audit.ts
+
+# Re-measure existing runs without regenerating
+node --import tsx --env-file=.env scripts/batch-audit.ts --measure
+
+# Rebuild the review dashboard
+node --import tsx scripts/build-review.ts
+
+# Re-render one saved spec in milliseconds
+npx tsx main.ts --render output/<runId>/5-content.json
 ```
 
-A free key comes from `aistudio.google.com`; no card is required. `.env` is
-gitignored.
+## Two traps that will cost you an hour each
 
-**The two `*_MODEL` lines are mandatory, not optional.** `DEFAULT_MODELS.gemini`
-in `lib/config.ts` is `gemini-2.5-pro`, which lost its free tier in April 2026 —
-setting `AI_PROVIDER=gemini` alone silently selects a paid model.
+**Screenshots lie about lazy images.** Playwright's `fullPage` capture resizes
+the viewport, which re-runs lazy-loading heuristics — a gallery captures as an
+empty white band and looks exactly like broken CSS. Measured in the DOM it was a
+correct 4×12 grid. Both harnesses now strip `loading="lazy"` and await
+`img.decode()`. **Measure the DOM before believing a screenshot.**
 
-## Then run the four gates, in order
+**The two stylesheets override each other silently.** `variants.ts` is emitted
+after the base sheet, and re-declaring a selector there wins at equal
+specificity with no warning. This has now happened twice — the colour tokens in
+the twenty-site review, and `.section--hero h1` in this batch. Tracked as
+INF-007.
 
-Each is cheap, and each has a defined failure exit.
+## Also true
 
-**Gate 1 — first live provider call this project has ever made.** A throwaway
-script: `provider.health()`, then one `generate()` against a two-field schema.
-Proves credential, endpoint, header and schema translation in isolation.
-*Fails → the adapter has a bug; fall back to `AI_PROVIDER=anthropic` with
-`claude-haiku-4-5` (~$0.12/site).*
-
-**Gate 2 — stage 4 on the real profile.** No re-scraping; the Tartine profile is
-already on disk.
-
-```bash
-npx tsx main.ts --from=analyze 25e648c7 --env-file=.env
-```
-
-*Fails → `STRATEGY_SCHEMA` is 6,954 chars and Google publishes no size limit;
-flatten it, or run the analyst on Haiku.*
-
-**Gate 3 — stage 5.** Same run continues. Check `5-content.json`: 6–9 sections,
-hero first, services with ≥ 5 bullets, `hours` and `contact` matching the
-profile exactly, `unresolvedGaps` naming the six missing opening days, and no
-grounding warnings in the run log.
-
-**Gate 4 — read the site.** The design agent and renderer run automatically and
-write `output/25e648c7/site/index.html`. Stage 6 then throws
-`NotImplementedError` — expected; the site is written before that point, so the
-artifact survives.
-
-## What is already true, so you do not re-derive it
-
-- **246 tests pass, typecheck is clean.** `npm run typecheck && npm test`.
-- **Everything is committed.** `git log` no longer ends at stage 3.
-- **`writerAgent` is implemented.** The model writes prose only; contact details,
-  opening hours, JSON-LD and image selection are assembled from
-  `BusinessProfile` afterwards. Its deterministic half is verified against the
-  real Tartine profile — hours merging, JSON-LD, and the grounding check, which
-  caught all three plants in deliberately poisoned copy.
-- **`designAgent` makes no model call** and never will. Determinism is a
-  property of the code, not a promise about temperature.
-- **The renderer is a library, not a stage**, so deployment can call it and get
-  byte-identical output to what was reviewed locally.
-- **Resume is the fast loop.** `npm run render -- output/<runId>/5-content.json`
-  re-renders a saved spec in milliseconds without paying for two model calls.
-
-## Two known product defects, already diagnosed
-
-Both surfaced from verifying the writer against real data, and both will be
-visible on the first generated site:
-
-1. **The contact block lists three emails**, including a press inbox and a
-   *different* business's address. `contactBullets` emits every email in the
-   profile; it needs ranking and a cap.
-2. **The phone renders as `+14154872600`** because that is what Maps supplied.
-   Honest, and wrong for a customer-facing page. Needs display formatting that
-   invents no digits.
-
-Do not fix these before Milestone 7. The critique decides what is highest impact.
-
-## Current state, in one line
-
-Repository secured at `f078d4b`; stages 1–3 verified live; stages 4–5 built and
-never executed; design and renderer built and tested; nothing deployed; blocked
-on one credential.
+- 248 tests pass; `npm run typecheck && npm test`.
+- Provider calls now retry retryable failures (429/5xx/transport) with
+  exponential backoff and full jitter. Two of five generations died on a
+  transient 503 before this existed.
+- Models: `gemini-3.6-flash` for both stages. The entire Gemini 2.5 family is
+  404 for accounts created after mid-2026 — the model catalogue still lists it,
+  so only a real generation call reveals the truth.
+- Stage 6 deploy is still a stub. When it lands, target **Cloudflare Pages**,
+  not Vercel: Vercel's Hobby tier prohibits commercial use, and BusinessForge
+  hosts customer sites commercially.
