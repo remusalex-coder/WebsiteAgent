@@ -36,6 +36,8 @@ import path from 'node:path';
 
 import { chromium } from 'playwright';
 
+import { defaultsFor } from '../lib/design/industries.js';
+
 const ROOT = path.resolve(import.meta.dirname, '..');
 const runId = process.argv[2];
 if (runId === undefined) throw new Error('usage: creative-review.ts <runId>');
@@ -104,11 +106,52 @@ const add = (area: string, verdict: Finding['verdict'], note: string): void => {
 };
 
 /* Imagery at the fold ------------------------------------------------ */
+
+/*
+ * How immersive the opening should be is an industry question, not a universal
+ * one.
+ *
+ * This check used to demand that the hero photograph cover half the first
+ * screen on every site, and scored anything less as "it illustrates rather than
+ * immerses". That is the right bar for a hotel and the wrong bar for a dental
+ * practice: a split hero cannot reach 50% at any size, because the copy takes
+ * half the width, so the metric was quietly demanding that every business in
+ * every industry be promoted to a full-bleed photograph.
+ *
+ * The platform's own design layer already disagrees with that. `imageReliance`
+ * says a hotel sells atmosphere and a dentist sells reassurance, and the
+ * industry table for dental says so in as many words — anxiety-reducing rather
+ * than clinical. A scorecard that pushes every business toward the same opening
+ * is a scorecard working against the design system, and the Constitution is
+ * explicit that a hotel should not feel like a law firm.
+ *
+ * So the bar is read from the design the page was actually built to.
+ */
+const designPath = path.join(ROOT, 'output', runId, '5b-design.json');
+const industryId = fs.existsSync(designPath)
+  ? (JSON.parse(fs.readFileSync(designPath, 'utf8')) as { industry?: { id?: string } }).industry?.id
+  : undefined;
+// `imageReliance` is not persisted in the artifact — it is a property of the
+// industry, so it is read from the same table the design layer read it from.
+const reliance = industryId === undefined ? 'supporting' : defaultsFor(industryId as never).imageReliance;
+const IMMERSION_BAR: Record<string, number> = { essential: 0.5, supporting: 0.18, incidental: 0 };
+const bar = IMMERSION_BAR[reliance] ?? 0.18;
+
 const heroFoldRatio = observed.heroHeight / observed.viewportHeight;
-if (observed.heroImageArea >= 0.5) {
-  add('Opening image', 'strong', `the hero photograph covers ${Math.round(observed.heroImageArea * 100)}% of the first screen`);
+if (bar === 0) {
+  add('Opening image', 'strong', `this industry does not lead with photography; the opening is type-led by design`);
+} else if (observed.heroImageArea >= bar) {
+  add(
+    'Opening image',
+    'strong',
+    `the hero photograph covers ${Math.round(observed.heroImageArea * 100)}% of the first screen (${reliance} imagery wants ${Math.round(bar * 100)}%)`,
+  );
 } else if (observed.heroImageArea > 0) {
-  add('Opening image', 'weak', `the hero photograph covers only ${Math.round(observed.heroImageArea * 100)}% of the first screen — it illustrates rather than immerses`);
+  add(
+    'Opening image',
+    'weak',
+    `the hero photograph covers only ${Math.round(observed.heroImageArea * 100)}% of the first screen, against ${Math.round(bar * 100)}% for ${reliance} imagery`,
+  );
 } else {
   add('Opening image', 'weak', 'the page opens with no photograph at all');
 }

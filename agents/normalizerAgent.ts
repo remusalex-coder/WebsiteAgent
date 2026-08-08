@@ -570,9 +570,55 @@ function categoryFor(
   return chooseBest([candidate(stated.label, 'maps', stated.sourceUrl)], () => 0);
 }
 
-function dedupeServices(services: readonly ServiceItem[]): ServiceItem[] {
+/** Punctuation and spacing removed, for comparing a label to a URL slug. */
+function slugOf(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+/**
+ * True when a "service" is really the heading above the services.
+ *
+ * Paradise Dental Care's page opened its service grid with **"Services"** and
+ * **"Dental Services"**, followed by the eight real treatments. Both are page
+ * furniture that the harvester could not distinguish from content, and both
+ * reached the finished page — the same failure class as the hotel whose
+ * category was the Maps button "Add website".
+ *
+ * Two mechanical signals, and deliberately no vocabulary list. A hard-coded set
+ * of banned words would have to guess at every trade in the world and would
+ * eventually delete a real service called "Emergency Care":
+ *
+ * - **The name is the page it came from.** "Dental Services" was scraped from
+ *   `/dental-services`. A list item that repeats the title of its own page is
+ *   the heading of that list.
+ * - **The name is a navigation label.** "Services" is in the site's own menu.
+ *   A menu entry is a route, not something a customer can buy.
+ *
+ * Both compare stripped of punctuation, so "Dental Services" matches
+ * `dental-services` and "Crowns & Bridges" matches nothing.
+ */
+function isSectionHeading(service: ServiceItem, navigation: readonly NavigationLink[]): boolean {
+  const name = slugOf(service.name);
+  if (name === '') return true;
+
+  try {
+    const path = new URL(service.sourceUrl).pathname;
+    const last = path.split('/').filter((part) => part !== '').at(-1);
+    if (last !== undefined && slugOf(last) === name) return true;
+  } catch {
+    // A source that is not a parseable URL simply contributes no signal.
+  }
+
+  return navigation.some((link) => slugOf(link.label) === name);
+}
+
+function dedupeServices(
+  services: readonly ServiceItem[],
+  navigation: readonly NavigationLink[],
+): ServiceItem[] {
   const seen = new Map<string, ServiceItem>();
   for (const service of services) {
+    if (isSectionHeading(service, navigation)) continue;
     const key = service.name.trim().toLowerCase();
     const existing = seen.get(key);
     // Prefer the entry that also carries a description.
@@ -755,7 +801,7 @@ export const normalizerAgent: NormalizerAgent = {
       ),
       reviews: collected.reviews,
       navigation: dedupeNavigation(collected.navigation),
-      services: dedupeServices(collected.services),
+      services: dedupeServices(collected.services, collected.navigation),
       pages: dedupePages(collected.pages),
       attributes: dedupeAttributes(collected.attributes),
       description:

@@ -912,6 +912,62 @@ h4 {
   box-shadow: var(--shadow-lg);
 }
 
+/*
+ * Every hero holds the first screen, whatever treatment it uses.
+ *
+ * Only the full-bleed hero had a floor, so a hero without a photograph big enough to
+ * justify one was simply as tall as its own words. Paradise Dental Care opened
+ * at **40% of the fold** — a headline, three lines and a button, with the
+ * bottom of the screen already showing the section beneath. The creative review
+ * scored it weak and it was right: an opening that does not fill the screen
+ * reads as the top of a document rather than the front of a place.
+ *
+ * The obvious repair was to promote every industry to a cinematic hero, and it
+ * would have been wrong. A hotel leads with a photograph because a guest is
+ * deciding whether they can picture themselves there; a dental practice is
+ * selling the opposite feeling, and a full-width photograph of a surgery is
+ * precisely the image a nervous patient does not want. The industry table says
+ * so in as many words — anxiety-reducing rather than clinical.
+ *
+ * So the floor is on the *hero*, not on the photograph. A text-led opening can
+ * hold a screen perfectly well; it simply has to be given the room. A split
+ * hero gains it too, because its media column stretches to the new height —
+ * which is what lifts the dentist's photograph from 13% of the fold without
+ * changing what the page leads with.
+ *
+ * Slightly under the full-bleed hero's 78vh: a text hero that exactly fills the
+ * viewport hides the fact that the page continues, and a visible edge of the
+ * next section is what invites the scroll.
+ *
+ * Set on the hero block itself and not on the section around it. The first
+ * attempt put it on the section, which simply grew the padding: the section
+ * measured 612px and the hero inside it was still 360px, which is a taller
+ * band containing the same small opening. The layout grid is what has to hold
+ * the screen.
+ */
+.hero {
+  min-height: min(68vh, 40rem);
+  align-content: center;
+}
+
+/*
+ * The split hero's photograph fills the height it has been given.
+ *
+ * Centring left the image at its aspect ratio in a taller row, so the hero grew
+ * and the photograph did not — 13% of the fold either way. Stretching the track
+ * and letting the image cover it is what turns a floor on the hero into a
+ * larger picture, without promoting the industry to a treatment its customers
+ * would not thank it for.
+ */
+.hero--split .hero__media,
+.hero--split .hero__media img {
+  height: 100%;
+}
+
+.hero--split .hero__media img {
+  aspect-ratio: auto;
+}
+
 /* centered: type on the axis, media as a band beneath it. */
 .hero--centered {
   justify-items: center;
@@ -931,9 +987,21 @@ h4 {
   aspect-ratio: var(--hero-aspect);
 }
 
-/* split: copy and photograph side by side, copy leading. */
+/*
+ * split: copy and photograph side by side, copy leading.
+ *
+ * Stretched rather than centred, so the photograph fills the height the hero
+ * floor gives it. Centring left the image at its own aspect ratio inside a
+ * taller row: the hero grew and the picture stayed 13% of the fold.
+ *
+ * Both properties, and that is not redundancy. The hero floor sets
+ * align-content: center, which sizes the row track to its contents and centres
+ * it — leaving align-items: stretch with nothing to stretch into. The track has
+ * to be told to fill before the items in it can.
+ */
 .hero--split {
-  align-items: center;
+  align-content: stretch;
+  align-items: stretch;
 }
 
 /* editorial: a display line over a narrow measure, media demoted to a column. */
@@ -1062,8 +1130,36 @@ h4 {
   color: var(--color-on-inverted);
 }
 
+/*
+ * A cinematic hero is set to the picture, not to a reading measure.
+ *
+ * The measure is a *prose* width — around 60 characters, which computes to
+ * roughly 568px here. Applied to a full-bleed hero it forced Tartine's
+ * headline into five stacked lines at 75px over a 1440px photograph of falling
+ * sourdough, which is a caption on a beautiful image rather than a title over
+ * it.
+ *
+ * Reference library, rules 3 and 4: one dominant mood, and large simple fields
+ * carry art direction better than many small elements. A display line over a
+ * photograph is one of those fields and wants the room.
+ *
+ * The supporting copy underneath keeps the measure — that text is read, and a
+ * 60-character line is where it stays readable.
+ */
+.hero--full-bleed .hero__headline {
+  /* No cap here. A ch unit on this block resolves in the body font, not the
+     display face, so any value set here silently under-measures the headline —
+     68ch computed to 603px and kept the five stacked lines. The h1 carries its
+     own display measure and is the right place for it. */
+  max-width: none;
+}
+
 .hero--full-bleed .hero__content {
-  max-width: var(--measure);
+  max-width: none;
+}
+
+.hero--full-bleed .hero__support {
+  max-width: min(var(--measure), 100%);
 }
 
 /* magazine: copy in one cell, a mosaic of photographs in the rest. */

@@ -14,10 +14,12 @@ import {
   composeBaseline,
   isUsablePhotograph,
   narrativeFrom,
+  placeMidPageCta,
   publishableParagraphs,
 } from '../../agents/writerAgent.js';
 import { profileFixture } from '../fixtures/business.js';
 
+import type { DraftSection } from '../../agents/writerAgent.js';
 import type { ImageAsset, PageText } from '../../lib/types.js';
 
 const SOURCE = 'https://example.test';
@@ -164,5 +166,62 @@ describe('a composed page', () => {
     // on and a button would point nowhere.
     const content = composeBaseline(profileFixture());
     assert.equal(content.sections.some((section) => section.kind === 'cta'), false);
+  });
+});
+
+describe('mid-page conversion', () => {
+  /** A gallery is most of a long page's height, and carries no button of its own. */
+  function longPage(): readonly DraftSection[] {
+    return [
+      { kind: 'hero', heading: 'H', subheading: '', body: '', bullets: [], ctaLabel: 'Call us', ctaTarget: 'phone' },
+      { kind: 'gallery', heading: 'Photographs', subheading: '', body: '', bullets: [], ctaLabel: '', ctaTarget: 'none' },
+      { kind: 'about', heading: 'About', subheading: '', body: 'x'.repeat(2000), bullets: [], ctaLabel: '', ctaTarget: 'none' },
+      { kind: 'contact', heading: 'Contact', subheading: '', body: '', bullets: [], ctaLabel: 'Call us', ctaTarget: 'phone' },
+    ];
+  }
+
+  const phone = { ctaLabel: 'Call us', ctaTarget: 'phone' as const };
+
+  it('adds a button when the reader would scroll screens without one', () => {
+    // Zuni Café: three calls to action on a 7.6-screen page, none of them in
+    // the 3.2 screens of gallery a reader crosses to reach the second.
+    const placed = placeMidPageCta(longPage(), phone, new Map([[1, 12]]), () => {});
+    const carriers = placed.filter((section) => section.ctaTarget !== 'none');
+    assert.equal(carriers.length, 3);
+  });
+
+  it('measures scroll, not sections', () => {
+    // The same four sections, but with no photographs and a short about, is a
+    // page a reader crosses in a screen and a half. Counting sections cannot
+    // tell it apart from the gallery page above — which is exactly why the
+    // first attempt at this rule changed nothing on the benchmark.
+    const short = longPage().map((section) =>
+      section.kind === 'about' ? { ...section, body: 'A short paragraph about the business.' } : section,
+    );
+    const placed = placeMidPageCta(short, phone, new Map(), () => {});
+    assert.equal(placed.filter((section) => section.ctaTarget !== 'none').length, 2);
+  });
+
+  it('never puts one on a section that is the destination', () => {
+    const placed = placeMidPageCta(longPage(), phone, new Map([[1, 12]]), () => {});
+    const added = placed.find((section, index) => section.ctaTarget !== 'none' && index !== 0 && index !== 3);
+    assert.ok(added !== undefined);
+    assert.ok(['gallery', 'about'].includes(added.kind));
+  });
+
+  it('adds nothing when the profile supports no action', () => {
+    const placed = placeMidPageCta(longPage(), { ctaLabel: '', ctaTarget: 'none' }, new Map([[1, 12]]), () => {});
+    assert.deepEqual(placed, longPage());
+  });
+
+  it('stops well short of a button in every section', () => {
+    // Restraint is the point: a page with a call to action everywhere reads as
+    // a funnel rather than as a business.
+    const huge = Array.from({ length: 12 }, (_, index) => ({
+      kind: 'about' as const, heading: `H${index}`, subheading: '', body: 'x'.repeat(3000),
+      bullets: [], ctaLabel: '', ctaTarget: 'none' as const,
+    }));
+    const placed = placeMidPageCta(huge, phone, new Map(), () => {});
+    assert.equal(placed.filter((section) => section.ctaTarget !== 'none').length, 2);
   });
 });
