@@ -44,7 +44,7 @@ import { curateGallery } from './direction.js';
 import { decodeImages, isDecodable } from './decode.js';
 import { seedFrom } from './palette.js';
 
-import type { BusinessProfile } from '../types.js';
+import type { BusinessProfile, ImageAsset } from '../types.js';
 
 /** Where the answer is kept, beside the run's other artifacts. */
 const ARTIFACT = 'palette.json';
@@ -67,20 +67,21 @@ export interface BrandSeed {
   readonly note: string;
 }
 
-/** The local files worth reading, hero first, best gallery images after. */
-function samplePaths(profile: BusinessProfile, outputDir: string): readonly string[] {
-  const curated = curateGallery(profile.images.gallery);
-  const candidates = [profile.images.hero, ...curated.chosen];
-
+/** Local, decodable and not already listed. */
+function pathsOf(
+  images: readonly (ImageAsset | null)[],
+  outputDir: string,
+  limit: number,
+): readonly string[] {
   const seen = new Set<string>();
   const files: string[] = [];
-  for (const image of candidates) {
+  for (const image of images) {
     if (image === null || image.localPath === null) continue;
     const file = path.join(outputDir, image.localPath);
     if (seen.has(file) || !isDecodable(file)) continue;
     seen.add(file);
     files.push(file);
-    if (files.length >= SAMPLE_SIZE) break;
+    if (files.length >= limit) break;
   }
   return files;
 }
@@ -111,12 +112,33 @@ export async function brandSeedFor(
     // No cache, or an unreadable one. Recompute.
   }
 
-  const files = samplePaths(profile, outputDir);
-  if (files.length === 0) {
+  /*
+   * The logo is asked first, and alone.
+   *
+   * A mark is a *declaration* of a brand colour; a photograph is evidence of
+   * one. Where a business has published a logo, the colour in it is the answer
+   * and there is nothing to average — which is why the logo is not simply added
+   * to the sample. Paradise Dental Care is the case that made this obvious: its
+   * mark is teal, and seeding from its photographs produced a warm brown,
+   * because the largest mid-lightness colour across a set of dental photographs
+   * is skin.
+   *
+   * Falling through to the photographs is the common path, not the exception.
+   * Most small businesses on Maps have no logo the crawler can find, and the
+   * atmosphere of their own pictures is then the best evidence available.
+   */
+  const logoFiles = pathsOf([profile.images.logo], outputDir, 1);
+  const photoFiles = pathsOf(
+    [profile.images.hero, ...curateGallery(profile.images.gallery).chosen],
+    outputDir,
+    SAMPLE_SIZE,
+  );
+
+  if (logoFiles.length === 0 && photoFiles.length === 0) {
     return {
       hex: null,
       sampled: 0,
-      note: 'No photographs were downloaded for this business, so no brand colour could be read from them.',
+      note: 'No logo or photographs were downloaded for this business, so no brand colour could be read from them.',
     };
   }
 
@@ -124,16 +146,25 @@ export async function brandSeedFor(
   try {
     const browser = await chromium.launch({ headless: true });
     try {
-      const pixels = await decodeImages(browser, files);
-      const hex = seedFrom(pixels);
-      seed = {
-        hex,
-        sampled: pixels.length,
-        note:
-          hex === null
-            ? `Read ${pixels.length} of the business's own photographs; none carried enough colour to seed a palette.`
-            : `Brand colour ${hex} was read from ${pixels.length} of the business's own photographs.`,
-      };
+      const fromLogo = seedFrom(await decodeImages(browser, logoFiles));
+      if (fromLogo !== null) {
+        seed = {
+          hex: fromLogo,
+          sampled: logoFiles.length,
+          note: `Brand colour ${fromLogo} was read from the business's own logo.`,
+        };
+      } else {
+        const pixels = await decodeImages(browser, photoFiles);
+        const hex = seedFrom(pixels);
+        seed = {
+          hex,
+          sampled: pixels.length,
+          note:
+            hex === null
+              ? `Read ${pixels.length} of the business's own photographs; none carried enough colour to seed a palette.`
+              : `Brand colour ${hex} was read from ${pixels.length} of the business's own photographs.`,
+        };
+      }
     } finally {
       await browser.close();
     }

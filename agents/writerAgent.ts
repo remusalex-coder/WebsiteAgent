@@ -33,7 +33,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { chooseForSection, curateGallery } from '../lib/art/direction.js';
+import { GALLERY_BUDGET, chooseForSection, curateGallery, photoIdentity } from '../lib/art/direction.js';
 import { UpstreamError } from '../lib/errors.js';
 import { VENDORED_FACES } from '../lib/render/fontManifest.js';
 import { assignIds } from '../lib/render/site.js';
@@ -1050,16 +1050,40 @@ function assignImages(
    */
   const curated = curateGallery(gallery.filter(isUsablePhotograph));
 
+  /*
+   * Every photograph is spent exactly once.
+   *
+   * Paradise Dental Care's page showed the same jar of toothbrushes as its
+   * hero, again in its services section and again in its gallery, and an
+   * Unsplash frame in both its about section and its gallery. Nothing was
+   * broken in the ranking: the sections and the gallery were simply drawing
+   * from the same list, and neither told the other what it had taken.
+   *
+   * Repetition is the cheapest possible tell that a page was generated. A
+   * designer given one good photograph uses it once, in the largest place it
+   * earns, and composes the rest of the page without it. So assignment is a
+   * single pass over one shrinking pool, in priority order:
+   *
+   *   1. the lead, which holds the first screen;
+   *   2. the sections whose photograph has to be *about* something specific;
+   *   3. the gallery, which takes what is left and is the only consumer that
+   *      does not care which images it gets.
+   *
+   * The gallery goes last on purpose. It is the one section that reads well
+   * with any honest photograph, so letting it pick first is how a `location`
+   * section ends up with nothing while a picture of the frontage sits in a grid.
+   */
+  const remaining = [...curated.chosen, ...curated.rest];
+  const spend = (image: ImageAsset | null): ImageAsset | null => {
+    if (image === null) return null;
+    const at = remaining.findIndex((entry) => photoIdentity(entry) === photoIdentity(image));
+    if (at !== -1) remaining.splice(at, 1);
+    return image;
+  };
+
   // A site with no tagged hero still has a lead photograph: the best curated
   // image. Taking it here is what stops the gallery from opening the page.
-  const galleryImages = [...curated.chosen];
-  const lead = hero ?? galleryImages.shift() ?? null;
-
-  // What the single-image sections may draw from: everything the gallery could
-  // not fit, plus everything it did not need. A section asking for a photograph
-  // of the premises should get the best one on the site, not the best one the
-  // gallery declined.
-  const pool = [...galleryImages, ...curated.rest];
+  const lead = spend(hero ?? curated.chosen[0] ?? null);
 
   const indexOf = (kind: SectionKind): number => sections.findIndex((section) => section.kind === kind);
 
@@ -1073,11 +1097,6 @@ function assignImages(
     // No hero section: the logo and favicon still have to reach the shell, so
     // they ride on whatever section leads the page.
     assigned.set(0, [logo, favicon].filter((image): image is ImageAsset => image !== null));
-  }
-
-  const galleryIndex = indexOf('gallery');
-  if (galleryIndex !== -1 && galleryImages.length > 0) {
-    assigned.set(galleryIndex, galleryImages);
   }
 
   /*
@@ -1096,17 +1115,19 @@ function assignImages(
    * layout planner already composes well, because a variant that needs media is
    * vetoed when there is none.
    */
-  const taken = new Set<string>();
   for (const kind of ['about', 'location', 'services', 'menu', 'testimonials'] as const) {
     const index = indexOf(kind);
     if (index === -1) continue;
 
-    const available = pool.filter((image) => !taken.has(image.url));
-    const chosen = chooseForSection(kind, available);
+    const chosen = spend(chooseForSection(kind, remaining));
     if (chosen === null) continue;
-
-    taken.add(chosen.url);
     assigned.set(index, [chosen]);
+  }
+
+  // Whatever survived the sections above, capped at the gallery's own budget.
+  const galleryIndex = indexOf('gallery');
+  if (galleryIndex !== -1 && remaining.length > 0) {
+    assigned.set(galleryIndex, remaining.slice(0, GALLERY_BUDGET));
   }
 
   return assigned;

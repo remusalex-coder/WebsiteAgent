@@ -36,7 +36,6 @@ function image(overrides: Partial<ImageAsset> & { url: string }): ImageAsset {
     height: null,
     localPath: null,
     bytes: null,
-    source: 'website',
     sourceUrl: 'https://example.com/',
     ...overrides,
   };

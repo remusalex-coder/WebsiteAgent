@@ -246,6 +246,55 @@ const SUBJECT_WORDS: Readonly<Record<Exclude<Subject, 'scene'>, readonly string[
   ],
 };
 
+/**
+ * What makes two images the same photograph.
+ *
+ * ## Why the URL is not the answer
+ *
+ * Paradise Dental Care's page showed the same jar of toothbrushes as its hero,
+ * again in its services section and again in its gallery. The normalizer had
+ * already deduplicated by URL and by SHA-256 of the bytes, and both passes were
+ * right to keep them: the two are served under different content ids —
+ *
+ *   .../635f122f.../6e0f1480-935e-4d50-ae27-4ff47b336471/blue-tooth-brushes-min.jpg
+ *   .../635f122f.../b825e01e-7fb9-4284-8f78-2f71b9aac001/blue-tooth-brushes-min.jpg
+ *
+ * — and re-encoded, so the bytes differ too. Every mechanical identity the
+ * pipeline had said "two images". A visitor sees one photograph, three times.
+ *
+ * ## The file name is the identity
+ *
+ * Squarespace, WordPress and Contentful all mint a fresh path when an asset is
+ * re-uploaded or re-cropped and all of them keep the original file name. That
+ * name is what the person who took the photograph called it, and it survives
+ * everything the CDN does to the bytes.
+ *
+ * The extension is dropped, because the same picture is routinely served as
+ * both `.jpg` and `.webp`. Nothing else is stripped: trimming size suffixes
+ * would fold `hero-1000` and `hero-2000` together, which is correct, and also
+ * `team-2019` and `team-2020`, which is not — and a page showing two similar
+ * photographs is a much smaller failure than a page missing one.
+ */
+export function photoIdentity(image: ImageAsset): string {
+  try {
+    const file = new URL(image.url).pathname.split('/').pop() ?? image.url;
+    return file.replace(/\.[a-z0-9]+$/i, '').toLowerCase();
+  } catch {
+    return image.url.toLowerCase();
+  }
+}
+
+/** Keeps the first of each distinct photograph, in the order given. */
+export function dedupeByIdentity(images: readonly ImageAsset[]): readonly ImageAsset[] {
+  const seen = new Set<string>();
+  return images.filter((image) => {
+    const identity = photoIdentity(image);
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
+}
+
 /** The words this image offers, lowercased: alt, file name and source path. */
 function haystackOf(image: ImageAsset): string {
   let path = '';
@@ -343,7 +392,7 @@ export function chooseForSection(
  * stacked until they ran out. A gallery is an edit. Eight is enough to show
  * range and few enough that each one can be large.
  */
-const GALLERY_BUDGET = 8;
+export const GALLERY_BUDGET = 8;
 
 /**
  * The most portraits a gallery will carry.
@@ -383,7 +432,14 @@ function scoreOf(image: ImageAsset): number {
 export function curateGallery(images: readonly ImageAsset[]): Curation {
   const notes: string[] = [];
 
-  const sized = dropUndersized(images);
+  const distinct = dedupeByIdentity(images);
+  if (distinct.length < images.length) {
+    notes.push(
+      `Folded ${images.length - distinct.length} republished copies of photographs the page already had.`,
+    );
+  }
+
+  const sized = dropUndersized(distinct);
   if (sized.note !== null) notes.push(sized.note);
 
   const merchandise = sized.kept.filter((image) => subjectOf(image) === 'merchandise');
