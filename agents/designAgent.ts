@@ -12,13 +12,17 @@
  * than a property of the code. It needs no API key, no network and no browser,
  * so it runs anywhere the pipeline does.
  *
- * That is not a permanent decision. `composeDesign` takes an optional
- * `direction`, which is exactly the seam a model-driven art director would use:
- * it would pick one value from a closed set of eleven, and everything
- * downstream would stay deterministic given that value.
+ * When a `DesignDirective` is supplied (produced by `designDirectorAgent`), it
+ * is translated to `ComposeOptions` via `applyDirective()` before being passed
+ * to `composeDesign`. Operator direction overrides (from feature flags) always
+ * take precedence over the directive — `applyDirective` enforces this.
+ *
+ * When no directive is supplied (director disabled or not yet run), the agent
+ * behaves exactly as it did before the Director integration.
  */
 
 import { composeDesign } from '../lib/design/index.js';
+import { applyDirective } from '../lib/design/directive.js';
 
 import type {
   Agent,
@@ -27,6 +31,8 @@ import type {
   BusinessStrategy,
   WebsiteContent,
 } from '../lib/types.js';
+import type { ComposeOptions } from '../lib/design/compose.js';
+import type { DesignDirective } from '../lib/design/directive.js';
 import type { DesignDirection, WebsiteDesign } from '../lib/design/index.js';
 
 const NAME = 'designAgent';
@@ -38,6 +44,18 @@ export interface DesignInput {
   readonly strategy: BusinessStrategy;
   /** What the site says. Never modified — only read. */
   readonly content: WebsiteContent;
+  /**
+   * Optional AI design directive from `designDirectorAgent`.
+   *
+   * When present, translated to `ComposeOptions` via `applyDirective()`.
+   * When absent (director disabled or not yet run), the deterministic
+   * design composition runs with no AI guidance — identical to pre-integration
+   * behaviour.
+   *
+   * The operator's `design-direction-*` feature flag always wins over the
+   * directive: `applyDirective` enforces this precedence.
+   */
+  readonly directive?: DesignDirective | undefined;
 }
 
 export interface DesignAgent extends Agent<DesignInput, WebsiteDesign> {}
@@ -66,9 +84,14 @@ export const designAgent: DesignAgent = {
   async run(input: DesignInput, ctx: AgentContext): Promise<WebsiteDesign> {
     const override = directionOverride(ctx);
 
+    // Operator direction override takes precedence over any directive value.
+    // applyDirective enforces this: operatorOptions.direction always wins.
+    const operatorOptions: ComposeOptions = override === undefined ? {} : { direction: override };
+    const composeOptions = applyDirective(input.directive, operatorOptions, ctx.logger);
+
     const design = composeDesign(
       { profile: input.profile, strategy: input.strategy, content: input.content },
-      override === undefined ? {} : { direction: override },
+      composeOptions,
     );
 
     ctx.logger.info('design composed', {
@@ -78,6 +101,7 @@ export const designAgent: DesignAgent = {
       hero: design.layout.hero,
       sections: design.layout.sections.length,
       density: design.personality.density,
+      directorEnabled: input.directive !== undefined,
     });
 
     // Compromises are reported, never thrown: an unreachable contrast target or

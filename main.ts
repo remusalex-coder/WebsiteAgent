@@ -22,6 +22,7 @@ import { normalizerAgent } from './agents/normalizerAgent.js';
 import { businessAnalystAgent } from './agents/businessAnalystAgent.js';
 import { writerAgent } from './agents/writerAgent.js';
 import { designAgent } from './agents/designAgent.js';
+import { designDirectorAgent } from './agents/designDirectorAgent.js';
 import { lovableAgent } from './agents/lovableAgent.js';
 
 import { loadConfig } from './lib/config.js';
@@ -35,6 +36,7 @@ import type { AppConfig } from './lib/config.js';
 import type { Logger } from './lib/logger.js';
 import type { BrowserSession } from './lib/browser.js';
 import type { Platform } from './lib/platform/platform.js';
+import type { DesignDirective } from './lib/design/directive.js';
 import type {
   AgentContext,
   DiscoveryInput,
@@ -348,8 +350,30 @@ async function executePipeline(
     const content = await step('write', () =>
       writerAgent.run({ profile, strategy }, contextFor(run, writerAgent.name)));
 
+    // Design Director (optional AI layer): runs only when enabled and only when
+    // the design stage is being executed (not loaded from disk). A failure here
+    // propagates as an AgentError — the pipeline never silently falls back and
+    // produces a design as though the director succeeded.
+    //
+    // When disabled, `directive` stays `undefined` and `designAgent` behaves
+    // exactly as it did before the integration.
+    let directive: DesignDirective | undefined = undefined;
+    if (config.director.enabled && STAGES.indexOf('design') >= firstIndex) {
+      run.logger.info('design director: invoking', { model: config.director.model });
+      directive = await designDirectorAgent.run(
+        { profile, strategy, content },
+        contextFor(run, designDirectorAgent.name),
+      );
+      await persistStage(run, '5a-directive', directive);
+      run.logger.info('design director: directive persisted', {
+        model: config.director.model,
+        direction: directive.direction,
+        confidence: directive.confidence,
+      });
+    }
+
     const design = await step('design', () =>
-      designAgent.run({ profile, strategy, content }, contextFor(run, designAgent.name)));
+      designAgent.run({ profile, strategy, content, directive }, contextFor(run, designAgent.name)));
 
     // Not a `step`: it persists no artifact, so there is nothing to load. It is
     // cheap and deterministic, so it re-runs whenever it is not being skipped.

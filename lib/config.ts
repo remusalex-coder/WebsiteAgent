@@ -156,6 +156,19 @@ export interface WriterConfig {
 }
 
 export interface DirectorConfig {
+  /**
+   * Whether the Design Director AI agent is active.
+   *
+   * `false` (default) — pipeline behaves exactly as before integration:
+   * the deterministic design agent runs with no directive.
+   *
+   * `true` — the Design Director runs between the writer and design stages,
+   * produces a `DesignDirective`, and that directive is threaded into the
+   * deterministic composition via `applyDirective()`.
+   *
+   * Set `DIRECTOR_ENABLED=true` in the environment to enable.
+   */
+  readonly enabled: boolean;
   /** Resolved from `DIRECTOR_MODEL`, else the selected provider's default. */
   readonly model: string;
   readonly effort: Effort;
@@ -245,6 +258,7 @@ export const DEFAULTS = {
     maxPageChars: 6_000,
   },
   director: {
+    enabled: false,
     effort: 'medium',
     maxOutputTokens: 4_000,
     maxPageChars: 2_000,
@@ -565,6 +579,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       maxPageChars: int(env, 'WRITER_MAX_PAGE_CHARS', DEFAULTS.writer.maxPageChars),
     },
     director: {
+      enabled: bool(env, 'DIRECTOR_ENABLED', DEFAULTS.director.enabled),
       model: str(env, 'DIRECTOR_MODEL', defaultModelFor(providerName)),
       effort: effort(env, 'DIRECTOR_EFFORT', DEFAULTS.director.effort),
       maxOutputTokens: int(env, 'DIRECTOR_MAX_OUTPUT_TOKENS', DEFAULTS.director.maxOutputTokens),
