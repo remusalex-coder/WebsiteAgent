@@ -171,24 +171,6 @@ interface DirectiveAnalysis {
 /* Runner                                                              */
 /* ------------------------------------------------------------------ */
 
-/**
- * Discovers new run directories created inside `baseDir` after a generation.
- */
-function newRunDirs(baseDir: string, before: Set<string>): Set<string> {
-  if (!fs.existsSync(baseDir)) return new Set();
-  return new Set(
-    fs
-      .readdirSync(baseDir, { withFileTypes: true })
-      .filter(
-        (entry) =>
-          entry.isDirectory() &&
-          /^[0-9a-f]{8}$/.test(entry.name) &&
-          !before.has(entry.name),
-      )
-      .map((entry) => entry.name),
-  );
-}
-
 function existingRunDirs(baseDir: string): Set<string> {
   if (!fs.existsSync(baseDir)) return new Set();
   return new Set(
@@ -905,7 +887,7 @@ ${results.flatMap((r) => r.improvements.map((imp) => `- **${r.business.name}**: 
 Changes in direction, color, or hero variant are **differences**, not improvements or regressions.
 They require human review to assess quality.
 
-${Object.keys(results.flatMap((r) => Object.keys(r.differences))).length > 0 ? 'Direction and hero variant changes were observed across businesses. See per-business tables for detail.' : 'No significant neutral changes detected mechanically.'}
+${results.flatMap((r) => Object.keys(r.differences)).length > 0 ? 'Direction and hero variant changes were observed across businesses. See per-business tables for detail.' : 'No significant neutral changes detected mechanically.'}
 
 ## 12. Overall Result
 
