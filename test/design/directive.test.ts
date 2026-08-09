@@ -46,11 +46,42 @@ describe('applyDirective – determinism', () => {
     assert.deepEqual(applyDirective(d), applyDirective(d));
   });
 
-  it('is a pure function — no observable side effects beyond logging', () => {
+  it('is a pure function — does not mutate the directive object', () => {
     const d: DesignDirective = { direction: 'modern', density: 'balanced' };
     const before = JSON.stringify(d);
     applyDirective(d);
     assert.equal(JSON.stringify(d), before, 'directive was mutated');
+  });
+
+  it('does not call console.warn or console.info', () => {
+    const captured: string[] = [];
+    const origWarn = console.warn.bind(console);
+    const origInfo = console.info.bind(console);
+    console.warn = (...args: unknown[]) => { captured.push(`warn: ${args.join(' ')}`); origWarn(...args); };
+    console.info = (...args: unknown[]) => { captured.push(`info: ${args.join(' ')}`); origInfo(...args); };
+    try {
+      applyDirective({
+        direction: 'luxury',
+        visualIntent: 'refined',
+        density: 'airy',
+        heroIntent: { preference: 'full-bleed', intent: 'cinematic' },
+        layoutIntent: 'editorial',
+        colorStrategy: 'high-contrast',
+        typographyIntent: { intent: 'elegant', preference: 'serif' },
+        imageryIntent: { intent: 'warm', treatment: 'warm' },
+        rationale: undefined,
+        confidence: 0.1,
+      });
+      // @ts-expect-error — testing runtime guard
+      applyDirective({ direction: 'galaxy-brain' });
+      // @ts-expect-error — testing runtime guard
+      applyDirective({ density: 'ridiculous' });
+      applyDirective({ accessibilityTarget: 'AA' });
+    } finally {
+      console.warn = origWarn;
+      console.info = origInfo;
+    }
+    assert.equal(captured.length, 0, `applyDirective called console: ${captured.join(', ')}`);
   });
 
   it('returns a new object, not a reference to the operator options', () => {

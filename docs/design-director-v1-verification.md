@@ -292,12 +292,12 @@ All verified by source code inspection and tests:
 
 | Invalid input | Behaviour |
 |---|---|
-| `direction: 'galaxy-brain'` (not in VALID_DIRECTIONS) | Warns via `console.warn`, `resolvedDirection` stays `undefined`, inference runs normally |
-| `density: 'ridiculous'` (not in VALID_DENSITIES) | Warns via `console.warn`, density ignored |
-| `confidence: -1` or `confidence: 2` | Warns, ignored |
-| `confidence: 0.2` (< 0.5) | Warns, directive still applied |
-| `accessibilityTarget: 'INVALID'` (bypassed via `as any`) | Runtime set check catches it, warns, defaults to `'AA'` |
-| Missing `rationale` | Warns, proceeds normally |
+| `direction: 'galaxy-brain'` (not in VALID_DIRECTIONS) | Warns via `logger.warn`, `resolvedDirection` stays `undefined`, inference runs normally |
+| `density: 'ridiculous'` (not in VALID_DENSITIES) | Warns via `logger.warn`, density ignored |
+| `confidence: -1` or `confidence: 2` | Warns via `logger.warn`, ignored |
+| `confidence: 0.2` (< 0.5) | Warns via logger.warn (if a logger is supplied), directive still applied |
+| `accessibilityTarget: 'INVALID'` (bypassed via `as any`) | Runtime set check catches it, warns via `logger.warn`, defaults to `'AA'` |
+| Missing `rationale` | Warns via `logger.warn`, proceeds normally |
 | Missing entire directive (`undefined`) | Returns operator options copy, no warnings |
 
 No `throw` anywhere in `applyDirective`. **Verified.**
@@ -394,3 +394,58 @@ it is worth noting so verification steps always include dependency installation.
 | Invalid directive values degrade gracefully | ✅ Confirmed |
 | No unrelated file modifications | ✅ Confirmed |
 | Spec / implementation agreement | ⚠️ console I/O claim mismatch |
+
+---
+
+## 12. Fix: Removed console I/O from applyDirective
+
+### Problem
+
+`lib/design/directive.ts` called `console.warn()` and `console.info()` inside
+`applyDirective()`. This caused two issues:
+
+1. **Side effect in a pure function.** `applyDirective` is documented as a
+   deterministic adapter with no I/O; console calls violate this contract.
+2. **TypeScript errors in environments without `@types/node`.** The project
+   `tsconfig.json` uses `"lib": ["ES2023"]` without a DOM lib; `console` is
+   only available via `@types/node`. Using it directly introduced implicit
+   dependency on that devDependency being present.
+
+### Fix (commit on this branch)
+
+**Files changed:** `lib/design/directive.ts`, `test/design/directive.test.ts`
+
+**`lib/design/directive.ts`:**
+- Added `import type { Logger } from '../logger.js'`.
+- Added a file-local `noopLogger: Logger` constant that discards all records.
+- Added an optional third parameter `logger: Logger = noopLogger` to
+  `applyDirective()`.
+- Replaced every `console.warn(...)` call with `logger.warn(...)`.
+- Replaced every `console.info(...)` call with `logger.info(...)`.
+- No other changes. Return value, operator precedence, and graceful-degradation
+  behaviour are all identical.
+
+**`test/design/directive.test.ts`:**
+- Updated the mutation-check test description (removed "beyond logging" qualifier).
+- Added `'does not call console.warn or console.info'` test: temporarily patches
+  `console.warn`/`console.info`, calls `applyDirective` with every path that
+  previously triggered console output (missing rationale, low confidence, invalid
+  direction, invalid density, advisory intents, high-contrast colour strategy),
+  then asserts that no console call was recorded.
+
+### Post-fix Verification Results
+
+| Check | Result |
+|---|---|
+| Tests (npm test, after npm install) | ✅ 289/289 pass |
+| Typecheck (npm run typecheck) | ✅ 0 errors |
+| applyDirective return value unchanged | ✅ All existing tests pass |
+| Operator precedence unchanged | ✅ Confirmed by existing tests |
+| Invalid inputs still degrade gracefully | ✅ Confirmed by existing tests |
+| applyDirective has no console I/O | ✅ New test confirms zero console calls |
+| No new dependencies (package.json unchanged) | ✅ Confirmed |
+| No unrelated files changed | ✅ git diff shows only 2 files |
+| WebsiteDesign not modified | ✅ Confirmed |
+| Renderer not modified | ✅ Confirmed |
+| composeDesign() not modified | ✅ Confirmed |
+| DesignDirective contract not expanded | ✅ Confirmed |

@@ -28,7 +28,18 @@
  */
 
 import type { ComposeOptions } from './compose.js';
+import type { Logger } from '../logger.js';
 import type { DesignDirection, HeroVariant, ImageTreatment, VisualDensity } from './types.js';
+
+/** A Logger that discards all records. Used when no logger is supplied. */
+const noopLogger: Logger = {
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+  child: () => noopLogger,
+  time: async (_label, fn) => fn(),
+};
 
 /* ------------------------------------------------------------------ */
 /* Hero intent                                                         */
@@ -232,10 +243,13 @@ const VALID_DENSITIES = new Set<string>(['airy', 'balanced', 'dense']);
  *
  * @param directive  The AI director's high-level intent. May be undefined.
  * @param operatorOptions  Explicit operator overrides. Always take precedence.
+ * @param logger  Optional logger for observability. Defaults to a no-op logger.
+ *               Logging is never a required runtime dependency.
  */
 export function applyDirective(
   directive: DesignDirective | undefined,
   operatorOptions: ComposeOptions = {},
+  logger: Logger = noopLogger,
 ): ComposeOptions {
   if (directive === undefined) {
     return { ...operatorOptions };
@@ -244,16 +258,16 @@ export function applyDirective(
   // --- Observability --------------------------------------------------
 
   if (directive.rationale === undefined || directive.rationale.trim() === '') {
-    console.warn('DesignDirective: rationale is absent — decision trail will be incomplete');
+    logger.warn('DesignDirective: rationale is absent — decision trail will be incomplete');
   }
 
   if (directive.confidence !== undefined) {
     if (directive.confidence < 0 || directive.confidence > 1) {
-      console.warn(
+      logger.warn(
         `DesignDirective: confidence ${directive.confidence} is out of range [0, 1]; ignoring`,
       );
     } else if (directive.confidence < 0.5) {
-      console.warn(
+      logger.warn(
         `DesignDirective: confidence ${directive.confidence.toFixed(2)} is below 0.5 — `
         + 'directive will be applied but the design system may produce a better result from '
         + 'inference alone',
@@ -262,19 +276,19 @@ export function applyDirective(
   }
 
   if (directive.visualIntent !== undefined) {
-    console.info(`DesignDirective: visualIntent = "${directive.visualIntent}"`);
+    logger.info(`DesignDirective: visualIntent = "${directive.visualIntent}"`);
   }
   if (directive.layoutIntent !== undefined) {
-    console.info(`DesignDirective: layoutIntent = "${directive.layoutIntent}"`);
+    logger.info(`DesignDirective: layoutIntent = "${directive.layoutIntent}"`);
   }
   if (directive.heroIntent?.intent !== undefined) {
-    console.info(`DesignDirective: heroIntent = "${directive.heroIntent.intent}"`);
+    logger.info(`DesignDirective: heroIntent = "${directive.heroIntent.intent}"`);
   }
   if (directive.typographyIntent?.intent !== undefined) {
-    console.info(`DesignDirective: typographyIntent = "${directive.typographyIntent.intent}"`);
+    logger.info(`DesignDirective: typographyIntent = "${directive.typographyIntent.intent}"`);
   }
   if (directive.imageryIntent?.intent !== undefined) {
-    console.info(`DesignDirective: imageryIntent = "${directive.imageryIntent.intent}"`);
+    logger.info(`DesignDirective: imageryIntent = "${directive.imageryIntent.intent}"`);
   }
 
   // --- Direction ------------------------------------------------------
@@ -286,7 +300,7 @@ export function applyDirective(
     if (VALID_DIRECTIONS.has(directive.direction)) {
       resolvedDirection = directive.direction;
     } else {
-      console.warn(
+      logger.warn(
         `DesignDirective: direction "${directive.direction}" is not a valid DesignDirection; `
         + 'falling back to inference',
       );
@@ -300,9 +314,9 @@ export function applyDirective(
   // direction × industry × section-count.
   if (directive.density !== undefined) {
     if (VALID_DENSITIES.has(directive.density)) {
-      console.info(`DesignDirective: density hint = "${directive.density}" (advisory in V1)`);
+      logger.info(`DesignDirective: density hint = "${directive.density}" (advisory in V1)`);
     } else {
-      console.warn(
+      logger.warn(
         `DesignDirective: density "${directive.density}" is not valid; ignoring`,
       );
     }
@@ -317,14 +331,14 @@ export function applyDirective(
     if (directive.colorStrategy === 'high-contrast') {
       // 'high-contrast' forces AAA regardless of accessibilityTarget.
       resolvedAccessibility = 'AAA';
-      console.info('DesignDirective: colorStrategy = "high-contrast" → accessibilityLevel forced to AAA');
+      logger.info('DesignDirective: colorStrategy = "high-contrast" → accessibilityLevel forced to AAA');
     } else if (directive.accessibilityTarget !== undefined) {
       // Use a runtime set so invalid values passed via `as any` are caught.
       const validTargets = new Set<string>(['AA', 'AAA']);
       if (validTargets.has(directive.accessibilityTarget)) {
         resolvedAccessibility = directive.accessibilityTarget as 'AA' | 'AAA';
       } else {
-        console.warn(
+        logger.warn(
           `DesignDirective: accessibilityTarget "${String(directive.accessibilityTarget)}" is invalid; `
           + 'defaulting to AA',
         );
@@ -337,7 +351,7 @@ export function applyDirective(
   // influence direction selection (the direction drives the palette) rather
   // than token values. Logged above for observability.
   if (directive.colorStrategy !== undefined && directive.colorStrategy !== 'high-contrast') {
-    console.info(`DesignDirective: colorStrategy = "${directive.colorStrategy}" (advisory in V1)`);
+    logger.info(`DesignDirective: colorStrategy = "${directive.colorStrategy}" (advisory in V1)`);
   }
 
   // --- Return resolved ComposeOptions ---------------------------------

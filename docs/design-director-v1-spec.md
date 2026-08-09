@@ -121,7 +121,7 @@ is preserved.
 `applyDirective` is a **pure deterministic function**:
 
 - Same `DesignDirective` + same operator options → same `ComposeOptions`, always.
-- No clock access, no randomness, no I/O, no model calls.
+- No clock access, no randomness, no model calls. Observability is surfaced via an optional `Logger` parameter (defaults to a no-op); the return value remains pure regardless of the logger supplied.
 - Does not mutate its inputs.
 - Returns a new object; never returns the operator options object directly.
 
