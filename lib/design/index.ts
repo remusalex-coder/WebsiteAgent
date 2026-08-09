@@ -9,6 +9,7 @@
  */
 
 export { composeDesign } from './compose.js';
+export { applyDirective } from './directive.js';
 export { classifyIndustry, defaultsFor, emphasisFor, INDUSTRY_DEFAULTS } from './industries.js';
 export { THEMES, themeFor, FALLBACK_STACKS } from './themes.js';
 export { chooseHero, chooseVariant, orderSections, planLayout } from './layout.js';
@@ -85,3 +86,5 @@ export type {
 } from './types.js';
 
 export { COLOR_ROLES, DESIGN_DIRECTIONS, HERO_VARIANTS, INDUSTRIES, SECTION_VARIANTS } from './types.js';
+
+export type { ColorStrategy, DesignDirective, HeroIntent, ImageryIntent, TypographyIntent } from './directive.js';
