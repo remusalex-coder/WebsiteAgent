@@ -78,6 +78,38 @@ describe('parseAttributeLabel', () => {
     assert.deepEqual(parseAttributeLabel('Free Wi-Fi available'), { label: 'Free Wi-Fi', available: true });
   });
 
+  /*
+   * Observed on River Park Events (run 77c15289), not invented: every available
+   * chip's accessible name begins with `U+E5CA`, the Material Icons tick. It is
+   * a Private Use Area codepoint, so it has no glyph in any font the generated
+   * site ships — it reached the published page as a tofu box in front of
+   * "Wheelchair-accessible entrance", in the hero marquee and on every service
+   * card.
+   */
+  it('strips the Material Icons glyph Maps prefixes the label with', () => {
+    const tick = String.fromCharCode(0xe5ca);
+    assert.deepEqual(
+      parseAttributeLabel(`${tick}Wheelchair-accessible entrance`),
+      { label: 'Wheelchair-accessible entrance', available: true },
+    );
+  });
+
+  it('strips any private-use glyph, not just the one observed', () => {
+    for (const code of [0xe000, 0xe5ca, 0xf8ff]) {
+      const parsed = parseAttributeLabel(`${String.fromCharCode(code)} Free parking available`);
+      assert.deepEqual(parsed, { label: 'Free parking', available: true },
+        `U+${code.toString(16).toUpperCase()} survived`);
+    }
+  });
+
+  it('leaves ordinary non-ASCII alone', () => {
+    // Drăgășani is not a rendering bug.
+    assert.deepEqual(
+      parseAttributeLabel('Terasă în grădină available'),
+      { label: 'Terasă în grădină', available: true },
+    );
+  });
+
   it('reads an absent one as absent', () => {
     // The whole point of the type. "Pool unavailable" read as a label would
     // put a swimming pool on the website of a hotel that has none.
