@@ -74,6 +74,15 @@ export interface AIGenerateResult {
   readonly structuredOutput: StructuredOutputMode;
   /** Provider's own completion reason, normalised to a string for logging. */
   readonly finishReason: string | null;
+  /**
+   * The vendor's own identifier for this request, where it offers one.
+   *
+   * `null` when the vendor returns none. Recorded rather than only logged
+   * because it is the one field that lets a generated artifact be reconciled
+   * against the provider's records — the difference between "a model produced
+   * this" as a claim and as something a third party can verify.
+   */
+  readonly requestId?: string | null;
 }
 
 /**

@@ -1,0 +1,833 @@
+{
+  "verdict": "PASS",
+  "reason": "a single live model call produced a directive that measurably changed the deterministic design and the rendered page, and both variants render as working websites",
+  "runId": "4fd89052",
+  "startedAt": "2026-08-10T11:44:39.947Z",
+  "finishedAt": "2026-08-10T11:47:17.989Z",
+  "ai": {
+    "calls": 0,
+    "directiveSource": "resumed",
+    "provider": "gemini",
+    "model": "gemini-3.6-flash",
+    "requestedModel": "gemini-3.6-flash",
+    "effort": "medium",
+    "maxOutputTokens": 12000,
+    "maxRetries": 0,
+    "inputTokens": 657,
+    "outputTokens": 215,
+    "requestId": "rbl5as-JA_6nkdUP_O_osQU",
+    "structuredOutput": "native",
+    "finishReason": "STOP",
+    "startedAt": "2026-08-10T11:44:44.917Z",
+    "finishedAt": "2026-08-10T11:44:52.013Z",
+    "durationMs": 7096,
+    "directiveArtifact": "smoke-test/director/directive.json",
+    "provenanceArtifact": "smoke-test/director/directive.provenance.json"
+  },
+  "directive": {
+    "direction": "editorial",
+    "visualIntent": "A warm, inviting neighbourhood bakery feel that highlights artisanal craft and daily offerings.",
+    "density": "balanced",
+    "heroIntent": {
+      "preference": "editorial",
+      "intent": "Establishes an authentic neighbourhood bakery atmosphere while highlighting freshly baked goods."
+    },
+    "layoutIntent": "Rhythmic and grounded spatial feel that guides local residents naturally from story to menu and opening hours.",
+    "colorStrategy": "brand-led",
+    "typographyIntent": {
+      "intent": "Combine elegant serif headlines for warmth and craft character with high-legibility sans body text for daily menu clarity.",
+      "preference": "serif"
+    },
+    "imageryIntent": {
+      "intent": "Showcase the warm tactile textures of freshly baked bread, coffee craft, and shop atmosphere.",
+      "treatment": "warm"
+    },
+    "accessibilityTarget": "AA",
+    "rationale": "The design strategy elevates Padaria Ana & Sons as an authentic neighbourhood staple on Rua da Prata using a warm editorial direction. The brand-led color palette and serif typographic accents reinforce artisan baking traditions, while clear content density ensures immediate utility for daily visitors checking hours and offerings.",
+    "confidence": 0.95
+  },
+  "steps": [
+    {
+      "id": "control.design",
+      "status": "produced",
+      "artifacts": [
+        "smoke-test/control/design.json"
+      ],
+      "durationMs": 13
+    },
+    {
+      "id": "control.render",
+      "status": "produced",
+      "artifacts": [
+        "smoke-test/control/index.html",
+        "smoke-test/control/styles.css"
+      ],
+      "durationMs": 109
+    },
+    {
+      "id": "control.shoot",
+      "status": "produced",
+      "artifacts": [
+        "smoke-test/control/screenshots/desktop.png",
+        "smoke-test/control/screenshots/mobile.png",
+        "smoke-test/control/report.json"
+      ],
+      "durationMs": 4778
+    },
+    {
+      "id": "director.directive",
+      "status": "resumed",
+      "artifacts": [
+        "smoke-test/director/directive.json",
+        "smoke-test/director/directive.provenance.json"
+      ],
+      "durationMs": 1
+    },
+    {
+      "id": "director.design",
+      "status": "produced",
+      "artifacts": [
+        "smoke-test/director/design.json"
+      ],
+      "durationMs": 5
+    },
+    {
+      "id": "director.render",
+      "status": "produced",
+      "artifacts": [
+        "smoke-test/director/index.html",
+        "smoke-test/director/styles.css"
+      ],
+      "durationMs": 37
+    },
+    {
+      "id": "director.shoot",
+      "status": "produced",
+      "artifacts": [
+        "smoke-test/director/screenshots/desktop.png",
+        "smoke-test/director/screenshots/mobile.png",
+        "smoke-test/director/report.json"
+      ],
+      "durationMs": 4663
+    }
+  ],
+  "difference": {
+    "changedFieldCount": 140,
+    "changedDecisions": [
+      "direction",
+      "contrast",
+      "mood",
+      "typeRatio",
+      "measureCh",
+      "brand",
+      "canvas",
+      "text",
+      "radiusStyle",
+      "elevationStyle",
+      "imagery"
+    ],
+    "changedPaths": [
+      "personality.direction",
+      "personality.mood.temperature",
+      "personality.mood.energy",
+      "personality.mood.formality",
+      "personality.rationale",
+      "personality.evidence[0]",
+      "tokens.color.ramps.primary.seed",
+      "tokens.color.ramps.primary.steps[0]",
+      "tokens.color.ramps.primary.steps[1]",
+      "tokens.color.ramps.primary.steps[2]",
+      "tokens.color.ramps.primary.steps[3]",
+      "tokens.color.ramps.primary.steps[4]",
+      "tokens.color.ramps.primary.steps[5]",
+      "tokens.color.ramps.primary.steps[6]",
+      "tokens.color.ramps.primary.steps[7]",
+      "tokens.color.ramps.primary.steps[8]",
+      "tokens.color.ramps.primary.steps[9]",
+      "tokens.color.ramps.primary.steps[10]",
+      "tokens.color.ramps.primary.steps[11]",
+      "tokens.color.ramps.secondary.seed",
+      "tokens.color.ramps.secondary.steps[0]",
+      "tokens.color.ramps.secondary.steps[1]",
+      "tokens.color.ramps.secondary.steps[2]",
+      "tokens.color.ramps.secondary.steps[3]",
+      "tokens.color.ramps.secondary.steps[4]",
+      "tokens.color.ramps.secondary.steps[5]",
+      "tokens.color.ramps.secondary.steps[6]",
+      "tokens.color.ramps.secondary.steps[7]",
+      "tokens.color.ramps.secondary.steps[8]",
+      "tokens.color.ramps.secondary.steps[9]",
+      "tokens.color.ramps.secondary.steps[10]",
+      "tokens.color.ramps.secondary.steps[11]",
+      "tokens.color.ramps.accent.seed",
+      "tokens.color.ramps.accent.steps[0]",
+      "tokens.color.ramps.accent.steps[1]",
+      "tokens.color.ramps.accent.steps[2]",
+      "tokens.color.ramps.accent.steps[3]",
+      "tokens.color.ramps.accent.steps[4]",
+      "tokens.color.ramps.accent.steps[5]",
+      "tokens.color.ramps.accent.steps[6]",
+      "tokens.color.ramps.accent.steps[7]",
+      "tokens.color.ramps.accent.steps[8]",
+      "tokens.color.ramps.accent.steps[9]",
+      "tokens.color.ramps.accent.steps[10]",
+      "tokens.color.ramps.accent.steps[11]",
+      "tokens.color.ramps.neutral.seed",
+      "tokens.color.ramps.neutral.steps[0]",
+      "tokens.color.ramps.neutral.steps[3]",
+      "tokens.color.ramps.neutral.steps[5]",
+      "tokens.color.ramps.neutral.steps[6]",
+      "tokens.color.ramps.neutral.steps[7]",
+      "tokens.color.ramps.neutral.steps[8]",
+      "tokens.color.ramps.neutral.steps[9]",
+      "tokens.color.ramps.neutral.steps[10]",
+      "tokens.color.ramps.neutral.steps[11]",
+      "tokens.color.ramps.success.seed",
+      "tokens.color.ramps.warning.seed",
+      "tokens.color.ramps.danger.seed",
+      "tokens.color.semantic.canvas",
+      "tokens.color.semantic.surfaceRaised",
+      "tokens.color.semantic.border",
+      "tokens.color.semantic.borderStrong",
+      "tokens.color.semantic.text",
+      "tokens.color.semantic.textMuted",
+      "tokens.color.semantic.heading",
+      "tokens.color.semantic.brand",
+      "tokens.color.semantic.brandHover",
+      "tokens.color.semantic.onBrand",
+      "tokens.color.semantic.brandText",
+      "tokens.color.semantic.accent",
+      "tokens.color.semantic.onAccent",
+      "tokens.color.semantic.inverted",
+      "tokens.color.semantic.onInverted",
+      "tokens.color.contrast.textOnCanvas",
+      "tokens.color.contrast.textOnSurface",
+      "tokens.color.contrast.onBrandOnBrand",
+      "tokens.typography.ratio",
+      "tokens.typography.baseRem",
+      "tokens.typography.scale.display.minRem",
+      "tokens.typography.scale.display.maxRem",
+      "tokens.typography.scale.display.letterSpacing",
+      "tokens.typography.scale.h1.minRem",
+      "tokens.typography.scale.h1.maxRem",
+      "tokens.typography.scale.h1.letterSpacing",
+      "tokens.typography.scale.h2.minRem",
+      "tokens.typography.scale.h2.maxRem",
+      "tokens.typography.scale.h2.letterSpacing",
+      "tokens.typography.scale.h3.minRem",
+      "tokens.typography.scale.h3.maxRem",
+      "tokens.typography.scale.h3.letterSpacing",
+      "tokens.typography.scale.h4.minRem",
+      "tokens.typography.scale.h4.maxRem",
+      "tokens.typography.scale.bodyLarge.minRem",
+      "tokens.typography.scale.bodyLarge.maxRem",
+      "tokens.typography.scale.body.minRem",
+      "tokens.typography.scale.body.maxRem",
+      "tokens.typography.scale.small.minRem",
+      "tokens.typography.scale.small.maxRem",
+      "tokens.typography.scale.caption.minRem",
+      "tokens.typography.scale.caption.maxRem",
+      "tokens.typography.scale.eyebrow.minRem",
+      "tokens.typography.scale.eyebrow.maxRem",
+      "tokens.typography.measureCh",
+      "tokens.spacing.ratio",
+      "tokens.spacing.scale.3xs.minRem",
+      "tokens.spacing.scale.3xs.maxRem",
+      "tokens.spacing.scale.2xs.minRem",
+      "tokens.spacing.scale.2xs.maxRem",
+      "tokens.spacing.scale.xs.minRem",
+      "tokens.spacing.scale.xs.maxRem",
+      "tokens.spacing.scale.md.minRem",
+      "tokens.spacing.scale.md.maxRem",
+      "tokens.spacing.scale.lg.minRem",
+      "tokens.spacing.scale.lg.maxRem",
+      "tokens.spacing.scale.xl.minRem",
+      "tokens.spacing.scale.xl.maxRem",
+      "tokens.spacing.scale.2xl.minRem",
+      "tokens.spacing.scale.2xl.maxRem",
+      "tokens.spacing.scale.3xl.minRem",
+      "tokens.spacing.scale.3xl.maxRem",
+      "tokens.spacing.scale.4xl.minRem",
+      "tokens.spacing.scale.4xl.maxRem",
+      "tokens.radius.style",
+      "tokens.radius.sm",
+      "tokens.radius.md",
+      "tokens.radius.lg",
+      "tokens.elevation.style",
+      "tokens.elevation.prefersBorders",
+      "tokens.elevation.levels.sm.shadow",
+      "tokens.elevation.levels.md.shadow",
+      "tokens.elevation.levels.lg.shadow",
+      "tokens.motion.effects[1]",
+      "layout.footer",
+      "imagery.treatment",
+      "imagery.galleryCrop",
+      "imagery.radius",
+      "icons.style",
+      "icons.strokeWidth",
+      "responsive.containerMaxRem",
+      "responsive.containerWideRem"
+    ],
+    "control": {
+      "direction": "friendly",
+      "density": "balanced",
+      "contrast": {
+        "textOnCanvas": 15.1,
+        "textOnSurface": 13.38,
+        "onBrandOnBrand": 4.95,
+        "mutedOnCanvas": 8.27
+      },
+      "mood": {
+        "temperature": "warm",
+        "energy": "steady",
+        "formality": "casual"
+      },
+      "world": "ember",
+      "patterns": [
+        "hero-cinematic",
+        "type-editorial-serif",
+        "type-display-statement",
+        "editorial-statement-break",
+        "marquee-verified-facts",
+        "marquee-wordmark",
+        "gallery-edited-grid",
+        "break-ground-shift",
+        "break-detail-rule",
+        "closing-invitation",
+        "closing-orphan-guard",
+        "motion-enter-rise",
+        "motion-hover-response"
+      ],
+      "industry": "bakery",
+      "hero": "full-bleed",
+      "sectionOrder": [
+        "hero:stack",
+        "services:cards",
+        "menu:list",
+        "gallery:collage",
+        "testimonials:quotes",
+        "faq:list",
+        "about:stack",
+        "hours:list",
+        "location:stack",
+        "contact:list",
+        "cta:banner"
+      ],
+      "headingFont": "Playfair Display",
+      "bodyFont": "Space Grotesk",
+      "typeRatio": 1.25,
+      "measureCh": 66,
+      "scheme": "light",
+      "brand": "#ad5622",
+      "canvas": "#fcfcfc",
+      "surface": "#efeeee",
+      "text": "#252423",
+      "sectionRhythmRem": [
+        2.25,
+        4.5
+      ],
+      "radiusStyle": "soft",
+      "elevationStyle": "subtle",
+      "accessibility": {
+        "targetLevel": "AA",
+        "minContrastBody": 4.5,
+        "minContrastLarge": 3,
+        "minTapTargetPx": 44,
+        "respectReducedMotion": true,
+        "focusStyle": "outline",
+        "semanticLandmarks": true
+      },
+      "imagery": {
+        "treatment": "warm",
+        "heroCrop": "wide",
+        "galleryCrop": "landscape",
+        "radius": "md",
+        "overlayOpacity": 0.45,
+        "fallback": "gradient"
+      }
+    },
+    "director": {
+      "direction": "editorial",
+      "density": "balanced",
+      "contrast": {
+        "textOnCanvas": 15.23,
+        "textOnSurface": 13.5,
+        "onBrandOnBrand": 4.92,
+        "mutedOnCanvas": 8.27
+      },
+      "mood": {
+        "temperature": "neutral",
+        "energy": "calm",
+        "formality": "neutral"
+      },
+      "world": "ember",
+      "patterns": [
+        "hero-cinematic",
+        "type-editorial-serif",
+        "type-display-statement",
+        "editorial-statement-break",
+        "marquee-verified-facts",
+        "marquee-wordmark",
+        "gallery-edited-grid",
+        "break-ground-shift",
+        "break-detail-rule",
+        "closing-invitation",
+        "closing-orphan-guard",
+        "motion-enter-rise",
+        "motion-hover-response"
+      ],
+      "industry": "bakery",
+      "hero": "full-bleed",
+      "sectionOrder": [
+        "hero:stack",
+        "services:cards",
+        "menu:list",
+        "gallery:collage",
+        "testimonials:quotes",
+        "faq:list",
+        "about:stack",
+        "hours:list",
+        "location:stack",
+        "contact:list",
+        "cta:banner"
+      ],
+      "headingFont": "Playfair Display",
+      "bodyFont": "Space Grotesk",
+      "typeRatio": 1.5,
+      "measureCh": 62,
+      "scheme": "light",
+      "brand": "#a05e3b",
+      "canvas": "#fcfcfb",
+      "surface": "#efeeee",
+      "text": "#252323",
+      "sectionRhythmRem": [
+        2.25,
+        4.5
+      ],
+      "radiusStyle": "sharp",
+      "elevationStyle": "flat",
+      "accessibility": {
+        "targetLevel": "AA",
+        "minContrastBody": 4.5,
+        "minContrastLarge": 3,
+        "minTapTargetPx": 44,
+        "respectReducedMotion": true,
+        "focusStyle": "outline",
+        "semanticLandmarks": true
+      },
+      "imagery": {
+        "treatment": "natural",
+        "heroCrop": "wide",
+        "galleryCrop": "natural",
+        "radius": "none",
+        "overlayOpacity": 0.45,
+        "fallback": "gradient"
+      }
+    }
+  },
+  "control": {
+    "variant": "control",
+    "htmlPath": "smoke-test/control/index.html",
+    "htmlBytes": 19393,
+    "htmlSha256": "0eab3ec178e444421f848be16369fdd4d2d5f8e619eabbd53d470d17613ed1c4",
+    "cssBytes": 119278,
+    "cssSha256": "58771259155ecb4164b2b5af92d2a05b9c89c5f968b705a903aacb2e66292576",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "rendererWarnings": [
+      "image has no usable location and was omitted: \"javascript:alert(1)\""
+    ],
+    "viewports": [
+      {
+        "viewport": "desktop",
+        "width": 1440,
+        "height": 900,
+        "screenshot": "smoke-test/control/screenshots/desktop.png",
+        "screenshotBytes": 330836,
+        "navigationWorks": true,
+        "words": 258,
+        "images": 6,
+        "brokenImages": 0,
+        "sections": 11,
+        "navLinks": 18,
+        "deadNavLinks": [],
+        "primaryCtas": 2,
+        "headingText": "Bread baked before dawn",
+        "mainHeadings": [
+          "Bread baked before dawn",
+          "What we bake",
+          "Menu",
+          "The shop",
+          "What people say",
+          "Questions",
+          "About \"the oven\"",
+          "Opening hours",
+          "Find us",
+          "Contact",
+          "Order a cake"
+        ],
+        "sectionIds": [
+          "bread-baked-before-dawn",
+          "what-we-bake",
+          "menu",
+          "the-shop",
+          "what-people-say",
+          "questions",
+          "about-the-oven",
+          "opening-hours",
+          "find-us",
+          "contact",
+          "order-a-cake"
+        ],
+        "documentHeight": 6097,
+        "horizontalOverflowPx": 0
+      },
+      {
+        "viewport": "mobile",
+        "width": 390,
+        "height": 844,
+        "screenshot": "smoke-test/control/screenshots/mobile.png",
+        "screenshotBytes": 208123,
+        "navigationWorks": true,
+        "words": 258,
+        "images": 6,
+        "brokenImages": 0,
+        "sections": 11,
+        "navLinks": 18,
+        "deadNavLinks": [],
+        "primaryCtas": 2,
+        "headingText": "Bread baked before dawn",
+        "mainHeadings": [
+          "Bread baked before dawn",
+          "What we bake",
+          "Menu",
+          "The shop",
+          "What people say",
+          "Questions",
+          "About \"the oven\"",
+          "Opening hours",
+          "Find us",
+          "Contact",
+          "Order a cake"
+        ],
+        "sectionIds": [
+          "bread-baked-before-dawn",
+          "what-we-bake",
+          "menu",
+          "the-shop",
+          "what-people-say",
+          "questions",
+          "about-the-oven",
+          "opening-hours",
+          "find-us",
+          "contact",
+          "order-a-cake"
+        ],
+        "documentHeight": 5083,
+        "horizontalOverflowPx": 0
+      }
+    ]
+  },
+  "director": {
+    "variant": "director",
+    "htmlPath": "smoke-test/director/index.html",
+    "htmlBytes": 17214,
+    "htmlSha256": "cfd876935188b409a7cb23949ad4838e95d795a07feb78fcec0419999a7baa54",
+    "cssBytes": 118821,
+    "cssSha256": "1f1843aff74e6e6f08e4b16c3c787a2e40ca844cee1607c0dd3c4e67f873f01b",
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "rendererWarnings": [
+      "image has no usable location and was omitted: \"javascript:alert(1)\""
+    ],
+    "viewports": [
+      {
+        "viewport": "desktop",
+        "width": 1440,
+        "height": 900,
+        "screenshot": "smoke-test/director/screenshots/desktop.png",
+        "screenshotBytes": 388220,
+        "navigationWorks": true,
+        "words": 224,
+        "images": 6,
+        "brokenImages": 0,
+        "sections": 11,
+        "navLinks": 9,
+        "deadNavLinks": [],
+        "primaryCtas": 2,
+        "headingText": "Bread baked before dawn",
+        "mainHeadings": [
+          "Bread baked before dawn",
+          "What we bake",
+          "Menu",
+          "The shop",
+          "What people say",
+          "Questions",
+          "About \"the oven\"",
+          "Opening hours",
+          "Find us",
+          "Contact",
+          "Order a cake"
+        ],
+        "sectionIds": [
+          "bread-baked-before-dawn",
+          "what-we-bake",
+          "menu",
+          "the-shop",
+          "what-people-say",
+          "questions",
+          "about-the-oven",
+          "opening-hours",
+          "find-us",
+          "contact",
+          "order-a-cake"
+        ],
+        "documentHeight": 6548,
+        "horizontalOverflowPx": 0
+      },
+      {
+        "viewport": "mobile",
+        "width": 390,
+        "height": 844,
+        "screenshot": "smoke-test/director/screenshots/mobile.png",
+        "screenshotBytes": 200206,
+        "navigationWorks": true,
+        "words": 224,
+        "images": 6,
+        "brokenImages": 0,
+        "sections": 11,
+        "navLinks": 9,
+        "deadNavLinks": [],
+        "primaryCtas": 2,
+        "headingText": "Bread baked before dawn",
+        "mainHeadings": [
+          "Bread baked before dawn",
+          "What we bake",
+          "Menu",
+          "The shop",
+          "What people say",
+          "Questions",
+          "About \"the oven\"",
+          "Opening hours",
+          "Find us",
+          "Contact",
+          "Order a cake"
+        ],
+        "sectionIds": [
+          "bread-baked-before-dawn",
+          "what-we-bake",
+          "menu",
+          "the-shop",
+          "what-people-say",
+          "questions",
+          "about-the-oven",
+          "opening-hours",
+          "find-us",
+          "contact",
+          "order-a-cake"
+        ],
+        "documentHeight": 4576,
+        "horizontalOverflowPx": 0
+      }
+    ]
+  },
+  "checks": [
+    {
+      "id": "control.html-loads",
+      "passed": true,
+      "detail": "no uncaught page errors"
+    },
+    {
+      "id": "control.no-console-errors",
+      "passed": true,
+      "detail": "console clean"
+    },
+    {
+      "id": "control.no-failed-requests",
+      "passed": true,
+      "detail": "every request resolved"
+    },
+    {
+      "id": "control.desktop.heading",
+      "passed": true,
+      "detail": "h1 = \"Bread baked before dawn\""
+    },
+    {
+      "id": "control.desktop.primary-cta",
+      "passed": true,
+      "detail": "2 primary call(s) to action"
+    },
+    {
+      "id": "control.desktop.navigation",
+      "passed": true,
+      "detail": "18 in-page links, 0 dead, click resolved: true"
+    },
+    {
+      "id": "control.desktop.images-load",
+      "passed": true,
+      "detail": "6 images, 0 broken"
+    },
+    {
+      "id": "control.desktop.no-horizontal-overflow",
+      "passed": true,
+      "detail": "0px overflow"
+    },
+    {
+      "id": "control.desktop.content-rendered",
+      "passed": true,
+      "detail": "258 words across 11 sections"
+    },
+    {
+      "id": "control.desktop.screenshot",
+      "passed": true,
+      "detail": "smoke-test/control/screenshots/desktop.png (330836 bytes)"
+    },
+    {
+      "id": "control.mobile.heading",
+      "passed": true,
+      "detail": "h1 = \"Bread baked before dawn\""
+    },
+    {
+      "id": "control.mobile.primary-cta",
+      "passed": true,
+      "detail": "2 primary call(s) to action"
+    },
+    {
+      "id": "control.mobile.navigation",
+      "passed": true,
+      "detail": "18 in-page links, 0 dead, click resolved: true"
+    },
+    {
+      "id": "control.mobile.images-load",
+      "passed": true,
+      "detail": "6 images, 0 broken"
+    },
+    {
+      "id": "control.mobile.no-horizontal-overflow",
+      "passed": true,
+      "detail": "0px overflow"
+    },
+    {
+      "id": "control.mobile.content-rendered",
+      "passed": true,
+      "detail": "258 words across 11 sections"
+    },
+    {
+      "id": "control.mobile.screenshot",
+      "passed": true,
+      "detail": "smoke-test/control/screenshots/mobile.png (208123 bytes)"
+    },
+    {
+      "id": "director.html-loads",
+      "passed": true,
+      "detail": "no uncaught page errors"
+    },
+    {
+      "id": "director.no-console-errors",
+      "passed": true,
+      "detail": "console clean"
+    },
+    {
+      "id": "director.no-failed-requests",
+      "passed": true,
+      "detail": "every request resolved"
+    },
+    {
+      "id": "director.desktop.heading",
+      "passed": true,
+      "detail": "h1 = \"Bread baked before dawn\""
+    },
+    {
+      "id": "director.desktop.primary-cta",
+      "passed": true,
+      "detail": "2 primary call(s) to action"
+    },
+    {
+      "id": "director.desktop.navigation",
+      "passed": true,
+      "detail": "9 in-page links, 0 dead, click resolved: true"
+    },
+    {
+      "id": "director.desktop.images-load",
+      "passed": true,
+      "detail": "6 images, 0 broken"
+    },
+    {
+      "id": "director.desktop.no-horizontal-overflow",
+      "passed": true,
+      "detail": "0px overflow"
+    },
+    {
+      "id": "director.desktop.content-rendered",
+      "passed": true,
+      "detail": "224 words across 11 sections"
+    },
+    {
+      "id": "director.desktop.screenshot",
+      "passed": true,
+      "detail": "smoke-test/director/screenshots/desktop.png (388220 bytes)"
+    },
+    {
+      "id": "director.mobile.heading",
+      "passed": true,
+      "detail": "h1 = \"Bread baked before dawn\""
+    },
+    {
+      "id": "director.mobile.primary-cta",
+      "passed": true,
+      "detail": "2 primary call(s) to action"
+    },
+    {
+      "id": "director.mobile.navigation",
+      "passed": true,
+      "detail": "9 in-page links, 0 dead, click resolved: true"
+    },
+    {
+      "id": "director.mobile.images-load",
+      "passed": true,
+      "detail": "6 images, 0 broken"
+    },
+    {
+      "id": "director.mobile.no-horizontal-overflow",
+      "passed": true,
+      "detail": "0px overflow"
+    },
+    {
+      "id": "director.mobile.content-rendered",
+      "passed": true,
+      "detail": "224 words across 11 sections"
+    },
+    {
+      "id": "director.mobile.screenshot",
+      "passed": true,
+      "detail": "smoke-test/director/screenshots/mobile.png (200206 bytes)"
+    },
+    {
+      "id": "ai.exactly-one-call",
+      "passed": true,
+      "detail": "0 live calls this invocation; directive resumed from an artifact produced by a live call at 2026-08-10T11:44:44.917Z (request rbl5as-JA_6nkdUP_O_osQU)"
+    },
+    {
+      "id": "ai.directive-is-model-output",
+      "passed": true,
+      "detail": "gemini/gemini-3.6-flash, 657 in / 215 out, finish STOP"
+    },
+    {
+      "id": "design.structural-difference",
+      "passed": true,
+      "detail": "140 field(s) differ in WebsiteDesign; decisions changed: direction, contrast, mood, typeRatio, measureCh, brand, canvas, text, radiusStyle, elevationStyle, imagery"
+    },
+    {
+      "id": "render.observable-difference",
+      "passed": true,
+      "detail": "html 0eab3ec178e4 vs cfd876935188; css 58771259155e vs 1f1843aff74e"
+    },
+    {
+      "id": "render.same-copy",
+      "passed": true,
+      "detail": "11 headings and 11 sections, identical in both variants; rendered word counts differ by 34 (chrome and design ornament, not copy)"
+    }
+  ]
+}

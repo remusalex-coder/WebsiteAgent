@@ -42,6 +42,7 @@ const TRUNCATED = ['length'];
 /* ------------------------------------------------------------------ */
 
 interface ChatResponse {
+  readonly id?: unknown;
   readonly model?: unknown;
   readonly choices?: readonly {
     readonly finish_reason?: unknown;
@@ -137,6 +138,7 @@ function createOpenAIProvider(options: ProviderOptions): AIProvider {
         },
         structuredOutput: 'native',
         finishReason,
+        requestId: typeof raw.id === 'string' ? raw.id : null,
       };
     },
 

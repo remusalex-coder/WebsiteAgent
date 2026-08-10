@@ -16,6 +16,7 @@
     "discover": "tsx main.ts --discovery-only",
     "render": "tsx main.ts --render",
     "resume": "tsx main.ts",
+    "design-director": "node --import tsx --env-file=.env scripts/design-director-smoke.ts",
     "postinstall": "playwright install chromium"
   },
   "dependencies": {

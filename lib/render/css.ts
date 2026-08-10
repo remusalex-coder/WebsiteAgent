@@ -468,6 +468,21 @@ a:hover {
  * that would need state. Scroll snapping keeps it from resting mid-label.
  */
 @media (max-width: 40rem) {
+  /*
+   * The rail can only scroll if it is allowed to be narrower than its contents.
+   *
+   * A flex item's min-width defaults to auto, which resolves to its min-content
+   * width — and for a nowrap flex row that is the sum of every link in it. So
+   * the nav held the header open at 504px inside a 390px viewport, overflow-x
+   * on the list never got a containing block small enough to clip against, and
+   * the page scrolled sideways instead of the rail. The rail was correct; it
+   * was never given room to work.
+   */
+  .site-nav--header {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .site-nav--header .site-nav__list {
     flex-wrap: nowrap;
     overflow-x: auto;

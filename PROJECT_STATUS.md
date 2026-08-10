@@ -1,6 +1,54 @@
 # Project Status
 
-_Last updated: 2026-08-08_
+_Last updated: 2026-08-10_
+
+## AI Design Director — proven live (2026-08-10)
+
+**PASS.** One business, one real model call, 39/39 checks green.
+
+`real AI → designDirectorAgent → DesignDirective → applyDirective() →
+composeDesign() → HTML → screenshots → persistent artifacts` is verified end to
+end. Run it with `npm run design-director`; artifacts land in `smoke-test/`,
+which is not gitignored. See `docs/runbooks/design-director-smoke.md`.
+
+| | |
+|---|---|
+| provider / model | `gemini` / `gemini-3.6-flash` |
+| AI calls | **1** |
+| usage | 657 input + 215 output tokens, finish `STOP` |
+| request id | `rbl5as-JA_6nkdUP_O_osQU` |
+| structural difference | **140 fields** of `WebsiteDesign` |
+
+The Director was **not on `main`** before this — it lived only on
+`origin/copilot/inspect-repository-codebase`, which forked 12 commits ago and
+was built against the pre-vocabulary design layer. Three self-contained pieces
+were ported forward; that branch's A/B harness was deliberately left behind
+because `scripts/ab-replay.ts` used `FALLBACK_DIRECTIVES`. **The five-business
+A/B experiment run from it is not evidence about any model and must not be cited
+as such.** `FALLBACK_DIRECTIVES` appears nowhere on `main`, and a test now fails
+if a fallback export is reintroduced. See `docs/decisions/0001`.
+
+**What the Director actually controls is one enum.** It returned eleven
+considered fields; `applyDirective` mapped two — `direction` and
+`accessibilityLevel` — and logged the rest as advisory. That one enum moved 140
+design fields, so it is a wide lever, not a narrow one, but the honest
+description is: *the Director picks one of eleven directions and a WCAG target;
+the deterministic system does everything else.* See `docs/decisions/0004`.
+
+Fixed on the way through: **the mobile header nav overflowed the viewport by
+117px.** The scroll rail was correct but was never given room to work — the nav
+is a flex item, `min-width` defaults to `auto`, and for a `nowrap` row that is
+the sum of every link. Pre-existing at `0223a41`, affecting every generated site
+on a phone.
+
+### Known, not fixed
+
+- `test/design/compose.test.ts` "separates adjacent sections by ground" fails
+  against the **uncommitted** working-tree design work (two adjacent sections
+  both land on `inverted`). Passes at `0223a41`; unrelated to the Director.
+- The services-cards and menu band render text at ~1.13–1.23:1 against their
+  ground — well under AA — **identically in both variants**, so it belongs to
+  the design layer's in-flight work, not to the Director.
 
 ## Design vocabulary engine (added 2026-08-08)
 

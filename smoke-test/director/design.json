@@ -1,0 +1,604 @@
+{
+  "version": 1,
+  "personality": {
+    "direction": "editorial",
+    "mood": {
+      "temperature": "neutral",
+      "energy": "calm",
+      "formality": "neutral"
+    },
+    "density": "balanced",
+    "contrast": "high",
+    "rationale": "Direction was set explicitly to editorial.",
+    "evidence": [
+      "operator override"
+    ]
+  },
+  "industry": {
+    "id": "bakery",
+    "basis": "listing",
+    "matchedOn": [
+      "category:bakery"
+    ],
+    "rationale": "Maps lists the business as \"Bakery\", which matches \"bakery\"."
+  },
+  "patterns": [
+    "hero-cinematic",
+    "type-editorial-serif",
+    "type-display-statement",
+    "editorial-statement-break",
+    "marquee-verified-facts",
+    "marquee-wordmark",
+    "gallery-edited-grid",
+    "break-ground-shift",
+    "break-detail-rule",
+    "closing-invitation",
+    "closing-orphan-guard",
+    "motion-enter-rise",
+    "motion-hover-response"
+  ],
+  "world": "ember",
+  "tokens": {
+    "color": {
+      "ramps": {
+        "primary": {
+          "role": "primary",
+          "seed": "#b16d49",
+          "steps": [
+            "#fefbfa",
+            "#faf6f3",
+            "#f6ece8",
+            "#efe1da",
+            "#e6d3ca",
+            "#dac1b5",
+            "#cdac9c",
+            "#be947e",
+            "#a05e3b",
+            "#884b2a",
+            "#6a422d",
+            "#321f15"
+          ]
+        },
+        "secondary": {
+          "role": "secondary",
+          "seed": "#b16d49",
+          "steps": [
+            "#fdfbfa",
+            "#f9f6f3",
+            "#f3ede7",
+            "#ece3da",
+            "#e1d5c9",
+            "#d4c4b4",
+            "#c5b09b",
+            "#b4997d",
+            "#926837",
+            "#7c5426",
+            "#61472b",
+            "#2e2114"
+          ]
+        },
+        "accent": {
+          "role": "accent",
+          "seed": "#b16d49",
+          "steps": [
+            "#fefbfb",
+            "#fbf5f4",
+            "#f6ecea",
+            "#f0e0de",
+            "#e8d2ce",
+            "#dcc0bc",
+            "#d0aaa4",
+            "#c1918a",
+            "#a45950",
+            "#8b473f",
+            "#6c3f39",
+            "#331d1a"
+          ]
+        },
+        "neutral": {
+          "role": "neutral",
+          "seed": "#b16d49",
+          "steps": [
+            "#fcfcfb",
+            "#f7f7f6",
+            "#efeeee",
+            "#e5e4e3",
+            "#d9d7d6",
+            "#c9c7c5",
+            "#b7b3b2",
+            "#a29d9b",
+            "#77706d",
+            "#625c59",
+            "#504c4a",
+            "#252323"
+          ]
+        },
+        "success": {
+          "role": "success",
+          "seed": "#b16d49",
+          "steps": [
+            "#fafdfa",
+            "#f3f8f3",
+            "#e8f2e8",
+            "#dbe9db",
+            "#cadeca",
+            "#b5d0b5",
+            "#9cbf9c",
+            "#7dad7e",
+            "#308639",
+            "#1d7028",
+            "#295a2c",
+            "#132a15"
+          ]
+        },
+        "warning": {
+          "role": "warning",
+          "seed": "#b16d49",
+          "steps": [
+            "#fefbf8",
+            "#fbf6f0",
+            "#f6ede1",
+            "#f0e2d0",
+            "#e7d4bb",
+            "#dcc3a2",
+            "#d0ae81",
+            "#c19657",
+            "#986600",
+            "#7e5400",
+            "#694500",
+            "#331f00"
+          ]
+        },
+        "danger": {
+          "role": "danger",
+          "seed": "#b16d49",
+          "steps": [
+            "#fffbfa",
+            "#fef4f3",
+            "#fceae7",
+            "#f9ddda",
+            "#f3cec9",
+            "#eabab4",
+            "#e1a29a",
+            "#d7857c",
+            "#c13c36",
+            "#a52926",
+            "#7e302a",
+            "#3c1714"
+          ]
+        }
+      },
+      "semantic": {
+        "canvas": "#fcfcfb",
+        "canvasSubtle": "#f7f7f6",
+        "surface": "#efeeee",
+        "surfaceRaised": "#e5e4e3",
+        "border": "#c9c7c5",
+        "borderStrong": "#b7b3b2",
+        "text": "#252323",
+        "textMuted": "#504c4a",
+        "heading": "#252323",
+        "brand": "#a05e3b",
+        "brandHover": "#884b2a",
+        "onBrand": "#fcfcfb",
+        "brandText": "#9a5835",
+        "accent": "#a45950",
+        "onAccent": "#fcfcfb",
+        "inverted": "#252323",
+        "onInverted": "#fcfcfb",
+        "success": "#308639",
+        "warning": "#986600",
+        "danger": "#c13c36"
+      },
+      "scheme": "light",
+      "contrast": {
+        "textOnCanvas": 15.23,
+        "textOnSurface": 13.5,
+        "onBrandOnBrand": 4.92,
+        "mutedOnCanvas": 8.27
+      }
+    },
+    "typography": {
+      "heading": {
+        "family": "Playfair Display",
+        "stack": "\"Playfair Display\", Georgia, \"Iowan Old Style\", \"Times New Roman\", Times, serif",
+        "character": "serif",
+        "weights": [
+          400,
+          600,
+          700
+        ]
+      },
+      "body": {
+        "family": "Space Grotesk",
+        "stack": "\"Space Grotesk\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "character": "sans",
+        "weights": [
+          400,
+          500,
+          700
+        ]
+      },
+      "mono": null,
+      "ratio": 1.5,
+      "baseRem": 1.125,
+      "scale": {
+        "display": {
+          "name": "display",
+          "minRem": 4.34,
+          "maxRem": 8.543,
+          "lineHeight": 1.05,
+          "letterSpacing": -0.02,
+          "weight": 700
+        },
+        "h1": {
+          "name": "h1",
+          "minRem": 3.313,
+          "maxRem": 5.695,
+          "lineHeight": 1.05,
+          "letterSpacing": -0.02,
+          "weight": 700
+        },
+        "h2": {
+          "name": "h2",
+          "minRem": 2.529,
+          "maxRem": 3.797,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.01,
+          "weight": 700
+        },
+        "h3": {
+          "name": "h3",
+          "minRem": 1.931,
+          "maxRem": 2.531,
+          "lineHeight": 1.25,
+          "letterSpacing": -0.01,
+          "weight": 400
+        },
+        "h4": {
+          "name": "h4",
+          "minRem": 1.474,
+          "maxRem": 1.688,
+          "lineHeight": 1.35,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "bodyLarge": {
+          "name": "bodyLarge",
+          "minRem": 1.288,
+          "maxRem": 1.378,
+          "lineHeight": 1.6,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "body": {
+          "name": "body",
+          "minRem": 1.125,
+          "maxRem": 1.125,
+          "lineHeight": 1.6,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "small": {
+          "name": "small",
+          "minRem": 0.859,
+          "maxRem": 0.75,
+          "lineHeight": 1.5,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "caption": {
+          "name": "caption",
+          "minRem": 0.75,
+          "maxRem": 0.612,
+          "lineHeight": 1.5,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "eyebrow": {
+          "name": "eyebrow",
+          "minRem": 0.75,
+          "maxRem": 0.612,
+          "lineHeight": 1.5,
+          "letterSpacing": 0.12,
+          "weight": 400
+        }
+      },
+      "measureCh": 62,
+      "fluidRange": {
+        "minRem": 20,
+        "maxRem": 90
+      }
+    },
+    "spacing": {
+      "baseRem": 0.8,
+      "ratio": 1.618,
+      "scale": {
+        "3xs": {
+          "name": "3xs",
+          "minRem": 0.189,
+          "maxRem": 0.189
+        },
+        "2xs": {
+          "name": "2xs",
+          "minRem": 0.306,
+          "maxRem": 0.306
+        },
+        "xs": {
+          "name": "xs",
+          "minRem": 0.494,
+          "maxRem": 0.494
+        },
+        "sm": {
+          "name": "sm",
+          "minRem": 0.8,
+          "maxRem": 0.8
+        },
+        "md": {
+          "name": "md",
+          "minRem": 0.803,
+          "maxRem": 1.294
+        },
+        "lg": {
+          "name": "lg",
+          "minRem": 1.298,
+          "maxRem": 2.094
+        },
+        "xl": {
+          "name": "xl",
+          "minRem": 2.101,
+          "maxRem": 3.389
+        },
+        "2xl": {
+          "name": "2xl",
+          "minRem": 3.399,
+          "maxRem": 5.483
+        },
+        "3xl": {
+          "name": "3xl",
+          "minRem": 5.5,
+          "maxRem": 8.871
+        },
+        "4xl": {
+          "name": "4xl",
+          "minRem": 8.899,
+          "maxRem": 14.354
+        }
+      },
+      "sectionMinRem": 2.25,
+      "sectionMaxRem": 4.5
+    },
+    "radius": {
+      "style": "sharp",
+      "none": "0",
+      "sm": "0",
+      "md": "0",
+      "lg": "0",
+      "pill": "999rem"
+    },
+    "elevation": {
+      "style": "flat",
+      "prefersBorders": true,
+      "levels": {
+        "none": {
+          "name": "none",
+          "shadow": "none"
+        },
+        "sm": {
+          "name": "sm",
+          "shadow": "none"
+        },
+        "md": {
+          "name": "md",
+          "shadow": "none"
+        },
+        "lg": {
+          "name": "lg",
+          "shadow": "none"
+        }
+      }
+    },
+    "motion": {
+      "level": "subtle",
+      "durationFastMs": 120,
+      "durationBaseMs": 200,
+      "durationSlowMs": 320,
+      "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "effects": [
+        "fade"
+      ],
+      "respectReducedMotion": true
+    }
+  },
+  "layout": {
+    "hero": "full-bleed",
+    "footer": "minimal",
+    "sections": [
+      {
+        "index": 0,
+        "kind": "hero",
+        "variant": "stack",
+        "emphasis": "lead",
+        "density": "airy",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose stack for hero: the section has 0 items and 1 image.",
+        "frame": "stacked",
+        "background": "subtle"
+      },
+      {
+        "index": 2,
+        "kind": "services",
+        "variant": "cards",
+        "emphasis": "primary",
+        "density": "balanced",
+        "columns": 3,
+        "fullBleed": false,
+        "rationale": "Chose cards for services: it is the bakery convention for a services section.",
+        "frame": "aside",
+        "background": "inverted"
+      },
+      {
+        "index": 3,
+        "kind": "menu",
+        "variant": "list",
+        "emphasis": "primary",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for menu: it is the bakery convention for a menu section.",
+        "frame": "offset",
+        "background": "inverted"
+      },
+      {
+        "index": 4,
+        "kind": "gallery",
+        "variant": "collage",
+        "emphasis": "secondary",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": true,
+        "rationale": "Chose collage for gallery: it is the bakery convention for a gallery section.",
+        "frame": "stacked",
+        "background": "subtle"
+      },
+      {
+        "index": 5,
+        "kind": "testimonials",
+        "variant": "quotes",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": 1,
+        "fullBleed": false,
+        "rationale": "Chose quotes for testimonials: the section has 1 item and 0 images.",
+        "frame": "aside",
+        "background": "canvas"
+      },
+      {
+        "index": 9,
+        "kind": "faq",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for faq: the section has 2 items and 0 images.",
+        "frame": "offset",
+        "background": "canvas"
+      },
+      {
+        "index": 1,
+        "kind": "about",
+        "variant": "stack",
+        "emphasis": "secondary",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose stack for about: the section has 0 items and 0 images.",
+        "frame": "statement",
+        "background": "canvas"
+      },
+      {
+        "index": 6,
+        "kind": "hours",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for hours: the section has 2 items and 0 images.",
+        "frame": "aside",
+        "background": "canvas"
+      },
+      {
+        "index": 7,
+        "kind": "location",
+        "variant": "stack",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose stack for location: the section has 0 items and 0 images.",
+        "frame": "statement",
+        "background": "canvas"
+      },
+      {
+        "index": 8,
+        "kind": "contact",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for contact: the section has 2 items and 0 images.",
+        "frame": "aside",
+        "background": "canvas"
+      },
+      {
+        "index": 10,
+        "kind": "cta",
+        "variant": "banner",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose banner for cta: the section has 0 items and 0 images.",
+        "frame": "centered",
+        "background": "brand"
+      }
+    ],
+    "order": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      9,
+      1,
+      6,
+      7,
+      8,
+      10
+    ],
+    "stickyHeader": true,
+    "showNavigation": true,
+    "rationale": "Chose the full-bleed hero because this industry sells atmosphere and the hero has 1 usable image, so the photograph leads at full width."
+  },
+  "imagery": {
+    "treatment": "natural",
+    "heroCrop": "wide",
+    "galleryCrop": "natural",
+    "radius": "none",
+    "overlayOpacity": 0.45,
+    "fallback": "gradient"
+  },
+  "icons": {
+    "style": "none",
+    "strokeWidth": 0,
+    "sizeRem": 1.5
+  },
+  "responsive": {
+    "containerMaxRem": 66,
+    "containerWideRem": 82,
+    "breakpoints": {
+      "smRem": 30,
+      "mdRem": 48,
+      "lgRem": 64
+    },
+    "mobileColumns": 1,
+    "fluid": true
+  },
+  "accessibility": {
+    "targetLevel": "AA",
+    "minContrastBody": 4.5,
+    "minContrastLarge": 3,
+    "minTapTargetPx": 44,
+    "respectReducedMotion": true,
+    "focusStyle": "outline",
+    "semanticLandmarks": true
+  },
+  "notes": [
+    "Visual world: Before light — the page opens in the dark and arrives in daylight.",
+    "Sections were reordered for the bakery category; content itself is unchanged."
+  ]
+}

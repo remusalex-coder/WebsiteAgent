@@ -46,6 +46,7 @@ const TRUNCATED = ['length'];
 /* ------------------------------------------------------------------ */
 
 interface ChatResponse {
+  readonly id?: unknown;
   readonly model?: unknown;
   readonly choices?: readonly {
     readonly finish_reason?: unknown;
@@ -151,6 +152,7 @@ function createOpenRouterProvider(options: ProviderOptions): AIProvider {
         },
         structuredOutput: 'instructed',
         finishReason,
+        requestId: typeof raw.id === 'string' ? raw.id : null,
       };
     },
 

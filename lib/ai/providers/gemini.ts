@@ -52,6 +52,8 @@ const REFUSED = ['SAFETY', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'RECITATIO
 
 interface GenerateContentResponse {
   readonly modelVersion?: unknown;
+  /** Gemini's per-request id. Absent on older API versions. */
+  readonly responseId?: unknown;
   readonly candidates?: readonly {
     readonly finishReason?: unknown;
     readonly content?: {
@@ -153,6 +155,7 @@ function createGeminiProvider(options: ProviderOptions): AIProvider {
         },
         structuredOutput: 'native',
         finishReason,
+        requestId: typeof raw.responseId === 'string' ? raw.responseId : null,
       };
     },
 

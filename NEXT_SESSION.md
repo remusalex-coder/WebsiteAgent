@@ -1,11 +1,59 @@
 # Next Session
 
-_Written 2026-08-08, after the engine learned a design vocabulary._
+_Written 2026-08-10, after the Design Director ran live for the first time._
 
 > **Canonical documentation is BusinessForge HQ in Notion.** This file is the
 > thirty-second version for whoever opens the repo first.
 
-## Start here
+## Start here (2026-08-10)
+
+**Look at the two pages side by side.**
+
+```bash
+start smoke-test/control/screenshots/desktop.png
+```
+
+Then `smoke-test/director/screenshots/desktop.png`. Same business, same words,
+same fixture. The left one is what the deterministic system chose on its own;
+the right one is what it built after a real model call said `editorial`.
+
+Re-running `npm run design-director` is **free** — the directive is on disk and
+the run resumes from it. It costs a call only if you delete
+`smoke-test/director/directive.json`.
+
+## The next milestone
+
+**Wire the Director into `main.ts`, behind `DIRECTOR_ENABLED`.** It is ported,
+tested and proven in a harness, and the pipeline still does not call it. That is
+the one thing standing between "we proved it works" and "it works".
+
+It is deliberately not done here: the smoke test was the deliverable, and
+untested code on the pipeline's critical path would have been the wrong way to
+end a milestone whose whole point was proving something honestly.
+
+Two things to settle while doing it:
+
+1. **Where the directive artifact lives in a real run.** `output/<runId>/` is
+   gitignored, which is right for a run and wrong for evidence. The smoke test
+   sidesteps it with `smoke-test/`; the pipeline needs an answer.
+2. **Whether stages become resumable jobs.** The harness already works this way
+   (ADR 0002) and it is what makes a second model call impossible after a
+   downstream crash. The pipeline does not, and that is the gap between this
+   harness and an orchestrator.
+
+Then, and only with evidence: consider opening `heroIntent.preference` as the
+Director's second control surface (ADR 0004). Not before — nine of eleven
+directive fields are advisory today, and widening on symmetry rather than on
+observed defects is how a closed contract stops being one.
+
+## Two known reds, neither from the Director
+
+- `test/design/compose.test.ts` "separates adjacent sections by ground" fails
+  against the uncommitted design work. Passes at `0223a41`.
+- Services cards and the menu band render at ~1.13–1.23:1 contrast, identically
+  in both variants.
+
+## Previous session
 
 **Look at a page before reading anything else.**
 

@@ -164,6 +164,7 @@ function createAnthropicProvider(options: ProviderOptions): AIProvider {
         },
         structuredOutput: 'native',
         finishReason: message.stop_reason,
+        requestId: message.id,
       };
     },
 

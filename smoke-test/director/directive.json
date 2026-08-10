@@ -1,0 +1,22 @@
+{
+  "direction": "editorial",
+  "visualIntent": "A warm, inviting neighbourhood bakery feel that highlights artisanal craft and daily offerings.",
+  "density": "balanced",
+  "heroIntent": {
+    "preference": "editorial",
+    "intent": "Establishes an authentic neighbourhood bakery atmosphere while highlighting freshly baked goods."
+  },
+  "layoutIntent": "Rhythmic and grounded spatial feel that guides local residents naturally from story to menu and opening hours.",
+  "colorStrategy": "brand-led",
+  "typographyIntent": {
+    "intent": "Combine elegant serif headlines for warmth and craft character with high-legibility sans body text for daily menu clarity.",
+    "preference": "serif"
+  },
+  "imageryIntent": {
+    "intent": "Showcase the warm tactile textures of freshly baked bread, coffee craft, and shop atmosphere.",
+    "treatment": "warm"
+  },
+  "accessibilityTarget": "AA",
+  "rationale": "The design strategy elevates Padaria Ana & Sons as an authentic neighbourhood staple on Rua da Prata using a warm editorial direction. The brand-led color palette and serif typographic accents reinforce artisan baking traditions, while clear content density ensures immediate utility for daily visitors checking hours and offerings.",
+  "confidence": 0.95
+}

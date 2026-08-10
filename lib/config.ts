@@ -155,6 +155,40 @@ export interface WriterConfig {
   readonly maxPageChars: number;
 }
 
+/**
+ * The AI Design Director — stage 5a, the only model call in the design path.
+ *
+ * `enabled` defaults to false, so a pipeline that has never heard of the
+ * director behaves exactly as it did before it existed. The smoke harness sets
+ * it explicitly; nothing else turns it on implicitly.
+ */
+export interface DirectorConfig {
+  /**
+   * Whether the Design Director AI agent is active in the pipeline.
+   *
+   * `false` (default) — the deterministic design agent runs with no directive.
+   * `true` — the director runs between the writer and design stages and its
+   * `DesignDirective` is threaded into composition through `applyDirective()`.
+   */
+  readonly enabled: boolean;
+  /** Resolved from `DIRECTOR_MODEL`, else the selected provider's default. */
+  readonly model: string;
+  readonly effort: Effort;
+  /**
+   * Caps thinking *and* response text together on a reasoning model.
+   *
+   * The directive itself is under a thousand tokens, so this number is almost
+   * entirely a thinking budget. It has to stay comfortably above the reasoning
+   * allowance `Effort` maps to — Gemini counts thinking against
+   * `maxOutputTokens`, so a budget at or below `toGeminiThinkingBudget(effort)`
+   * spends the whole allowance thinking and returns `MAX_TOKENS` with no JSON
+   * at all. At `medium` that ceiling is 4,096; at `xhigh` it is 24,576.
+   */
+  readonly maxOutputTokens: number;
+  /** Per-page cap when excerpting site text into the director's brief. */
+  readonly maxPageChars: number;
+}
+
 export interface LovableConfig {
   readonly apiKey: string;
   readonly baseUrl: string;
@@ -208,6 +242,7 @@ export interface AppConfig {
   readonly places: PlacesConfig;
   readonly analyst: AnalystConfig;
   readonly writer: WriterConfig;
+  readonly director: DirectorConfig;
   readonly lovable: LovableConfig;
 }
 
@@ -262,6 +297,15 @@ export const DEFAULTS = {
     // has to hold nine sections of prose *and* the reasoning behind them.
     maxOutputTokens: 24_000,
     maxPageChars: 6_000,
+  },
+  director: {
+    enabled: false,
+    effort: 'medium',
+    // Three times the `medium` thinking budget. The directive is small; this
+    // number exists to leave the model room to reason and still have tokens
+    // left to answer with. See `DirectorConfig.maxOutputTokens`.
+    maxOutputTokens: 12_000,
+    maxPageChars: 2_000,
   },
   lovable: {
     baseUrl: 'https://api.lovable.dev',
@@ -582,6 +626,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       effort: effort(env, 'WRITER_EFFORT', DEFAULTS.writer.effort),
       maxOutputTokens: int(env, 'WRITER_MAX_OUTPUT_TOKENS', DEFAULTS.writer.maxOutputTokens),
       maxPageChars: int(env, 'WRITER_MAX_PAGE_CHARS', DEFAULTS.writer.maxPageChars),
+    },
+    director: {
+      enabled: bool(env, 'DIRECTOR_ENABLED', DEFAULTS.director.enabled),
+      model: str(env, 'DIRECTOR_MODEL', defaultModelFor(providerName)),
+      effort: effort(env, 'DIRECTOR_EFFORT', DEFAULTS.director.effort),
+      maxOutputTokens: int(env, 'DIRECTOR_MAX_OUTPUT_TOKENS', DEFAULTS.director.maxOutputTokens),
+      maxPageChars: int(env, 'DIRECTOR_MAX_PAGE_CHARS', DEFAULTS.director.maxPageChars),
     },
     lovable: {
       apiKey: str(env, 'LOVABLE_API_KEY', ''),

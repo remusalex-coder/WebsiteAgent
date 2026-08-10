@@ -9,6 +9,7 @@
  */
 
 export { composeDesign } from './compose.js';
+export { applyDirective } from './directive.js';
 export { classifyIndustry, defaultsFor, emphasisFor, INDUSTRY_DEFAULTS } from './industries.js';
 export { THEMES, themeFor, FALLBACK_STACKS } from './themes.js';
 export { chooseHero, chooseVariant, orderSections, planLayout } from './layout.js';
@@ -37,6 +38,13 @@ export {
 } from './color.js';
 
 export type { ComposeInput, ComposeOptions } from './compose.js';
+export type {
+  ColorStrategy,
+  DesignDirective,
+  HeroIntent,
+  ImageryIntent,
+  TypographyIntent,
+} from './directive.js';
 export type { ClassifyInput, ClassifyResult, IndustryDefaults } from './industries.js';
 export type { ThemeDefinition, ThemeFontChoice } from './themes.js';
 export type { LayoutInput } from './layout.js';
