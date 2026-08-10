@@ -1,0 +1,59 @@
+{
+  "variant": "director",
+  "htmlPath": "smoke-test/experience-intent/director/index.html",
+  "htmlBytes": 17246,
+  "htmlSha256": "d570227561b48e614254098f5984b45e92d87ae7c68e5c3e865fbdb0b39ad2b5",
+  "cssSha256": "a3234cc256bc87c8d3c331e7db90a12b9295d455238a254c55916346dc3b5d1a",
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedRequests": [],
+  "rendererWarnings": [
+    "image has no usable location and was omitted: \"javascript:alert(1)\""
+  ],
+  "reducedMotion": {
+    "consoleErrors": [],
+    "screenshot": "smoke-test/experience-intent/director/screenshots/desktop-reduced-motion.png"
+  },
+  "viewports": [
+    {
+      "viewport": "desktop",
+      "width": 1440,
+      "height": 900,
+      "documentHeight": 6550,
+      "horizontalOverflowPx": 0,
+      "words": 224,
+      "images": 6,
+      "brokenImages": 0,
+      "sections": 11,
+      "navLinks": 9,
+      "deadNavLinks": [],
+      "primaryCtas": 2,
+      "headingText": "Bread baked before dawn",
+      "hasMomentSection": true,
+      "momentContrastRatio": 5.353215825063611,
+      "screenshot": "smoke-test/experience-intent/director/screenshots/desktop.png",
+      "screenshotBytes": 396357,
+      "navigationWorks": true
+    },
+    {
+      "viewport": "mobile",
+      "width": 390,
+      "height": 844,
+      "documentHeight": 4578,
+      "horizontalOverflowPx": 0,
+      "words": 224,
+      "images": 6,
+      "brokenImages": 0,
+      "sections": 11,
+      "navLinks": 9,
+      "deadNavLinks": [],
+      "primaryCtas": 2,
+      "headingText": "Bread baked before dawn",
+      "hasMomentSection": true,
+      "momentContrastRatio": 5.353215825063611,
+      "screenshot": "smoke-test/experience-intent/director/screenshots/mobile.png",
+      "screenshotBytes": 205947,
+      "navigationWorks": true
+    }
+  ]
+}

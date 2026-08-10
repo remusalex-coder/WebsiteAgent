@@ -1,0 +1,28 @@
+{
+  "direction": "editorial",
+  "visualIntent": "A warm, craft-focused aesthetic that highlights artisanal baking traditions and local charm.",
+  "density": "balanced",
+  "heroIntent": {
+    "preference": "editorial",
+    "intent": "Establish an intimate visual story around nightly flour milling and early morning baking."
+  },
+  "layoutIntent": "Rhythmic and inviting, balancing story-driven copy blocks with appetizing visual imagery.",
+  "colorStrategy": "brand-led",
+  "typographyIntent": {
+    "intent": "Pair classic serif elegance for titles with high-legibility sans-serif for daily menus and hours.",
+    "preference": "serif"
+  },
+  "imageryIntent": {
+    "intent": "Showcase authentic bakery textures, freshly baked crusts, and the cozy counter environment in rich, inviting warmth.",
+    "treatment": "warm"
+  },
+  "accessibilityTarget": "AA",
+  "experienceIntent": {
+    "mode": "moment-led",
+    "moment": "about",
+    "momentIntent": "Elevate the story of milling flour and overnight baking to build trust and highlight artisanal quality.",
+    "transitionAtMoment": true
+  },
+  "rationale": "The visual strategy reflects a traditional neighbourhood bakery committed to craft and community. Using warm tones, editorial typography, and focused narrative moments emphasizes the artisanal nature of their daily baking process. Balanced spacing and clear menu hierarchy ensure local residents can easily check daily offerings and opening hours.",
+  "confidence": 0.9
+}

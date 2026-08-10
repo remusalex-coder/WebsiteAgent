@@ -17,6 +17,7 @@
     "render": "tsx main.ts --render",
     "resume": "tsx main.ts",
     "design-director": "node --import tsx --env-file=.env scripts/design-director-smoke.ts",
+    "experience-intent": "node --import tsx --env-file=.env scripts/experience-intent-smoke.ts",
     "build-site": "node --import tsx --env-file=.env main.ts",
     "publish": "node --import tsx scripts/publish-run.ts",
     "preview": "node scripts/preview.mjs",

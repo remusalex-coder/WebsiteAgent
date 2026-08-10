@@ -1,0 +1,13 @@
+{
+  "provider": "gemini",
+  "model": "gemini-3.6-flash",
+  "requestedModel": "gemini-3.6-flash",
+  "inputTokens": 794,
+  "outputTokens": 253,
+  "structuredOutput": "native",
+  "finishReason": "STOP",
+  "requestId": "IRN6aurjG7-9xN8PjsW7qA4",
+  "startedAt": "2026-08-10T18:06:25.088Z",
+  "finishedAt": "2026-08-10T18:06:33.229Z",
+  "durationMs": 8141
+}
