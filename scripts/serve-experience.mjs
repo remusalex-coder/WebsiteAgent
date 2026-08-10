@@ -15,7 +15,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const runId = process.argv[2] ?? '25e648c7';
-const port = Number(process.argv[3] ?? 4321);
+// PORT wins when a launcher assigns one dynamically; the positional arg is
+// for a human running this by hand.
+const port = Number(process.env.PORT ?? process.argv[3] ?? 4321);
 const base = path.join(ROOT, 'output', runId, 'experience');
 
 const TYPES = {
