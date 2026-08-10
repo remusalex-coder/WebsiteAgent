@@ -1,57 +1,74 @@
 # Next Session
 
-_Written 2026-08-10, after the Design Director ran live for the first time._
+_Rewritten 2026-08-10, after a read-only audit found the working tree had
+already gone further than this file said — the Director was wired into
+`main.ts` and a whole second engine (`lib/experience/`) existed — all
+uncommitted. That work is now committed (`ebcb49a`, `a1c44af`, `efb84af`,
+`239975e`) and this file is corrected to match. See PROJECT_STATUS.md for the
+full account; this is the thirty-second version._
 
-> **Canonical documentation is BusinessForge HQ in Notion.** This file is the
-> thirty-second version for whoever opens the repo first.
+> **Canonical documentation is BusinessForge HQ in Notion.**
 
 ## Start here (2026-08-10)
 
-**Look at the two pages side by side.**
+**Look at River Park first**, the first real business the Director actually
+directed in production, not a harness:
 
 ```bash
-start smoke-test/control/screenshots/desktop.png
+npm run preview -- 77c15289
 ```
 
-Then `smoke-test/director/screenshots/desktop.png`. Same business, same words,
-same fixture. The left one is what the deterministic system chose on its own;
-the right one is what it built after a real model call said `editorial`.
+`artifacts/77c15289/qa/qa.json` is the QA record — 28/28 checks pass. It also
+still carries the PUA/tofu glyph defect that `239975e` fixes going forward
+(the fix isn't retroactive to this artifact; see PROJECT_STATUS.md).
 
-Re-running `npm run design-director` is **free** — the directive is on disk and
-the run resumes from it. It costs a call only if you delete
-`smoke-test/director/directive.json`.
+**Then look at Bakery V2**, now a recorded, reproducible baseline rather than
+just "the immersive thing from a few sessions ago":
+[docs/canonical-bakery-v2.md](docs/canonical-bakery-v2.md). It has the exact
+commands to rebuild it and the specific screenshots proving Blade, Oven
+Spring, Whiteout, the photography handoff and the loop-closing ending.
 
 ## The next milestone
 
-**Wire the Director into `main.ts`, behind `DIRECTOR_ENABLED`.** It is ported,
-tested and proven in a harness, and the pipeline still does not call it. That is
-the one thing standing between "we proved it works" and "it works".
+**Not this session's to implement — this session closed and documented what
+already existed.** The real open question, evidenced rather than assumed:
 
-It is deliberately not done here: the smoke test was the deliverable, and
-untested code on the pipeline's critical path would have been the wrong way to
-end a milestone whose whole point was proving something honestly.
+River Park (general pipeline) and Bakery V2 (`lib/experience/`) are two
+disjoint code paths today. Nothing learned building the bakery experience —
+scroll-as-time scenes, signature moments, a scene-level ink system — is
+reachable by any other business. **The next milestone is deciding how to
+generalize experiential capability into the pipeline without forcing every
+generated site into a cinematic mode it doesn't earn.** That is a design
+decision first, and should be made with evidence from more than one
+business's Director output — not from Bakery V2 alone, which is a capability
+ceiling, not a template.
 
-Two things to settle while doing it:
+Not yet independently re-verified this session, carried over from before:
+whether resuming a completed pipeline run genuinely skips a second Director
+call (ADR 0002's property, proven for the smoke-test harness; the general
+pipeline's `step()`/`ARTIFACT_DEFAULTS` machinery looks built for the same
+thing but wasn't exercised by re-running a completed job this session).
 
-1. **Where the directive artifact lives in a real run.** `output/<runId>/` is
-   gitignored, which is right for a run and wrong for evidence. The smoke test
-   sidesteps it with `smoke-test/`; the pipeline needs an answer.
-2. **Whether stages become resumable jobs.** The harness already works this way
-   (ADR 0002) and it is what makes a second model call impossible after a
-   downstream crash. The pipeline does not, and that is the gap between this
-   harness and an orchestrator.
+Then, and only with evidence from more than one business: consider opening
+`heroIntent.preference` as the Director's second control surface (ADR 0004).
+Not before — nine of eleven directive fields are still advisory, and widening
+on symmetry rather than on observed defects is how a closed contract stops
+being one.
 
-Then, and only with evidence: consider opening `heroIntent.preference` as the
-Director's second control surface (ADR 0004). Not before — nine of eleven
-directive fields are advisory today, and widening on symmetry rather than on
-observed defects is how a closed contract stops being one.
+## Known reds — none currently open
 
-## Two known reds, neither from the Director
+Both prior reds are resolved and verified this session (524/524,
+`npm run typecheck` clean):
 
-- `test/design/compose.test.ts` "separates adjacent sections by ground" fails
-  against the uncommitted design work. Passes at `0223a41`.
-- Services cards and the menu band render at ~1.13–1.23:1 contrast, identically
-  in both variants.
+- `compose.test.ts`'s ground-separation assertion — fixed by the visual-worlds
+  work (`efb84af`).
+- Services cards / menu band contrast (~1.13–1.23:1) — same commit; every
+  ground now carries its own full ink family via `lib/render/variants.ts`'s
+  `ground()` helper.
+
+`shoot-handoff.mjs` hardcodes port 4321 rather than taking one as an argument
+— found while producing the Bakery V2 record, not fixed (see
+docs/canonical-bakery-v2.md). Small, not urgent.
 
 ## Previous session
 

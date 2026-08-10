@@ -2,24 +2,24 @@
 
 _Last updated: 2026-08-10_
 
-## AI Design Director — proven live (2026-08-10)
+## AI Design Director — integrated into the production pipeline
 
-**PASS.** One business, one real model call, 39/39 checks green.
+**Done, not just proven.** Stage 5a of `main.ts` calls `designDirectorAgent`
+whenever `DIRECTOR_ENABLED` is set; off (the default — see `.env.example`),
+it is a no-op and `design` composes from inference exactly as it always did.
+This was smoke-tested in isolation first (`npm run design-director`,
+artifacts in `smoke-test/`, see `docs/runbooks/design-director-smoke.md`) and
+is now wired into `executePipeline` itself, committed at `ebcb49a`.
 
-`real AI → designDirectorAgent → DesignDirective → applyDirective() →
-composeDesign() → HTML → screenshots → persistent artifacts` is verified end to
-end. Run it with `npm run design-director`; artifacts land in `smoke-test/`,
-which is not gitignored. See `docs/runbooks/design-director-smoke.md`.
+| | smoke test | production run |
+|---|---|---|
+| provider / model | `gemini` / `gemini-3.6-flash` | `gemini` / `gemini-3.6-flash` |
+| AI calls | 1 | 1 |
+| usage | 657 in + 215 out, `STOP` | 919 in + 213 out, `STOP` |
+| request id | `rbl5as-JA_6nkdUP_O_osQU` | `XcJ5apGmA93NkdUPpOG82Ag` |
+| evidence | `smoke-test/` | `artifacts/77c15289/` (River Park Events) |
 
-| | |
-|---|---|
-| provider / model | `gemini` / `gemini-3.6-flash` |
-| AI calls | **1** |
-| usage | 657 input + 215 output tokens, finish `STOP` |
-| request id | `rbl5as-JA_6nkdUP_O_osQU` |
-| structural difference | **140 fields** of `WebsiteDesign` |
-
-The Director was **not on `main`** before this — it lived only on
+The Director was **not on `main`** before 2026-08-10 — it lived only on
 `origin/copilot/inspect-repository-codebase`, which forked 12 commits ago and
 was built against the pre-vocabulary design layer. Three self-contained pieces
 were ported forward; that branch's A/B harness was deliberately left behind
@@ -31,26 +31,89 @@ if a fallback export is reintroduced. See `docs/decisions/0001`.
 **What the Director actually controls is one enum.** It returned eleven
 considered fields; `applyDirective` mapped two — `direction` and
 `accessibilityLevel` — and logged the rest as advisory. That one enum moved 140
-design fields, so it is a wide lever, not a narrow one, but the honest
-description is: *the Director picks one of eleven directions and a WCAG target;
-the deterministic system does everything else.* See `docs/decisions/0004`.
+design fields on the smoke-test business, so it is a wide lever, not a narrow
+one, but the honest description is: *the Director picks one of eleven
+directions and a WCAG target; the deterministic system does everything else.*
+See `docs/decisions/0004`.
 
-Fixed on the way through: **the mobile header nav overflowed the viewport by
-117px.** The scroll rail was correct but was never given room to work — the nav
-is a flex item, `min-width` defaults to `auto`, and for a `nowrap` row that is
-the sum of every link. Pre-existing at `0223a41`, affecting every generated site
-on a phone.
+Fixed on the way through (both committed): **the mobile header nav overflowed
+the viewport by 117px** — the scroll rail was correct but never had room to
+work, since a flex item's `min-width` defaults to `auto` and for a `nowrap`
+row that is the sum of every link; pre-existing at `0223a41`, affecting every
+generated site on a phone. And **the services-cards/menu band contrast
+defect** below — resolved, not just diagnosed.
 
-### Known, not fixed
+### Previously "known, not fixed" — now fixed
 
-- The services-cards and menu band rendered text at ~1.13–1.23:1 against their
-  ground — well under AA — **identically in both variants**, so it belongs to
-  the design layer's in-flight work, not to the Director. Re-measure: the
-  ground/variant work moved after this was recorded.
+The services-cards and menu band rendered text at ~1.13–1.23:1 against their
+ground — well under AA — identically whether the Director ran or not, so it
+was always the design layer's bug, not the Director's. **Resolved** by the
+visual-worlds work (`efb84af`): every ground now carries its own full ink
+family, and `lib/render/variants.ts`'s `ground()` helper rebinds the token
+names components already read so a component cannot land on the wrong ink by
+forgetting to ask for a new one. `compose.test.ts`'s ground-separation
+assertion and all three renderer snapshots pass; `npm test` is 524/524.
 
-> The ground-separation failure noted earlier on 2026-08-10 is **resolved**.
-> `compose.test.ts` passes 42/42; the in-flight `worlds.ts` / `variants.ts` work
-> fixed it during the same session.
+## FIRST_REAL_DESIGN_DIRECTOR_PRODUCTION_RUN — River Park Events (`77c15289`)
+
+Not regenerated this session; inspected only. This run **proves**:
+
+- real pipeline integration — `main.ts` stage 5a called the Director, not a
+  harness;
+- a real provider call — `gemini-3.6-flash`, request id
+  `XcJ5apGmA93NkdUPpOG82Ag`, 919 in / 213 out tokens, finish `STOP`;
+- a real business input — a live Google Maps URL for a Drăgășani event venue,
+  not a fixture;
+- a real generated website — `artifacts/77c15289/render/index.html`;
+- functional QA — 28/28 checks pass: heading, CTA, navigation, links, images,
+  no horizontal overflow, a11y landmarks and alt text, and all four security
+  checks (no inline handlers, no `javascript:` hrefs, no mixed content, no
+  external scripts).
+
+This run does **not** prove:
+
+- generalized immersive capability — River Park was composed through the
+  general pattern/world engine (`lib/design/`), not `lib/experience/`;
+- that Bakery V2's capabilities are available to arbitrary businesses — the
+  two engines are still separate code paths (see Architectural gap, below);
+- final visual quality — QA checks structure and function, not taste.
+
+**Known defect, present in this artifact.** The rendered HTML carries 18
+instances of `U+E5CA`, a Material Icons Private Use Area glyph Maps embeds in
+its own accessible-name strings (3 more in `content.json`) — a tofu box in
+front of amenity labels. The fix (`239975e`, strips the PUA block at
+`normalizeSpaces`) landed *after* this run and is not retroactive: this
+specific artifact still has the defect, and future collector runs will not.
+
+## Bakery V2 — now a committed canonical benchmark
+
+`lib/experience/` (commit `a1c44af`) is **CANONICAL_BAKERY_V2** as of this
+session. Full record, reproduction commands, and evidence review in
+[docs/canonical-bakery-v2.md](docs/canonical-bakery-v2.md): Blade, Oven
+Spring, Whiteout/Daybreak, the 3D→photography handoff, and the loop-closing
+ending are each backed by a specific screenshot and a specific measured value
+(veil opacity, clock, contrast ratio), not an eyeballed claim. Verified
+locally, zero AI/API cost: 61fps desktop / 60fps mobile, 0 console errors,
+0 contrast failures while scrolling (worst 6.27:1 against a 4.5:1 target),
+correct reduced-motion and no-WebGL fallbacks, full keyboard reachability.
+
+## The architectural gap this leaves
+
+Bakery V2 is a **separate experience capability** (`lib/experience/`,
+Tartine-shaped: dough, a levain, an oven), not yet generalized into the
+universal pipeline. River Park — the first real Director production run —
+went through the general pattern/world engine (`lib/design/`), the same path
+every business takes; it never touches `lib/experience/`. The two are
+disjoint on purpose (see the master-prompt guidance against forcing an
+immersive style onto every business), but that also means nothing learned
+building the bakery experience is currently reachable by any other business.
+
+**The open question for the next session is not "is Bakery V2 good" — it now
+has a canonical, reproducible answer — but how to generalize experiential
+capability (scroll-as-time scenes, signature moments, a scene-level ink
+system) into something the general pipeline can draw from *without* making
+every generated site cinematic.** That is a design decision, not an
+engineering one, and is explicitly out of scope for this session.
 
 ## Design vocabulary engine (added 2026-08-08)
 
