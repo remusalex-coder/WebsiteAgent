@@ -30,18 +30,32 @@ Spring, Whiteout, the photography handoff and the loop-closing ending.
 
 ## The next milestone
 
-**Not this session's to implement — this session closed and documented what
-already existed.** The real open question, evidenced rather than assumed:
+**The architecture question has an answer now** (read-only audit, 2026-08-10):
+[docs/experience-capability-audit.md](docs/experience-capability-audit.md) +
+[ADR 0005](docs/decisions/0005-experience-mode-is-a-directive-field.md).
+Short version: add `experienceMode` to `DesignDirective` — a closed enum that
+can nominate one existing `SectionKind` as the page's signature moment —
+executed through the same `applyDirective`-style deterministic adapter, plus
+letting `lib/design/worlds.ts` return a short ground *sequence* instead of one
+static world. **Not** a new pipeline layer, **not** a generalized version of
+`lib/experience/`'s WebGL runtime — that stays separate and human-gated.
 
-River Park (general pipeline) and Bakery V2 (`lib/experience/`) are two
-disjoint code paths today. Nothing learned building the bakery experience —
-scroll-as-time scenes, signature moments, a scene-level ink system — is
-reachable by any other business. **The next milestone is deciding how to
-generalize experiential capability into the pipeline without forcing every
-generated site into a cinematic mode it doesn't earn.** That is a design
-decision first, and should be made with evidence from more than one
-business's Director output — not from Bakery V2 alone, which is a capability
-ceiling, not a template.
+That is implementation-ready as a design, not yet as code. Scope for the
+session that picks it up:
+
+1. `lib/design/directive.ts` — new field, adapter branch, tests.
+2. `lib/design/worlds.ts` — sequence support (additive; single-world callers
+   unaffected).
+3. `lib/design/layout.ts` — pacing for the nominated section.
+4. `agents/designDirectorAgent.ts` — schema + system prompt addition.
+5. Test the deterministic half via `--compose` (no model call). One
+   smoke-test-style Director call (same harness as
+   `docs/runbooks/design-director-smoke.md`) to prove the model populates the
+   field sensibly — that's the only AI spend this needs.
+
+Comparable in size to the visual-worlds work already committed this session
+(`efb84af`). Do not expand it into `ExperienceSpec`, a new AI stage, or
+anything that reaches `lib/experience/` — the audit explicitly rejected those.
 
 Not yet independently re-verified this session, carried over from before:
 whether resuming a completed pipeline run genuinely skips a second Director

@@ -108,12 +108,22 @@ disjoint on purpose (see the master-prompt guidance against forcing an
 immersive style onto every business), but that also means nothing learned
 building the bakery experience is currently reachable by any other business.
 
-**The open question for the next session is not "is Bakery V2 good" — it now
-has a canonical, reproducible answer — but how to generalize experiential
-capability (scroll-as-time scenes, signature moments, a scene-level ink
-system) into something the general pipeline can draw from *without* making
-every generated site cinematic.** That is a design decision, not an
-engineering one, and is explicitly out of scope for this session.
+**That question now has an answer.** A full read-only capability audit
+(2026-08-10) — every file in `lib/experience/` read in full against the
+general pipeline's `DesignDirective`/`WebsiteDesign`/`LayoutPlan` — concluded
+that most of Bakery V2's individual principles (cinematic opening, skeleton
+loading, meaningful motion, functional conversion) already exist in some form
+on the general path; what's missing is the connective tissue that turns
+independent decisions into one arc. See
+[docs/experience-capability-audit.md](docs/experience-capability-audit.md)
+for the full capability matrix and River Park gap analysis, and
+[ADR 0005](docs/decisions/0005-experience-mode-is-a-directive-field.md) for
+the recommendation: generalize experience as **one more closed-enum field on
+`DesignDirective`** (a signature-moment nomination + a world-as-sequence
+extension to `worlds.ts`), executed by the same deterministic-adapter pattern
+already proven at ADR 0001/0004 — not a new pipeline layer, and explicitly
+not a generalized version of `lib/experience/`'s WebGL runtime, which stays a
+separate, human-gated capability. **Architecture only; not implemented.**
 
 ## Design vocabulary engine (added 2026-08-08)
 
