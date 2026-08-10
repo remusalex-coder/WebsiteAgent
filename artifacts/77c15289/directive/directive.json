@@ -1,22 +1,28 @@
 {
   "direction": "elegant",
-  "visualIntent": "An elegant, refined visual presence that establishes venue credibility and invites event hosts to connect.",
-  "density": "airy",
+  "visualIntent": "A polished, inviting visual presence showcasing the event venue with clear hierarchy and structured warmth.",
+  "density": "balanced",
   "heroIntent": {
-    "preference": "full-bleed",
-    "intent": "A full-bleed hero layout leverages the primary visual asset to immediately immerse visitors in the venue experience."
+    "preference": "split",
+    "intent": "Present clear booking action alongside the venue hero visual to immediately capture local event inquiries."
   },
-  "layoutIntent": "A clear, spacious structure designed to highlight essential location and contact details for prospective clients.",
+  "layoutIntent": "Structured and accessible linear layout emphasizing direct communication, location clarity, and event inquiry channels.",
   "colorStrategy": "brand-led",
   "typographyIntent": {
-    "intent": "Clean sans-serif typography ensures effortless readability and a contemporary, professional look.",
+    "intent": "Modern geometric headlines paired with highly readable body text for practical venue details.",
     "preference": "sans"
   },
   "imageryIntent": {
-    "intent": "Warm, welcoming visual framing highlights the venue ambiance and celebration context.",
+    "intent": "Highlight the physical venue atmosphere with authentic visual warmth.",
     "treatment": "warm"
   },
   "accessibilityTarget": "AA",
-  "rationale": "Designed as an elegant visual portal for a local venue, the strategy utilizes rich brand colors and open spacing to foster trust. With gallery assets currently limited, the full-bleed visual structure creates immediate impact, leading visitors seamlessly toward contact actions. The layout balances celebration elegance with direct communication pathways.",
+  "experienceIntent": {
+    "mode": "standard",
+    "moment": "hero",
+    "momentIntent": "The hero section anchors the venue's online presence and establishes local credibility.",
+    "transitionAtMoment": false
+  },
+  "rationale": "The visual strategy balances refined elegance suitable for weddings and private functions with a direct, functional structure for lead generation. A brand-led color palette creates a welcoming atmosphere while clean typography ensures local clients can quickly find location and booking details.",
   "confidence": 0.75
 }

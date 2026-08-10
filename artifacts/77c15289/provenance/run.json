@@ -1,6 +1,6 @@
 {
   "runId": "77c15289",
-  "publishedAt": "2026-08-10T16:27:18.183Z",
+  "publishedAt": "2026-08-10T18:16:25.596Z",
   "input": {
     "sourceUrl": "https://www.google.com/maps/search/River+Park+Events+Dragasani"
   },
@@ -15,14 +15,14 @@
       "provider": "gemini",
       "model": "gemini-3.6-flash",
       "requestedModel": "gemini-3.6-flash",
-      "inputTokens": 919,
-      "outputTokens": 213,
+      "inputTokens": 1056,
+      "outputTokens": 228,
       "structuredOutput": "native",
       "finishReason": "STOP",
-      "requestId": "XcJ5apGmA93NkdUPpOG82Ag",
-      "startedAt": "2026-08-10T12:21:49.001Z",
-      "finishedAt": "2026-08-10T12:21:56.769Z",
-      "durationMs": 7768
+      "requestId": "MhV6av-KL-GhkdUPpbT7oAo",
+      "startedAt": "2026-08-10T18:15:14.340Z",
+      "finishedAt": "2026-08-10T18:15:23.770Z",
+      "durationMs": 9430
     },
     "analystModel": "gemini-3.6-flash",
     "writerModel": null
