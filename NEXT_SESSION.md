@@ -1,11 +1,9 @@
 # Next Session
 
-_Rewritten 2026-08-10, after a read-only audit found the working tree had
-already gone further than this file said — the Director was wired into
-`main.ts` and a whole second engine (`lib/experience/`) existed — all
-uncommitted. That work is now committed (`ebcb49a`, `a1c44af`, `efb84af`,
-`239975e`) and this file is corrected to match. See PROJECT_STATUS.md for the
-full account; this is the thirty-second version._
+_Rewritten 2026-08-10, after Experience Intent V1 shipped — `DesignDirective`
+now has an `experienceIntent` field, verified deterministically and with one
+real Director call. See PROJECT_STATUS.md for the full account; this is the
+thirty-second version._
 
 > **Canonical documentation is BusinessForge HQ in Notion.**
 
@@ -28,38 +26,39 @@ just "the immersive thing from a few sessions ago":
 commands to rebuild it and the specific screenshots proving Blade, Oven
 Spring, Whiteout, the photography handoff and the loop-closing ending.
 
+## Experience Intent V1 — done
+
+`DesignDirective.experienceIntent` (`mode` / `moment` / `momentIntent` /
+`transitionAtMoment`) is built, tested (565/565), and proven with one real
+Director call — see PROJECT_STATUS.md for the full account, including the
+one real defect the live call found (Gemini rejects a nullable-union JSON
+Schema type) and how it was fixed. `npm run experience-intent` reproduces
+the whole thing; `-- --deterministic-only` reproduces the zero-AI half.
+
+**It reaches production automatically.** The new logic lives inside
+`applyDirective` itself (`lib/design/directive.ts`), which `agents/designAgent.ts`
+already calls on every pipeline run — no `main.ts` wiring was needed. The
+next time `DIRECTOR_ENABLED=true` and the model returns an
+`experienceIntent`, it will affect the generated page. It has not yet been
+observed doing so on a real, non-fixture business — River Park predates it.
+
 ## The next milestone
 
-**The architecture question has an answer now** (read-only audit, 2026-08-10):
-[docs/experience-capability-audit.md](docs/experience-capability-audit.md) +
-[ADR 0005](docs/decisions/0005-experience-mode-is-a-directive-field.md).
-Short version: add `experienceMode` to `DesignDirective` — a closed enum that
-can nominate one existing `SectionKind` as the page's signature moment —
-executed through the same `applyDirective`-style deterministic adapter, plus
-letting `lib/design/worlds.ts` return a short ground *sequence* instead of one
-static world. **Not** a new pipeline layer, **not** a generalized version of
-`lib/experience/`'s WebGL runtime — that stays separate and human-gated.
+**Not decided here, deliberately** — this session's scope was Experience
+Intent V1 alone. The honest options once someone is ready to spend another
+AI call:
 
-That is implementation-ready as a design, not yet as code. Scope for the
-session that picks it up:
+1. Run the real pipeline (`DIRECTOR_ENABLED=true`) against one or two more
+   real, diverse businesses and observe `experienceIntent` in practice —
+   evidence before any further widening, the same discipline ADR 0004
+   already established for `heroIntent.preference`.
+2. Only with evidence from more than one business: consider whether
+   `heroIntent.preference` (still advisory, ADR 0004) or a second
+   `experienceIntent` field is warranted. Not before.
 
-1. `lib/design/directive.ts` — new field, adapter branch, tests.
-2. `lib/design/worlds.ts` — sequence support (additive; single-world callers
-   unaffected).
-3. `lib/design/layout.ts` — pacing for the nominated section.
-4. `agents/designDirectorAgent.ts` — schema + system prompt addition.
-5. Test the deterministic half via `--compose` (no model call). One
-   smoke-test-style Director call (same harness as
-   `docs/runbooks/design-director-smoke.md`) to prove the model populates the
-   field sensibly — that's the only AI spend this needs.
-
-Comparable in size to the visual-worlds work already committed this session
-(`efb84af`). Do not expand it into `ExperienceSpec`, a new AI stage, or
-anything that reaches `lib/experience/` — the audit explicitly rejected those.
-
-Not yet independently re-verified this session, carried over from before:
-whether resuming a completed pipeline run genuinely skips a second Director
-call (ADR 0002's property, proven for the smoke-test harness; the general
+Not yet independently re-verified, carried over from before: whether
+resuming a completed pipeline run genuinely skips a second Director call
+(ADR 0002's property, proven for the smoke-test harness; the general
 pipeline's `step()`/`ARTIFACT_DEFAULTS` machinery looks built for the same
 thing but wasn't exercised by re-running a completed job this session).
 

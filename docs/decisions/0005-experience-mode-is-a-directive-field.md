@@ -1,8 +1,36 @@
 # ADR 0005 — Generalize experience as one more Directive field, not a new pipeline layer
 
-**Date:** 2026-08-10 · **Amended:** 2026-08-10, same day, after a contract gate
-**Status:** Accepted — architecture only, not implemented
+**Date:** 2026-08-10 · **Amended:** 2026-08-10, same day, after a contract gate · **Implemented:** 2026-08-10, same day, as Experience Intent V1
+**Status:** Implemented
 **Context:** read-only audit comparing Bakery V2 (`a1c44af`) against the general pipeline, prompted by River Park (`77c15289`) being the first real business the Director actually directed and receiving zero experiential decisions
+
+> **Implementation note.** Built exactly as specified below:
+> `ExperienceIntent` nested on `DesignDirective`, `applyExperienceIntent` in
+> `lib/design/directive.ts`, a moment marker in `lib/design/layout.ts`
+> (`stepUpEmphasis`, one rung, never straight to `'lead'`), and one CSS-only
+> transition primitive in `lib/render/variants.ts` (`.section--moment`). One
+> real Director call validated it end-to-end — the model chose `moment-led`
+> on `about` for a bakery, confidence 0.9, request `IRN6aurjG7-9xN8PjsW7qA4`.
+> Full account in `PROJECT_STATUS.md`.
+>
+> **One correction found only by making the real call, not by design
+> review.** The schema originally modelled `moment`/`momentIntent` as
+> nullable (`type: ['string', 'null']`, matching the "must be null when mode
+> is standard" rule below literally). Gemini's structured-output translator
+> rejects that union-type construct outright (`HTTP 400`, "Proto field is
+> not repeating, cannot start list") — a request-level failure before any
+> model inference, so effectively zero cost, but a real failed call
+> nonetheless. Fixed by following the pattern the three pre-existing nested
+> fields (`heroIntent`, `typographyIntent`, `imageryIntent`) already used
+> for their own nullable-in-TypeScript preferences: never model `null` in
+> the wire schema at all; require a real value always; let the deterministic
+> adapter — not the schema — decide when to ignore it. `moment` and
+> `momentIntent` are now plain required strings on the wire; the *behavior*
+> "standard mode never produces a moment" is unchanged, enforced by
+> `applyExperienceIntent` rather than by the model being able to return
+> null. The `SectionKind | null` / `string | null` TypeScript type is
+> unchanged, since hand-constructed directives (tests, an operator) can
+> still legitimately use `null`.
 
 > **Amendment note.** The original version of this ADR proposed extending
 > `lib/design/worlds.ts` to return a sequence of grounds instead of one

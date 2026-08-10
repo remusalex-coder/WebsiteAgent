@@ -108,22 +108,71 @@ disjoint on purpose (see the master-prompt guidance against forcing an
 immersive style onto every business), but that also means nothing learned
 building the bakery experience is currently reachable by any other business.
 
-**That question now has an answer.** A full read-only capability audit
-(2026-08-10) — every file in `lib/experience/` read in full against the
-general pipeline's `DesignDirective`/`WebsiteDesign`/`LayoutPlan` — concluded
-that most of Bakery V2's individual principles (cinematic opening, skeleton
-loading, meaningful motion, functional conversion) already exist in some form
-on the general path; what's missing is the connective tissue that turns
-independent decisions into one arc. See
+**That question now has an answer, and it is built.** A read-only capability
+audit (2026-08-10) concluded that most of Bakery V2's individual principles
+already exist in some form on the general path; what was missing was the
+connective tissue that turns independent decisions into one arc. See
 [docs/experience-capability-audit.md](docs/experience-capability-audit.md)
-for the full capability matrix and River Park gap analysis, and
-[ADR 0005](docs/decisions/0005-experience-mode-is-a-directive-field.md) for
-the recommendation: generalize experience as **one more closed-enum field on
-`DesignDirective`** (a signature-moment nomination + a world-as-sequence
-extension to `worlds.ts`), executed by the same deterministic-adapter pattern
-already proven at ADR 0001/0004 — not a new pipeline layer, and explicitly
-not a generalized version of `lib/experience/`'s WebGL runtime, which stays a
-separate, human-gated capability. **Architecture only; not implemented.**
+for the capability matrix, and [ADR 0005](docs/decisions/0005-experience-mode-is-a-directive-field.md)
+for the corrected decision (its first draft proposed extending `worlds.ts`;
+a contract gate found that ground sequencing already existed there,
+committed at `efb84af`, and corrected the shape before anything was built).
+
+## Experience Intent V1 (implemented 2026-08-10)
+
+`DesignDirective` gained one optional nested field, `experienceIntent`,
+mirroring the existing `heroIntent`/`typographyIntent`/`imageryIntent` shape:
+a closed `mode` (`'standard' | 'moment-led'`), a `moment` referencing an
+existing `SectionKind`, a one-sentence `momentIntent`, and a boolean
+`transitionAtMoment`. `applyExperienceIntent` (`lib/design/directive.ts`) is
+the deterministic adapter — same pattern as `applyDirective`, same
+graceful-degradation philosophy, same "the model chooses from closed sets,
+never supplies a measurement" rule from ADR 0004.
+
+Two small, genuinely new deterministic pieces, exactly where ADR 0005 said
+they belonged and nowhere else: `lib/design/layout.ts`'s `stepUpEmphasis`
+raises the nominated section's emphasis by **one rung** (never straight to
+`'lead'`), and `lib/render/variants.ts` gained **one** CSS-only transition
+primitive (`.section--moment`, a bounded low-opacity wash on
+`animation-timeline: view()`, gated behind
+`@media (prefers-reduced-motion: no-preference)`, `pointer-events: none`).
+`worlds.ts` was not touched.
+
+**Verified, in order:**
+
+- 565/565 tests pass, typecheck clean — including a schema test asserting
+  `experienceIntent` exposes exactly its four documented fields and rejects
+  CSS/JS/WebGL smuggled alongside them.
+- A zero-AI deterministic fixture (`npm run experience-intent -- --deterministic-only`)
+  proved standard vs. moment-led are **visibly** different — not just at the
+  data-attribute level. The first attempt (nominating `gallery`, which was
+  already at `'secondary'` emphasis) produced no visible change, because the
+  renderer only has dedicated CSS for the `'lead'` and `'quiet'` tiers —
+  `'secondary'`→`'primary'` crosses no rule. Nominating `testimonials`
+  (baseline `'quiet'`) instead produced a real, inspectable difference: an
+  "IV — TESTIMONIALS" eyebrow label appears that the quiet tier suppresses.
+  Screenshots and crops in `smoke-test/experience-intent/`.
+- One real Director call (**only after** every above check passed):
+  `gemini-3.6-flash`, 794 in / 253 out tokens, request `IRN6aurjG7-9xN8PjsW7qA4`,
+  confidence 0.9. For "Padaria Ana & Sons" it chose `moment-led` on `about`
+  — "Elevate the story of milling flour and overnight baking to build trust
+  and highlight artisanal quality" — a section this fixture actually has,
+  referencing evidence actually in the brief. Full directive, provenance,
+  design, HTML and screenshots in `smoke-test/experience-intent/director/`.
+- **One real defect found only by the live call, not by review**: Gemini's
+  structured-output translator rejects a nullable-union JSON Schema type
+  (`type: ['string', 'null']`), which is exactly how `moment`/`momentIntent`
+  were first written to satisfy "must be null when mode is standard"
+  literally. Fixed by following the pattern the three pre-existing nested
+  fields already used — never model `null` on the wire, always require a
+  real value, let the deterministic adapter decide when to ignore it. The
+  failed call happened before any model inference (`HTTP 400`), so was
+  effectively free; full account in ADR 0005.
+
+Both `standard` and `moment-led` remain byte-identical to pre-milestone
+output on every field except the new, additive `momentTransition: false` —
+confirmed by the same snapshot-diff-inspection discipline used earlier this
+session, not merely asserted.
 
 ## Design vocabulary engine (added 2026-08-08)
 
