@@ -37,6 +37,7 @@
     "motion-enter-rise",
     "motion-hover-response"
   ],
+  "world": "bone",
   "tokens": {
     "color": {
       "ramps": {
@@ -185,6 +186,8 @@
         "onAccent": "#fcfcfc",
         "inverted": "#252423",
         "onInverted": "#fcfcfc",
+        "onInvertedMuted": "#acaba9",
+        "onInvertedAccent": "#da8b64",
         "success": "#308639",
         "warning": "#986600",
         "danger": "#c13c36"
@@ -194,27 +197,31 @@
         "textOnCanvas": 15.1,
         "textOnSurface": 13.38,
         "onBrandOnBrand": 4.94,
-        "mutedOnCanvas": 8.29
+        "mutedOnCanvas": 8.29,
+        "textOnInverted": 15.1,
+        "mutedOnInverted": 6.75,
+        "accentOnInverted": 5.8
       }
     },
     "typography": {
       "heading": {
-        "family": "IBM Plex Sans",
-        "stack": "\"IBM Plex Sans\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
-        "character": "sans",
+        "family": "Manrope",
+        "stack": "\"Manrope\", Georgia, \"Iowan Old Style\", \"Times New Roman\", Times, serif",
+        "character": "serif",
         "weights": [
-          500,
+          400,
           600,
           700
         ]
       },
       "body": {
-        "family": "IBM Plex Sans",
-        "stack": "\"IBM Plex Sans\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "family": "Manrope",
+        "stack": "\"Manrope\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
         "character": "sans",
         "weights": [
           400,
-          500
+          500,
+          700
         ]
       },
       "mono": {
@@ -258,7 +265,7 @@
           "maxRem": 1.44,
           "lineHeight": 1.25,
           "letterSpacing": -0.005,
-          "weight": 500
+          "weight": 400
         },
         "h4": {
           "name": "h4",
@@ -266,7 +273,7 @@
           "maxRem": 1.2,
           "lineHeight": 1.35,
           "letterSpacing": 0,
-          "weight": 500
+          "weight": 400
         },
         "bodyLarge": {
           "name": "bodyLarge",
@@ -306,7 +313,7 @@
           "maxRem": 0.761,
           "lineHeight": 1.5,
           "letterSpacing": 0.12,
-          "weight": 500
+          "weight": 400
         }
       },
       "measureCh": 68,
@@ -604,6 +611,7 @@
   },
   "notes": [
     "Density is balanced: the law category expects airy and the corporate direction expects balanced, over 11 sections.",
+    "Visual world: Bone — light throughout, ordered, one face, space instead of drama.",
     "Sections were reordered for the law category; content itself is unchanged."
   ]
 }

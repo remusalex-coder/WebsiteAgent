@@ -491,7 +491,27 @@ function scoreOf(image: ImageAsset): number {
   // Width is the only quality signal available without decoding the bytes, and
   // it is a decent one: the image a site serves largest is the one it is
   // proudest of. Unknown widths sort mid-pack rather than last.
-  return width ?? 900;
+  const base = width ?? 900;
+
+  /*
+   * A story photograph sorts behind every photograph of the business.
+   *
+   * `arrangeSequence` already keeps these out of the lead and closing cells,
+   * and that was not enough. Tartine's gallery still carried a wheat field and
+   * two people sitting on a beach in its middle four cells — and once the world
+   * put the sequence on black, those two became *more* prominent rather than
+   * less, because darkness flatters whatever is in it.
+   *
+   * The test that matters is whether the page could belong to another business
+   * with the pictures swapped. A coastline and a field of grain could belong to
+   * anyone. A basket of proving loaves and a room full of people eating could
+   * not.
+   *
+   * A penalty rather than an exclusion: a business whose photography is *all*
+   * from its story page still gets a gallery, because the alternative is an
+   * empty band. They simply go last.
+   */
+  return isStoryImage(image) ? base - 10_000 : base;
 }
 
 /**

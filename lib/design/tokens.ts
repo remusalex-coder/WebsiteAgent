@@ -190,6 +190,35 @@ export function buildColorSystem(input: ColorInput): ColorResult {
     ? text
     : oklchToHex(adjustForContrast(brandTextSeed, surface, accessibility.minContrastBody, 'darker'));
 
+  /*
+   * The same two roles again, for a ground that is dark.
+   *
+   * Both are walked *up* from the inverted ground rather than down from
+   * `onInverted`, because the question is how dim a secondary role can afford to
+   * be, not how bright. Starting at the ground and climbing until the target is
+   * met produces the dimmest ink that still reads, which is what "muted" is
+   * supposed to mean; starting at near-white and stopping at the first passing
+   * value would return near-white itself and there would be no hierarchy on a
+   * dark band at all.
+   *
+   * The margins are deliberate and not the bare minimum. `textMuted` sits at
+   * roughly 8:1 against the page rather than at its 4.5 floor, and a dark band
+   * whose muted ink sat exactly on the floor would read as a different, cheaper
+   * decision than the light half of the same page. Two steps of headroom for the
+   * muted role and one for the accent keeps the two halves recognisably the same
+   * design — and a world that repaints the ground can only paint it darker than
+   * `inverted`, so the margin is a floor rather than an estimate.
+   */
+  const invertedSeed = hexToOklch(inverted);
+  const onInvertedMuted = invertedSeed === null
+    ? readableAgainst(inverted, accessibility.minContrastBody)
+    : oklchToHex(adjustForContrast(invertedSeed, inverted, accessibility.minContrastBody + 2, 'lighter'));
+
+  const onInvertedAccentSeed = hexToOklch(brand);
+  const onInvertedAccent = onInvertedAccentSeed === null
+    ? readableAgainst(inverted, accessibility.minContrastBody)
+    : oklchToHex(adjustForContrast(onInvertedAccentSeed, inverted, accessibility.minContrastBody + 1, 'lighter'));
+
   const semantic: SemanticColors = {
     canvas,
     canvasSubtle: step(neutral, RAMP_ROLE.canvasSubtle),
@@ -211,6 +240,8 @@ export function buildColorSystem(input: ColorInput): ColorResult {
     onAccent: readableAgainst(accent, accessibility.minContrastBody),
     inverted,
     onInverted: readableAgainst(inverted, accessibility.minContrastBody),
+    onInvertedMuted,
+    onInvertedAccent,
     success: step(ramps.success.steps, RAMP_ROLE.solid),
     warning: step(ramps.warning.steps, RAMP_ROLE.solid),
     danger: step(ramps.danger.steps, RAMP_ROLE.solid),
@@ -221,6 +252,12 @@ export function buildColorSystem(input: ColorInput): ColorResult {
     textOnSurface: round2(contrastHex(semantic.text, semantic.surface)),
     onBrandOnBrand: round2(contrastHex(semantic.onBrand, semantic.brand)),
     mutedOnCanvas: round2(contrastHex(semantic.textMuted, semantic.canvas)),
+    // The dark half of the page, reported for the same reason the light half is:
+    // a band nobody measured is how the services cards and the menu shipped at
+    // 1.13:1 while `textOnCanvas` read a healthy 15.1.
+    textOnInverted: round2(contrastHex(semantic.onInverted, semantic.inverted)),
+    mutedOnInverted: round2(contrastHex(semantic.onInvertedMuted, semantic.inverted)),
+    accentOnInverted: round2(contrastHex(semantic.onInvertedAccent, semantic.inverted)),
   };
 
   // Report rather than throw: a shortfall is worth knowing about, and refusing
@@ -236,6 +273,12 @@ export function buildColorSystem(input: ColorInput): ColorResult {
   // large-text floor was why every generated button sat in the low fours.
   if (contrast.onBrandOnBrand < accessibility.minContrastBody) {
     notes.push(`Text on the brand colour reaches only ${contrast.onBrandOnBrand}:1, below the ${accessibility.minContrastBody}:1 body target.`);
+  }
+  if (contrast.mutedOnInverted < accessibility.minContrastBody) {
+    notes.push(`Muted text on a dark band reaches only ${contrast.mutedOnInverted}:1, below the ${accessibility.minContrastBody}:1 target.`);
+  }
+  if (contrast.accentOnInverted < accessibility.minContrastBody) {
+    notes.push(`Accent text on a dark band reaches only ${contrast.accentOnInverted}:1, below the ${accessibility.minContrastBody}:1 target.`);
   }
 
   return { system: { ramps, semantic, scheme: 'light', contrast }, notes };

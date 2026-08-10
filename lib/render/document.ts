@@ -418,6 +418,7 @@ export function renderDocument(input: DocumentInput): string {
   const html = element('html', {
     lang: options.lang,
     ...(design === null ? {} : {
+      'data-world': design.world,
       'data-direction': design.personality.direction,
       'data-industry': design.industry.id,
       'data-density': design.personality.density,

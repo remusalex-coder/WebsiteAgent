@@ -43,12 +43,14 @@ on a phone.
 
 ### Known, not fixed
 
-- `test/design/compose.test.ts` "separates adjacent sections by ground" fails
-  against the **uncommitted** working-tree design work (two adjacent sections
-  both land on `inverted`). Passes at `0223a41`; unrelated to the Director.
-- The services-cards and menu band render text at ~1.13–1.23:1 against their
+- The services-cards and menu band rendered text at ~1.13–1.23:1 against their
   ground — well under AA — **identically in both variants**, so it belongs to
-  the design layer's in-flight work, not to the Director.
+  the design layer's in-flight work, not to the Director. Re-measure: the
+  ground/variant work moved after this was recorded.
+
+> The ground-separation failure noted earlier on 2026-08-10 is **resolved**.
+> `compose.test.ts` passes 42/42; the in-flight `worlds.ts` / `variants.ts` work
+> fixed it during the same session.
 
 ## Design vocabulary engine (added 2026-08-08)
 

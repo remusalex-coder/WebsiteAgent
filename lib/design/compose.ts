@@ -22,6 +22,7 @@
 
 import { classifyIndustry, defaultsFor } from './industries.js';
 import { selectPatterns } from './patterns.js';
+import { worldFor } from './worlds.js';
 import { planLayout } from './layout.js';
 import { themeFor } from './themes.js';
 import {
@@ -480,42 +481,32 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
   });
   notes.push(...color.notes);
 
+  const world = worldFor(defaults.ground, chosen.direction, defaults.imageReliance);
+  notes.push(`Visual world: ${world.concept}`);
+
   /*
-   * A selected pattern has to change the page, or it is documentation.
+   * The world owns the pairing, not the theme.
    *
-   * `type-editorial-serif` is the first pattern that reaches back into the
-   * tokens, and it is the one the benchmark most needs: typography scored 4/10,
-   * and the single largest reason was that a craft bakery rendered every word
-   * on the page in one humanist sans, because that is what the `friendly` theme
-   * specifies for both roles.
+   * A theme is a *direction* — friendly, editorial, corporate — and eleven
+   * categories share each one, which is why a craft bakery and a suburban
+   * plumber rendered in the same humanist sans. The world is the page's
+   * material, and its two faces are chosen as a pair for the tension between
+   * them: Playfair against Space Grotesk is a romantic serif beside a technical
+   * grotesque, which is the tension a bakery actually lives in — something made
+   * by hand, to a specification, every morning.
    *
-   * The theme is not wrong — `friendly` is the right direction for a great many
-   * small businesses, and a plain page is the correct default. What was missing
-   * was a way for the *industry and the direction together* to say that this
-   * particular business earns a display face. That judgement now lives in the
-   * pattern's `industries` and `directions` lists, where it can be reviewed,
-   * rather than being buried in a theme that eleven categories share.
-   *
-   * Only the heading role changes. The body face is what the visitor actually
-   * reads, the theme chose it for legibility, and swapping it would be a
-   * different and much riskier decision.
+   * Both roles change, unlike the earlier override which moved only the
+   * headings. A pairing is a pairing; swapping half of it is how a page ends up
+   * with a display face that belongs to nothing beneath it.
    */
-  const headingOverride = patterns.includes('type-editorial-serif')
-    && theme.headingFont.character === 'sans'
-    ? EDITORIAL_DISPLAY
-    : null;
+  const worldTheme: ThemeDefinition = {
+    ...theme,
+    headingFont: { family: world.display, character: 'serif', fallback: 'serif', weights: [400, 600, 700] },
+    bodyFont: { family: world.text, character: 'sans', fallback: 'sans', weights: [400, 500, 700] },
+  };
+  notes.push();
 
-  if (headingOverride !== null) {
-    notes.push(
-      `Headings are set in ${headingOverride.family}: the ${industry.id} category on the `
-      + `${chosen.direction} direction earns a display face, and the theme pairs one sans for both roles.`,
-    );
-  }
-
-  const typography = buildTypography(
-    headingOverride === null ? theme : { ...theme, headingFont: headingOverride },
-    density,
-  );
+  const typography = buildTypography(worldTheme, density);
   const spacing = buildSpacing(theme, density);
   const radius = buildRadius(theme);
   const elevation = buildElevation(
@@ -531,6 +522,7 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     density,
     imageReliance: defaults.imageReliance,
     ground: defaults.ground,
+    world,
   });
   notes.push(...layout.notes);
 
@@ -539,6 +531,7 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     personality,
     industry,
     patterns,
+    world: world.id,
     tokens: { color: color.system, typography, spacing, radius, elevation, motion },
     layout: layout.plan,
     imagery: imageryFor(theme, defaults.imageReliance, layout.plan.hero),

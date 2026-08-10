@@ -187,6 +187,22 @@ export interface SemanticColors {
   readonly onAccent: string;
   readonly inverted: string;
   readonly onInverted: string;
+  /**
+   * The rest of the ink family for a dark ground.
+   *
+   * `onInverted` alone is not an ink family, and treating it as one is what put
+   * three service cards and a menu on the page at 1.13:1. Every secondary text
+   * role — the dimmed line under a card title, the eyebrow, the price beside a
+   * dish — reads `textMuted` and `brandText`, and both of those are constructed
+   * against the page's *light* grounds. On an inverted band they measure 1.83:1
+   * and 2.79:1.
+   *
+   * So a dark ground gets its own muted and its own accent, built the same way
+   * every other pair here is: walked away from the ground until they clear the
+   * target rather than picked and checked afterwards.
+   */
+  readonly onInvertedMuted: string;
+  readonly onInvertedAccent: string;
   readonly success: string;
   readonly warning: string;
   readonly danger: string;
@@ -203,6 +219,9 @@ export interface ColorSystem {
     readonly textOnSurface: number;
     readonly onBrandOnBrand: number;
     readonly mutedOnCanvas: number;
+    readonly textOnInverted: number;
+    readonly mutedOnInverted: number;
+    readonly accentOnInverted: number;
   };
 }
 
@@ -547,6 +566,8 @@ export interface WebsiteDesign {
    * runs reads as a list of design decisions that changed.
    */
   readonly patterns: readonly string[];
+  /** The visual world the page is built in. See lib/design/worlds.ts. */
+  readonly world: string;
   readonly tokens: DesignTokens;
   readonly layout: LayoutPlan;
   readonly imagery: ImageStrategy;

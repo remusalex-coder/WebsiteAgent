@@ -37,6 +37,7 @@
     "motion-enter-rise",
     "motion-hover-response"
   ],
+  "world": "ember",
   "tokens": {
     "color": {
       "ramps": {
@@ -185,6 +186,8 @@
         "onAccent": "#fcfcfc",
         "inverted": "#252423",
         "onInverted": "#fcfcfc",
+        "onInvertedMuted": "#acaba9",
+        "onInvertedAccent": "#e38755",
         "success": "#308639",
         "warning": "#986600",
         "danger": "#c13c36"
@@ -194,27 +197,31 @@
         "textOnCanvas": 15.1,
         "textOnSurface": 13.38,
         "onBrandOnBrand": 4.95,
-        "mutedOnCanvas": 8.27
+        "mutedOnCanvas": 8.27,
+        "textOnInverted": 15.1,
+        "mutedOnInverted": 6.75,
+        "accentOnInverted": 5.8
       }
     },
     "typography": {
       "heading": {
-        "family": "Lora",
-        "stack": "\"Lora\", Georgia, \"Iowan Old Style\", \"Times New Roman\", Times, serif",
+        "family": "Playfair Display",
+        "stack": "\"Playfair Display\", Georgia, \"Iowan Old Style\", \"Times New Roman\", Times, serif",
         "character": "serif",
         "weights": [
           400,
-          500,
-          600
+          600,
+          700
         ]
       },
       "body": {
-        "family": "Nunito Sans",
-        "stack": "\"Nunito Sans\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "family": "Space Grotesk",
+        "stack": "\"Space Grotesk\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
         "character": "sans",
         "weights": [
           400,
-          600
+          500,
+          700
         ]
       },
       "mono": null,
@@ -227,7 +234,7 @@
           "maxRem": 3.052,
           "lineHeight": 1.05,
           "letterSpacing": -0.01,
-          "weight": 600
+          "weight": 700
         },
         "h1": {
           "name": "h1",
@@ -235,7 +242,7 @@
           "maxRem": 2.441,
           "lineHeight": 1.05,
           "letterSpacing": -0.01,
-          "weight": 600
+          "weight": 700
         },
         "h2": {
           "name": "h2",
@@ -243,7 +250,7 @@
           "maxRem": 1.953,
           "lineHeight": 1.15,
           "letterSpacing": -0.005,
-          "weight": 600
+          "weight": 700
         },
         "h3": {
           "name": "h3",
@@ -435,7 +442,7 @@
         "fullBleed": false,
         "rationale": "Chose cards for services: it is the bakery convention for a services section.",
         "frame": "aside",
-        "background": "canvas"
+        "background": "inverted"
       },
       {
         "index": 3,
@@ -447,7 +454,7 @@
         "fullBleed": false,
         "rationale": "Chose list for menu: it is the bakery convention for a menu section.",
         "frame": "offset",
-        "background": "subtle"
+        "background": "surface"
       },
       {
         "index": 4,
@@ -459,7 +466,7 @@
         "fullBleed": false,
         "rationale": "Chose grid for gallery: the section has 0 items and 2 images.",
         "frame": "stacked",
-        "background": "canvas"
+        "background": "subtle"
       },
       {
         "index": 5,
@@ -471,7 +478,7 @@
         "fullBleed": false,
         "rationale": "Chose quotes for testimonials: the section has 1 item and 0 images.",
         "frame": "aside",
-        "background": "subtle"
+        "background": "canvas"
       },
       {
         "index": 9,
@@ -483,7 +490,7 @@
         "fullBleed": false,
         "rationale": "Chose list for faq: the section has 2 items and 0 images.",
         "frame": "offset",
-        "background": "canvas"
+        "background": "subtle"
       },
       {
         "index": 1,
@@ -495,7 +502,7 @@
         "fullBleed": false,
         "rationale": "Chose stack for about: the section has 0 items and 0 images.",
         "frame": "statement",
-        "background": "subtle"
+        "background": "canvas"
       },
       {
         "index": 6,
@@ -507,7 +514,7 @@
         "fullBleed": false,
         "rationale": "Chose list for hours: the section has 2 items and 0 images.",
         "frame": "aside",
-        "background": "canvas"
+        "background": "subtle"
       },
       {
         "index": 7,
@@ -519,7 +526,7 @@
         "fullBleed": false,
         "rationale": "Chose stack for location: the section has 0 items and 0 images.",
         "frame": "statement",
-        "background": "subtle"
+        "background": "canvas"
       },
       {
         "index": 8,
@@ -531,7 +538,7 @@
         "fullBleed": false,
         "rationale": "Chose list for contact: the section has 2 items and 0 images.",
         "frame": "aside",
-        "background": "canvas"
+        "background": "subtle"
       },
       {
         "index": 10,
@@ -597,7 +604,7 @@
     "semanticLandmarks": true
   },
   "notes": [
-    "Headings are set in Lora: the bakery category on the friendly direction earns a display face, and the theme pairs one sans for both roles.",
+    "Visual world: Before light — the page opens in the dark and arrives in daylight.",
     "Sections were reordered for the bakery category; content itself is unchanged."
   ]
 }

@@ -44,6 +44,75 @@ const DENSITY_FACTOR: Readonly<Record<'airy' | 'balanced' | 'dense', number>> = 
   dense: 0.78,
 };
 
+/* ------------------------------------------------------------------ */
+/* Grounds and ink                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The four text roles a ground has to answer for.
+ *
+ * Not "a colour": a ground that names only its strongest ink is the bug this
+ * type exists to prevent. Every one of these is read by some component that has
+ * no idea what band it landed in.
+ */
+interface Ink {
+  readonly text: string;
+  readonly heading: string;
+  readonly muted: string;
+  readonly accent: string;
+}
+
+/**
+ * A ground and the ink that goes on it, emitted as one declaration.
+ *
+ * ## Why this is a function and not four rules
+ *
+ * `.card` painted `--color-surface` and named no ink. Inside a dark band it
+ * therefore inherited the band's near-white text and rendered its titles at
+ * 1.13:1 — light type on a light card. The menu failed from the other side:
+ * `.detail-list__label` hard-coded `--color-heading`, which is the *page's*
+ * near-black, and sat on the dark band at 1.23:1. Neither component was wrong
+ * about anything it could see. The ground and the ink were simply decided in
+ * different places, and nothing made them agree.
+ *
+ * So they stop being two decisions. Everything that paints a ground calls this,
+ * and the ink travels with the paint.
+ *
+ * ## Why it rebinds the token names rather than introducing new ones
+ *
+ * The alternative was an `--ink-*` layer that components would read instead.
+ * That works only as long as every future component remembers to reach for the
+ * new name, and the failure mode when one forgets is exactly the failure being
+ * fixed here — silently invisible text. Rebinding the names components already
+ * read means a component cannot get this wrong, because it is not being asked
+ * anything: `var(--color-heading)` means "the heading ink where I am", which is
+ * what it always should have meant.
+ *
+ * This is the opposite of the `--color-surface` collision recorded in `css.ts`.
+ * That name genuinely held two concepts — the page and a card — and the fix was
+ * to separate them. This one is a single concept that was being resolved in the
+ * wrong scope.
+ *
+ * Literal values rather than `var()` references, because a ground has to be able
+ * to restore the page's ink after a darker band has overridden it, and
+ * `--color-text: var(--color-text)` is a cycle rather than a reset.
+ */
+function ground(background: string | null, ink: Ink): string {
+  return [
+    ...(background === null ? [] : [`background: ${background};`]),
+    `--color-text: ${ink.text};`,
+    `--color-heading: ${ink.heading};`,
+    // Both names, because the two sheets disagree about what to call it. The
+    // base sheet's `.section__subheading` and `figcaption` read `--color-muted`
+    // while the design layer's read `--color-text-muted`, and rebinding one of
+    // them leaves half the secondary type on the band still set in the other.
+    `--color-text-muted: ${ink.muted};`,
+    `--color-muted: ${ink.muted};`,
+    `--color-brand-text: ${ink.accent};`,
+    'color: var(--color-text);',
+  ].join('\n  ');
+}
+
 /** A crop name as an `aspect-ratio` value. `natural` lets the file decide. */
 function aspect(crop: ImageCrop): string {
   switch (crop) {
@@ -101,6 +170,37 @@ export function designRules(design: WebsiteDesign): string {
   const cardHoverDepth = elevation.prefersBorders
     ? `border-color: var(--color-brand);`
     : `box-shadow: var(--shadow-lg);`;
+
+  /*
+   * The three inks this page has, named once.
+   *
+   * `brand` gets no dimmed role at all, and that is a measurement rather than an
+   * oversight: `onBrand` is constructed to clear the body target against the
+   * brand fill and lands just above it, so dimming it by even a tenth puts it
+   * under. On a brand band the secondary roles are the primary ink — the
+   * hierarchy there has to come from size and weight, because the colour has no
+   * room left to carry it.
+   */
+  const pageInk: Ink = {
+    text: color.semantic.text,
+    heading: color.semantic.heading,
+    muted: color.semantic.textMuted,
+    accent: color.semantic.brandText,
+  };
+
+  const invertedInk: Ink = {
+    text: color.semantic.onInverted,
+    heading: color.semantic.onInverted,
+    muted: color.semantic.onInvertedMuted,
+    accent: color.semantic.onInvertedAccent,
+  };
+
+  const brandInk: Ink = {
+    text: color.semantic.onBrand,
+    heading: color.semantic.onBrand,
+    muted: color.semantic.onBrand,
+    accent: color.semantic.onBrand,
+  };
 
   const lifts = motion.effects.includes('scale') || motion.effects.includes('rise');
   const staggers = motion.effects.includes('stagger');
@@ -461,34 +561,36 @@ h4 {
 
 /* Ground ----------------------------------------------------------- */
 
-.section[data-bg="canvas"] { background: var(--color-canvas); }
-.section[data-bg="subtle"] { background: var(--color-canvas-subtle); }
+/*
+ * Five grounds, each carrying its own ink. See \`ground()\`.
+ *
+ * The list of \`color: inherit\` overrides that used to sit here — headings,
+ * eyebrows and subheadings named one by one for the two dark grounds — is gone
+ * with it. That list was the workaround: it existed because \`--color-heading\`
+ * meant the page's near-black even on a black band, so every element that read
+ * it had to be individually told not to. It also only ever covered the elements
+ * somebody remembered, which is why \`.card__title\` and \`.detail-list__label\`
+ * were not on it.
+ */
+.section[data-bg="canvas"] {
+  ${ground('var(--color-canvas)', pageInk)}
+}
+
+.section[data-bg="subtle"] {
+  ${ground('var(--color-canvas-subtle)', pageInk)}
+}
+
 .section[data-bg="surface"] {
-  background: var(--color-surface);
+  ${ground('var(--color-surface)', pageInk)}
   border-block: 1px solid ${rule};
 }
 
 .section[data-bg="brand"] {
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  ${ground('var(--color-brand)', brandInk)}
 }
 
 .section[data-bg="inverted"] {
-  background: var(--color-inverted);
-  color: var(--color-on-inverted);
-}
-
-.section[data-bg="brand"] h1,
-.section[data-bg="brand"] h2,
-.section[data-bg="brand"] h3,
-.section[data-bg="brand"] .eyebrow,
-.section[data-bg="brand"] .section__subheading,
-.section[data-bg="inverted"] h1,
-.section[data-bg="inverted"] h2,
-.section[data-bg="inverted"] h3,
-.section[data-bg="inverted"] .eyebrow,
-.section[data-bg="inverted"] .section__subheading {
-  color: inherit;
+  ${ground('var(--color-inverted)', invertedInk)}
 }
 
 .section[data-bg="brand"] .button,
@@ -1077,11 +1179,21 @@ h4 {
  * somewhere to be — a gradient that is dense where the words are and clear where
  * the picture is.
  */
+/*
+ * The scrim is this block's ground, so the ink is declared here.
+ *
+ * No \`background\`: what the copy actually sits on is the gradient in
+ * \`.hero__scrim\`, painted by a sibling behind it. The section's own colour is
+ * only what shows if the photograph never arrives. Either way the ground under
+ * these words is dark, and the whole ink family has to say so — not just the
+ * body colour, or the eyebrow goes back to being the page's brown on a
+ * photograph at dusk.
+ */
 .hero--full-bleed {
   min-height: min(78vh, 46rem);
   align-content: end;
   padding-block: var(--space-3xl) var(--space-2xl);
-  color: var(--color-on-inverted);
+  ${ground(null, invertedInk)}
 }
 
 .hero--full-bleed .hero__backdrop {
@@ -1131,13 +1243,6 @@ h4 {
       transparent 60%
     );
   opacity: calc(0.55 + var(--overlay-opacity) * 0.45);
-}
-
-.hero--full-bleed h1,
-.hero--full-bleed .eyebrow,
-.hero--full-bleed .section__subheading,
-.hero--full-bleed .section__body {
-  color: var(--color-on-inverted);
 }
 
 /*
@@ -1299,12 +1404,22 @@ h4 {
  * reads as a box drawn around some text — the tell that separates a designed
  * card from a \`<div>\` with a stroke.
  */
+/*
+ * A card is a light ground wherever it lands, so it carries the page's ink with
+ * it.
+ *
+ * This is the half of the rule that is easy to forget. A band that goes dark is
+ * visibly a decision; a card that stays light *inside* that band is the same
+ * decision made silently, and it has the same obligation. Without this the card
+ * kept its own paper colour and inherited the band's near-white type, which is
+ * the 1.13:1 the services cards shipped at.
+ */
 .card {
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
   padding: var(--space-lg) var(--space-md);
-  background: var(--color-surface);
+  ${ground('var(--color-surface)', pageInk)}
   border-radius: var(--radius-md);
   ${cardDepth}
   transition:
@@ -1341,8 +1456,9 @@ h4 {
   justify-content: flex-end;
 }
 
+/* Step 2 of the ramp is a near-white tint, so this cell is a light ground too. */
 .bento__cell--wide {
-  background: var(--primary-2);
+  ${ground('var(--primary-2)', pageInk)}
 }
 
 @media (min-width: ${round(mdRem)}rem) {
@@ -2223,12 +2339,10 @@ a.contact-block__value:hover {
 }
 
 .site-footer--rich {
-  background: var(--color-inverted);
-  color: var(--color-on-inverted);
+  ${ground('var(--color-inverted)', invertedInk)}
 }
 
-.site-footer--rich .site-footer__name,
-.site-footer--rich .site-footer__title,
+/* Links keep the band's ink rather than the page's brand brown. */
 .site-footer--rich a {
   color: inherit;
 }
@@ -2539,8 +2653,7 @@ a {
  */
 .facts-bar {
   overflow: hidden;
-  background: var(--color-brand);
-  color: var(--color-on-brand, var(--color-on-primary));
+  ${ground('var(--color-brand)', brandInk)}
 }
 
 /*
@@ -2780,6 +2893,355 @@ a {
   .gallery figure:hover img {
     transform: scale(1.04);
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* The ember world — before light                                      */
+/* ------------------------------------------------------------------ */
+
+/*
+ * The page is a sunrise.
+ *
+ * A bakery's day starts hours before the city's. The ovens are lit in the dark,
+ * the room is warm before anyone is in it, and the door opens into morning. So
+ * the page opens in near-black, warms through the middle, and arrives in
+ * daylight at the counter — the scroll itself carries the day.
+ *
+ * This is invention, and it is the *permitted* kind. It claims nothing about
+ * when Tartine opens, how long it has existed or who works there; every one of
+ * those remains a verified fact in the sections that carry them. What is
+ * invented is the experience of arriving, which is the only thing a photograph
+ * of bread on a white page has never been able to give.
+ *
+ * The ember itself is not chosen. It is the colour read off the business's own
+ * photographs — crust brown — so the world is warm because the bread is.
+ */
+[data-world="ember"] {
+  --ember-night: #12100e;
+  --ember-dusk: #1c1815;
+  --ember-dawn: #efe7dc;
+  color-scheme: dark light;
+}
+
+/*
+ * Night is the default ground, not an exception.
+ *
+ * Every previous page began white and stayed white with bands painted on it.
+ * Here the dark *is* the page for its first three scenes, so the photographs
+ * are lit objects in a room rather than pictures on paper.
+ */
+/*
+ * Night and dawn keep the ink the base ground already established: night is
+ * darker than \`--color-inverted\` and dawn is lighter than \`--color-canvas\`, so
+ * each moves *away* from the type sitting on it. The ink is a floor, and this
+ * world only ever raises it.
+ */
+[data-world="ember"] .section[data-bg="inverted"] {
+  background: var(--ember-night);
+}
+
+[data-world="ember"] .section[data-bg="subtle"] {
+  background: var(--ember-dawn);
+}
+
+/*
+ * Dusk: the second dark band, and the reason there can be one.
+ *
+ * The journey wants to hold the dark across two scenes, and two scenes painted
+ * the same black are one scene with a heading adrift in it. So night's
+ * companion ground is painted here as the warming rather than as the pale card
+ * it is in a light world — the ovens are on, the sky has moved, and the room is
+ * still dark. The band is a stage of the arc, so it takes night's text
+ * treatment with it and its rules go to the light instead of against it.
+ */
+/*
+ * Dusk is the one band in this world that reverses its ground.
+ *
+ * \`surface\` is a pale card everywhere else, so it is the only ember ground that
+ * has to bring the whole inverted ink with it rather than inherit what the base
+ * rule already set. It used to do that by naming five selectors and setting them
+ * to \`inherit\`; the ground now carries its own ink and the list is unnecessary.
+ */
+[data-world="ember"] .section[data-bg="surface"] {
+  ${ground('var(--ember-dusk)', invertedInk)}
+  border-block-color: color-mix(in srgb, var(--ember-dawn) 14%, transparent);
+}
+
+[data-world="ember"] .section[data-bg="surface"] .button {
+  background: var(--color-on-brand);
+  border-color: var(--color-on-brand);
+  color: var(--color-brand);
+}
+
+/*
+ * The seam between night and morning.
+ *
+ * A hard edge between a black band and a cream one reads as two pages stapled
+ * together. A tall gradient in the join makes the change feel like light
+ * arriving rather than a section ending, and it is the one place on the page
+ * where a gradient earns its keep.
+ *
+ * Both dark grounds get one, because either can be the last band before the
+ * light: the arc normally hands over at dusk, but a page short enough to skip
+ * that stage hands over straight from night. Each fades from the colour
+ * actually above it, or the join advertises a band that is not there.
+ */
+[data-world="ember"] .section[data-bg="inverted"] + .section[data-bg="subtle"],
+[data-world="ember"] .section[data-bg="surface"] + .section[data-bg="subtle"] {
+  position: relative;
+}
+
+[data-world="ember"] .section[data-bg="inverted"] + .section[data-bg="subtle"]::before,
+[data-world="ember"] .section[data-bg="surface"] + .section[data-bg="subtle"]::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: clamp(6rem, 18vh, 14rem);
+  pointer-events: none;
+}
+
+[data-world="ember"] .section[data-bg="inverted"] + .section[data-bg="subtle"]::before {
+  background: linear-gradient(to bottom, var(--ember-night), transparent);
+}
+
+[data-world="ember"] .section[data-bg="surface"] + .section[data-bg="subtle"]::before {
+  background: linear-gradient(to bottom, var(--ember-dusk), transparent);
+}
+
+/*
+ * The hero holds the whole screen and darkens as it leaves.
+ *
+ * A cinematic opening that stops at 78vh is a picture with a page under it. At
+ * full height the photograph *is* the first thing, and the scrim deepening as
+ * the reader scrolls hands the page to the dark band beneath rather than
+ * cutting to it.
+ */
+[data-world="ember"] .section--hero {
+  background: var(--ember-night);
+}
+
+[data-world="ember"] .hero {
+  min-height: min(92vh, 56rem);
+}
+
+/*
+ * Display type at the scale the world allows.
+ *
+ * Playfair carries this and Lora would not: at ninety points a high-contrast
+ * serif has hairlines to lose against a photograph, which is the drama. The
+ * eyebrow beneath it goes the other way — Space Grotesk, small, widely tracked,
+ * upper case — so the two faces are doing visibly different jobs rather than
+ * agreeing with each other.
+ */
+/*
+ * The opening is a poster, and it was still a page with a picture on it.
+ *
+ * v1 of this world kept the hero at its old proportions: a 76px headline in the
+ * bottom-left eighth of the frame, with the photograph doing all the work
+ * behind it. The photograph is good enough that the page looked fine — and
+ * "fine" is the whole problem. Nothing about the first three seconds said a
+ * person had made a decision.
+ *
+ * So the headline takes the frame. Roughly twice the display step, capped by
+ * both the viewport and the longest word so the words never break, sitting on
+ * the baseline of a full-height photograph. At this size Playfair's hairlines
+ * are the drama, which is why this world chose it over a text serif.
+ */
+[data-world="ember"] .section--hero h1 {
+  font-size: min(
+    calc(var(--text-display-size) * 2.3),
+    17vw,
+    calc(100cqi / var(--headline-chars, 8) * 2.3),
+    calc(100cqi / var(--headline-length, 24) * 3.6)
+  );
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  max-width: 14ch;
+}
+
+/*
+ * The scrim is a graded floor, not a wash over the whole picture.
+ *
+ * A flat 45% overlay across a photograph is what every generated page does, and
+ * it dulls the image everywhere in order to make text legible in one corner.
+ * A gradient from the bottom leaves the top of the photograph at full strength
+ * and puts the density exactly where the words are.
+ */
+[data-world="ember"] .hero__scrim {
+  background: linear-gradient(
+    to top,
+    rgb(6 5 4 / 88%) 0%,
+    rgb(6 5 4 / 62%) 28%,
+    rgb(6 5 4 / 12%) 62%,
+    transparent 100%
+  );
+}
+
+/*
+ * Scenes, numbered.
+ *
+ * The eyebrow said "gallery" and "about" — the names of the fields in a content
+ * model, printed on the page. In a world built as a journey they become scene
+ * numbers, which is the cheapest possible change that makes a reader feel they
+ * are moving through something rather than scrolling past blocks.
+ *
+ * A counter rather than authored labels, because a number invents nothing. It
+ * says "this is the second thing", which is true by construction, where a name
+ * like "Our Craft" would be a claim nobody at the business ever made.
+ */
+[data-world="ember"] main {
+  counter-reset: scene;
+}
+
+[data-world="ember"] .section:not(.section--hero):not(.section--cta) .eyebrow {
+  counter-increment: scene;
+}
+
+[data-world="ember"] .section:not(.section--hero):not(.section--cta) .eyebrow::before {
+  content: counter(scene, upper-roman) " — ";
+  opacity: 0.55;
+}
+
+[data-world="ember"] .eyebrow,
+[data-world="ember"] .facts-bar__item,
+[data-world="ember"] .detail__label {
+  font-family: var(--font-body);
+  letter-spacing: 0.28em;
+  font-size: 0.68rem;
+}
+
+/*
+ * The statement is the darkest, emptiest thing on the page.
+ *
+ * It sits in the middle of the night scenes, holds three quarters of a screen,
+ * and carries one sentence of the business's own words at a size nothing else
+ * reaches. The line rises as it is scrolled to — slowly, and only once.
+ */
+[data-world="ember"] .section--statement {
+  background: var(--ember-night);
+  min-height: min(78vh, 40rem);
+}
+
+[data-world="ember"] .pronouncement {
+  font-size: min(
+    calc(100cqi / var(--statement-length, 40) * 5.4),
+    11rem,
+    13vw
+  );
+  letter-spacing: -0.035em;
+}
+
+/*
+ * The gallery is a room in the dark, not a grid on paper.
+ *
+ * Same six photographs, same composition, no gutters between the two largest
+ * cells — the sequence reads as one object lit from within rather than as tiles
+ * with space around them.
+ */
+[data-world="ember"] .section--gallery {
+  padding-block: clamp(5rem, 12vw, 10rem);
+}
+
+[data-world="ember"] .gallery--collage {
+  gap: 0.5rem;
+}
+
+[data-world="ember"] .gallery img {
+  border-radius: 0;
+}
+
+/*
+ * The sequence ends by leaving the page.
+ *
+ * The closing photograph breaks its container and runs the full width of the
+ * viewport — no gutter, no radius, nothing beside it. After five images held
+ * inside a margin, one that ignores the margin entirely is the moment the
+ * composition has been building toward, and it costs one rule.
+ *
+ * A half-width negative margin rather than a fixed one, so it stays exact at
+ * every viewport and cannot introduce a horizontal scrollbar the way a viewport
+ * width does when a scrollbar is present.
+ */
+[data-world="ember"] .gallery--collage .gallery__item--5 {
+  margin-inline: calc(50% - 50vw);
+  width: 100vw;
+}
+
+[data-world="ember"] .gallery--collage .gallery__item--5 img {
+  aspect-ratio: 2.4;
+}
+
+/*
+ * The scene title steps aside for it.
+ *
+ * "Photographs" set as a heading in the middle of an atmospheric sequence is a
+ * content-model label wearing a serif. The scene number carries the position and
+ * the photographs carry the rest, so the heading stays in the document for the
+ * landmark and leaves the composition.
+ */
+[data-world="ember"] .section--gallery .section__head h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * The closing band is the ember, and the wordmark burns through it.
+ *
+ * The footer wordmark was a pale tint on white and read as a printing fault.
+ * On the dawn ground at full width it is the last thing the page says, and it
+ * says the name.
+ */
+/*
+ * Daylight is still part of the world.
+ *
+ * v2 opened beautifully and then, three scenes in, reverted to the page it had
+ * always been: small type, a four-column label/value contact table, a hairline
+ * under a 25px heading. The world stopped exactly where the reader starts
+ * looking for the useful information, which is the worst possible place to stop
+ * caring.
+ *
+ * The morning scenes get the same treatment as the night ones — the display
+ * face at real scale, the address set as something worth reading rather than a
+ * cell in a table, and air around it. The information does not become less
+ * useful for being composed; it becomes findable because it looks deliberate.
+ */
+[data-world="ember"] .section--contact,
+[data-world="ember"] .section--hours {
+  padding-block: clamp(4.5rem, 9vw, 8rem);
+}
+
+[data-world="ember"] .section--contact .section__head h2 {
+  font-size: min(calc(var(--text-display-size) * 1.15), 8vw);
+  line-height: 1;
+}
+
+/*
+ * The address is the largest thing in the contact scene.
+ *
+ * It is also the single most useful string on the page for a bakery — someone
+ * reading this is deciding whether to walk there. Setting it at caption size in
+ * a grey table beside three other cells was an information-architecture
+ * decision made by a stylesheet, not by anyone thinking about the visitor.
+ */
+[data-world="ember"] .section--contact .detail:first-child .detail__value {
+  font-family: var(--font-heading);
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  line-height: 1.15;
+}
+
+[data-world="ember"] .site-footer {
+  background: var(--ember-dawn);
+}
+
+[data-world="ember"] .wordmark {
+  opacity: 0.3;
+  letter-spacing: -0.05em;
 }
 
 /* ------------------------------------------------------------------ */

@@ -15,9 +15,11 @@
  */
 
 import { defaultsFor, emphasisFor } from './industries.js';
+import { assignJourney } from './worlds.js';
 
 import type { SectionKind, WebsiteContent, WebsiteSection } from '../types.js';
 import type { ThemeDefinition } from './themes.js';
+import type { VisualWorld } from './worlds.js';
 import type {
   Emphasis,
   FooterVariant,
@@ -544,6 +546,7 @@ export interface LayoutInput {
   readonly imageReliance: 'essential' | 'supporting' | 'incidental';
   /** What the page is made of. See IndustryDefaults.ground. */
   readonly ground: 'clean' | 'warm' | 'atmospheric';
+  readonly world: VisualWorld;
 }
 
 export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: readonly string[] } {
@@ -588,7 +591,14 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
     };
   });
 
-  const backgrounds = assignBackgrounds(partial, input.ground);
+  /*
+   * A journey, not an alternation.
+   *
+   * The world owns the sequence of grounds across the page, which is what lets
+   * a page move from night into morning instead of merely striping. See
+   * lib/design/worlds.ts.
+   */
+  const backgrounds = assignJourney(partial.map((section) => section.kind), input.world);
   const frames = assignFrames(partial.map((design) => {
     const section = content.sections[design.index];
     return {
