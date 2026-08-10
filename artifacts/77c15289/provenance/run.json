@@ -1,0 +1,63 @@
+{
+  "runId": "77c15289",
+  "publishedAt": "2026-08-10T12:24:21.196Z",
+  "input": {
+    "sourceUrl": "https://www.google.com/maps/search/River+Park+Events+Dragasani"
+  },
+  "business": {
+    "value": "River Park Events Dragasani",
+    "source": "maps",
+    "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+    "alternatives": []
+  },
+  "ai": {
+    "directive": {
+      "provider": "gemini",
+      "model": "gemini-3.6-flash",
+      "requestedModel": "gemini-3.6-flash",
+      "inputTokens": 919,
+      "outputTokens": 213,
+      "structuredOutput": "native",
+      "finishReason": "STOP",
+      "requestId": "XcJ5apGmA93NkdUPpOG82Ag",
+      "startedAt": "2026-08-10T12:21:49.001Z",
+      "finishedAt": "2026-08-10T12:21:56.769Z",
+      "durationMs": 7768
+    },
+    "analystModel": "gemini-3.6-flash",
+    "writerModel": null
+  },
+  "design": {
+    "direction": "elegant",
+    "world": "bone",
+    "industry": "general",
+    "patterns": [
+      "hero-typographic",
+      "type-grotesque-authority",
+      "type-display-statement",
+      "editorial-own-words",
+      "editorial-statement-break",
+      "marquee-verified-facts",
+      "marquee-wordmark",
+      "break-ground-shift",
+      "break-detail-rule",
+      "closing-invitation",
+      "closing-orphan-guard",
+      "motion-enter-rise",
+      "motion-hover-response"
+    ]
+  },
+  "artifacts": {
+    "html": "artifacts/77c15289/render/index.html",
+    "htmlSha256": "f58a8fe6b3f1a83e4a7353b55a1afcae6a4219cf4a0d93b4c19fee304afc3e96",
+    "screenshots": {
+      "desktop": "artifacts/77c15289/screenshots/desktop.png",
+      "mobile": "artifacts/77c15289/screenshots/mobile.png"
+    },
+    "directive": "artifacts/77c15289/directive/directive.json",
+    "design": "artifacts/77c15289/design/design.json",
+    "qa": "artifacts/77c15289/qa/qa.json"
+  },
+  "preview": "npm run preview -- 77c15289",
+  "qaVerdict": "PASS"
+}

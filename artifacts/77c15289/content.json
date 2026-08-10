@@ -1,0 +1,169 @@
+{
+  "businessName": "River Park Events Dragasani",
+  "tagline": "Function room facility on Strada Regele Ferdinand in Drăgășani",
+  "voice": {
+    "tone": "direct and clear",
+    "palette": [
+      "#1b3b2b",
+      "#d4a359",
+      "#f8f9fa"
+    ],
+    "typography": {
+      "heading": "Space Grotesk",
+      "body": "Inter"
+    }
+  },
+  "sections": [
+    {
+      "kind": "hero",
+      "heading": "Function room and event space in Drăgășani",
+      "subheading": "A venue on Strada Regele Ferdinand for private gatherings and local events.",
+      "body": "River Park Events Dragasani offers event space at Strada Regele Ferdinand 56. Contact the venue directly to inquire about booking availability.",
+      "bullets": [],
+      "images": [
+        {
+          "url": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4RuOWfJeS43WU3mczinzvtwqVhy_rgJmvJKlzXSPNAT0S6uUqnD8jFgi6sM-4myrIWsVqUZWPfQRtvJJhPabom9P1tL_Jhf7Y5qjMgpo-jVCm=w1600-h1200-k-no",
+          "alt": null,
+          "width": null,
+          "height": null,
+          "role": "gallery",
+          "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en",
+          "localPath": "assets/gallery-AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4-1c757004.jpg",
+          "bytes": 259422
+        }
+      ],
+      "callToAction": {
+        "label": "Call 0723607005",
+        "href": "tel:0723607005"
+      }
+    },
+    {
+      "kind": "services",
+      "heading": "Venue accessibility and features",
+      "subheading": "Confirmed facility access details for guests.",
+      "body": "",
+      "bullets": [
+        "Wheelchair-accessible entrance — Step-free access into the main venue space",
+        "Wheelchair-accessible car park — Dedicated parking areas for step-free arrival",
+        "Wheelchair-accessible toilet — On-site accessible restroom facilities"
+      ],
+      "images": [],
+      "callToAction": null
+    },
+    {
+      "kind": "location",
+      "heading": "Located on Strada Regele Ferdinand",
+      "subheading": "Address and venue location details in Drăgășani.",
+      "body": "The venue is located at Strada Regele Ferdinand 56, postal code 245700, in Drăgășani.",
+      "bullets": [],
+      "images": [],
+      "callToAction": null
+    },
+    {
+      "kind": "hours",
+      "heading": "Opening hours",
+      "subheading": "Schedule for inquiries and venue access.",
+      "body": "Get in touch by phone to schedule site visits or discuss event dates.",
+      "bullets": [
+        "Monday — 00:00–23:59"
+      ],
+      "images": [],
+      "callToAction": {
+        "label": "Call to confirm",
+        "href": "tel:0723607005"
+      }
+    },
+    {
+      "kind": "contact",
+      "heading": "Contact River Park Events Dragasani",
+      "subheading": "Reach the venue directly for booking details.",
+      "body": "Call to ask about open dates, site visits, and hall reservations.",
+      "bullets": [
+        "Address — Strada Regele Ferdinand 56, 245700 Drăgășani",
+        "Phone — 0723607005",
+        "Rating — 4.7 on Google"
+      ],
+      "images": [],
+      "callToAction": {
+        "label": "Call 0723607005",
+        "href": "tel:0723607005"
+      }
+    },
+    {
+      "kind": "cta",
+      "heading": "Plan your event in Drăgășani",
+      "subheading": "Contact River Park Events Dragasani by phone to check date availability.",
+      "body": "",
+      "bullets": [],
+      "images": [],
+      "callToAction": {
+        "label": "Call 0723607005",
+        "href": "tel:0723607005"
+      }
+    }
+  ],
+  "trust": [
+    {
+      "kind": "rating",
+      "label": "4.7 on Google",
+      "source": "maps"
+    }
+  ],
+  "facts": [
+    "Function room facility",
+    "4.7 on Google",
+    "Wheelchair-accessible car park",
+    "Wheelchair-accessible entrance",
+    "Wheelchair-accessible toilet"
+  ],
+  "seo": {
+    "title": "River Park Events Dragasani | Event Venue in Drăgășani",
+    "description": "Function room facility at Strada Regele Ferdinand 56 in Drăgășani. Call 0723607005 to inquire about event dates and venue availability.",
+    "keywords": [
+      "River Park Events Dragasani",
+      "sala evenimente Dragasani",
+      "sali de nunti Dragasani",
+      "function room Dragasani",
+      "event venue Dragasani"
+    ],
+    "structuredData": {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "River Park Events Dragasani",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Strada Regele Ferdinand 56",
+        "addressRegion": "245700 Drăgășani"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 44.6605789,
+        "longitude": 24.2519676
+      },
+      "telephone": "0723607005",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": "https://schema.org/Monday",
+          "opens": "00:00",
+          "closes": "23:59"
+        }
+      ],
+      "image": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4RuOWfJeS43WU3mczinzvtwqVhy_rgJmvJKlzXSPNAT0S6uUqnD8jFgi6sM-4myrIWsVqUZWPfQRtvJJhPabom9P1tL_Jhf7Y5qjMgpo-jVCm=w1600-h1200-k-no"
+    }
+  },
+  "unresolvedGaps": [
+    "Venue guest capacity limits need to be confirmed by the owner.",
+    "Specific event packages, menu offerings, and pricing need to be confirmed.",
+    "Standard operating and booking office hours beyond Monday need clarification.",
+    "An official email address for website inquiry notifications needs to be provided.",
+    "Opening hours are only known for 1 of seven days; the rest were not published where the pipeline could read them.",
+    "No email address was found for this business.",
+    "The star rating is shown on the page but not marked up as structured data: the review count is missing and schema.org requires both.",
+    "website: No website found on the listing",
+    "images.logo: No logo found",
+    "images.gallery: No gallery images found",
+    "pages: No page text collected",
+    "services: No services identified"
+  ]
+}

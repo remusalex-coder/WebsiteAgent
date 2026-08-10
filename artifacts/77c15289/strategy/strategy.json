@@ -1,0 +1,196 @@
+{
+  "businessName": "River Park Events Dragasani",
+  "category": {
+    "primary": "Function room facility",
+    "secondary": [
+      "Event venue",
+      "Wedding venue"
+    ],
+    "rationale": "The business is registered on Google Maps as a Function room facility in Drăgășani, operating as a dedicated venue for hosted events.",
+    "basis": "listing"
+  },
+  "goals": [
+    {
+      "title": "Direct Lead Generation via Phone and Inquiries",
+      "rationale": "With no existing website or email address listed, providing clear phone contact options and simple inquiry submission will capture prospective event organizers.",
+      "priority": "high",
+      "evidence": [
+        "Phones: 0723607005",
+        "Website: none",
+        "Category (from the Maps listing): Function room facility"
+      ]
+    },
+    {
+      "title": "Establish Digital Presence and Local Credibility",
+      "rationale": "A dedicated website will showcase the venue's strong rating and physical address, giving local clients confidence when choosing a venue for private functions.",
+      "priority": "high",
+      "evidence": [
+        "Rating: 4.7",
+        "Address: Strada Regele Ferdinand 56, 245700 Drăgășani",
+        "Website: none"
+      ]
+    }
+  ],
+  "audience": {
+    "primary": {
+      "name": "Local Event Hosts & Private Clients",
+      "description": "Individuals and families in Drăgășani and surrounding Valcea region planning weddings, parties, or family celebrations.",
+      "needs": [
+        "Find physical venue location and phone contact details",
+        "Submit event inquiry for date availability and capacity",
+        "Verify venue reputation and ratings"
+      ],
+      "rationale": "The business operates a function room facility in Drăgășani with phone contact details."
+    },
+    "secondary": [
+      {
+        "name": "Corporate & Organizational Event Planners",
+        "description": "Local businesses and community groups looking for a hall or function room for conferences, meetings, or dinners.",
+        "needs": [
+          "Check event venue location and contact management directly",
+          "Inquire about venue amenities and availability"
+        ],
+        "rationale": "Function room facilities commonly host both corporate and social events."
+      }
+    ]
+  },
+  "pages": [
+    {
+      "title": "Home",
+      "rationale": "Introduces River Park Events, highlights the 4.7 rating, provides address details, and encourages direct call or online inquiries.",
+      "priority": "high",
+      "evidence": [
+        "Name: River Park Events Dragasani",
+        "Category (from the Maps listing): Function room facility",
+        "Rating: 4.7",
+        "Hero image: yes"
+      ],
+      "path": "https://schema.org/",
+      "sections": [
+        "Hero section with venue name and quick contact call-to-action",
+        "Event venue overview and facility introduction",
+        "Customer rating and review highlight",
+        "Location summary and contact callout"
+      ]
+    },
+    {
+      "title": "Contact & Location",
+      "rationale": "Provides direct phone action buttons, map directions, and an event inquiry form for visitors seeking event bookings.",
+      "priority": "high",
+      "evidence": [
+        "Phones: 0723607005",
+        "Address: Strada Regele Ferdinand 56, 245700 Drăgășani"
+      ],
+      "path": "/contact",
+      "sections": [
+        "Contact phone details and click-to-call button",
+        "Interactive location map and full address details",
+        "Event inquiry web form"
+      ]
+    }
+  ],
+  "features": [
+    {
+      "title": "Direct Click-to-Call Phone Action",
+      "rationale": "Allows mobile site visitors to immediately phone the venue for quick inquiries.",
+      "priority": "high",
+      "evidence": [
+        "Phones: 0723607005"
+      ]
+    },
+    {
+      "title": "Event Inquiry Form",
+      "rationale": "Enables visitors to send event dates and guest counts to venue management easily without needing a published email.",
+      "priority": "high",
+      "evidence": [
+        "Emails: none found",
+        "Category (from the Maps listing): Function room facility"
+      ]
+    },
+    {
+      "title": "Interactive Location Map",
+      "rationale": "Helps clients locate the event hall accurately in Drăgășani.",
+      "priority": "medium",
+      "evidence": [
+        "Address: Strada Regele Ferdinand 56, 245700 Drăgășani"
+      ]
+    }
+  ],
+  "backendModules": [
+    {
+      "title": "Inquiry Form Processing Module",
+      "rationale": "Receives user inquiry submissions, validates inputs, and dispatches notification alerts to venue staff.",
+      "priority": "high",
+      "evidence": [
+        "Phones: 0723607005",
+        "Emails: none found"
+      ],
+      "layer": "backend",
+      "dependsOn": []
+    }
+  ],
+  "frontendModules": [
+    {
+      "title": "Call-to-Action & Contact Component",
+      "rationale": "Renders direct calling buttons and inquiry form triggers across mobile and desktop viewpoints.",
+      "priority": "high",
+      "evidence": [
+        "Phones: 0723607005"
+      ],
+      "layer": "frontend",
+      "dependsOn": []
+    },
+    {
+      "title": "Interactive Map Component",
+      "rationale": "Embeds dynamic mapping interface pinpointing the exact address in Drăgășani.",
+      "priority": "medium",
+      "evidence": [
+        "Address: Strada Regele Ferdinand 56, 245700 Drăgășani"
+      ],
+      "layer": "frontend",
+      "dependsOn": []
+    }
+  ],
+  "seoPriorities": [
+    {
+      "title": "Local Search Optimization for Drăgășani Event Venues",
+      "rationale": "Captures search intent for local users searching for event venues and function rooms in Drăgășani.",
+      "priority": "high",
+      "evidence": [
+        "Name: River Park Events Dragasani",
+        "Address: Strada Regele Ferdinand 56, 245700 Drăgășani",
+        "Category (from the Maps listing): Function room facility"
+      ],
+      "kind": "local",
+      "targetKeywords": [
+        "River Park Events Dragasani",
+        "sala evenimente Dragasani",
+        "sali de nunti Dragasani",
+        "function room Dragasani"
+      ]
+    },
+    {
+      "title": "EventVenue Structured Data Schema",
+      "rationale": "Ensures search engines accurately extract address, aggregate rating, and telephone contact details.",
+      "priority": "medium",
+      "evidence": [
+        "Address: Strada Regele Ferdinand 56, 245700 Drăgășani",
+        "Rating: 4.7",
+        "Phones: 0723607005"
+      ],
+      "kind": "schema",
+      "targetKeywords": [
+        "River Park Events location",
+        "River Park Events contact details"
+      ]
+    }
+  ],
+  "openQuestions": [
+    "What official email address should receive website inquiry notifications?",
+    "What are the specific venue guest capacities and event packages available (e.g., weddings, baptisms, corporate events)?",
+    "Are high-resolution venue photos and logo assets available to replace existing missing imagery?",
+    "What are the standard operating and booking office hours beyond the listed Monday schedule?"
+  ],
+  "model": "gemini-3.6-flash",
+  "generatedAt": "2026-08-10T12:21:34.735Z"
+}

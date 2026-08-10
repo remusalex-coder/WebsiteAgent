@@ -1,0 +1,540 @@
+{
+  "version": 1,
+  "personality": {
+    "direction": "elegant",
+    "mood": {
+      "temperature": "warm",
+      "energy": "calm",
+      "formality": "neutral"
+    },
+    "density": "airy",
+    "contrast": "medium",
+    "rationale": "Direction was set explicitly to elegant.",
+    "evidence": [
+      "operator override"
+    ]
+  },
+  "industry": {
+    "id": "general",
+    "basis": "fallback",
+    "matchedOn": [],
+    "rationale": "Nothing in the listing, strategy, services or name identified an industry; using neutral defaults."
+  },
+  "patterns": [
+    "hero-typographic",
+    "type-grotesque-authority",
+    "type-display-statement",
+    "editorial-own-words",
+    "editorial-statement-break",
+    "marquee-verified-facts",
+    "marquee-wordmark",
+    "break-ground-shift",
+    "break-detail-rule",
+    "closing-invitation",
+    "closing-orphan-guard",
+    "motion-enter-rise",
+    "motion-hover-response"
+  ],
+  "world": "bone",
+  "tokens": {
+    "color": {
+      "ramps": {
+        "primary": {
+          "role": "primary",
+          "seed": "#4b916e",
+          "steps": [
+            "#fafcfb",
+            "#f4f8f5",
+            "#e9f1ec",
+            "#dce8e1",
+            "#cbdcd2",
+            "#b8cec1",
+            "#9fbdac",
+            "#81a993",
+            "#3b825f",
+            "#296c4d",
+            "#2e5742",
+            "#16291f"
+          ]
+        },
+        "secondary": {
+          "role": "secondary",
+          "seed": "#4b916e",
+          "steps": [
+            "#fafcfc",
+            "#f3f8f7",
+            "#e8f1f0",
+            "#dbe8e6",
+            "#cadcda",
+            "#b6cdcb",
+            "#9cbcb9",
+            "#7ea8a5",
+            "#31807c",
+            "#1e6b67",
+            "#295653",
+            "#142827"
+          ]
+        },
+        "accent": {
+          "role": "accent",
+          "seed": "#4b916e",
+          "steps": [
+            "#fafcfd",
+            "#f3f8f9",
+            "#e7f0f3",
+            "#d9e7ec",
+            "#c8dbe2",
+            "#b3ccd5",
+            "#98bbc6",
+            "#79a7b6",
+            "#227d96",
+            "#08687f",
+            "#225463",
+            "#11282f"
+          ]
+        },
+        "neutral": {
+          "role": "neutral",
+          "seed": "#4b916e",
+          "steps": [
+            "#fcfcfc",
+            "#f6f7f7",
+            "#eeefee",
+            "#e4e5e4",
+            "#d6d8d7",
+            "#c6c8c7",
+            "#b2b5b3",
+            "#9c9f9d",
+            "#6e7370",
+            "#5a5f5c",
+            "#4b4e4c",
+            "#232423"
+          ]
+        },
+        "success": {
+          "role": "success",
+          "seed": "#4b916e",
+          "steps": [
+            "#fafdfa",
+            "#f3f8f3",
+            "#e8f2e8",
+            "#dbe9db",
+            "#cadeca",
+            "#b5d0b5",
+            "#9cbf9c",
+            "#7dad7e",
+            "#308639",
+            "#1d7028",
+            "#295a2c",
+            "#132a15"
+          ]
+        },
+        "warning": {
+          "role": "warning",
+          "seed": "#4b916e",
+          "steps": [
+            "#fefbf8",
+            "#fbf6f0",
+            "#f6ede1",
+            "#f0e2d0",
+            "#e7d4bb",
+            "#dcc3a2",
+            "#d0ae81",
+            "#c19657",
+            "#986600",
+            "#7e5400",
+            "#694500",
+            "#331f00"
+          ]
+        },
+        "danger": {
+          "role": "danger",
+          "seed": "#4b916e",
+          "steps": [
+            "#fffbfa",
+            "#fef4f3",
+            "#fceae7",
+            "#f9ddda",
+            "#f3cec9",
+            "#eabab4",
+            "#e1a29a",
+            "#d7857c",
+            "#c13c36",
+            "#a52926",
+            "#7e302a",
+            "#3c1714"
+          ]
+        }
+      },
+      "semantic": {
+        "canvas": "#fcfcfc",
+        "canvasSubtle": "#f6f7f7",
+        "surface": "#eeefee",
+        "surfaceRaised": "#e4e5e4",
+        "border": "#c6c8c7",
+        "borderStrong": "#b2b5b3",
+        "text": "#232423",
+        "textMuted": "#4b4e4c",
+        "heading": "#232423",
+        "brand": "#3b825f",
+        "brandHover": "#296c4d",
+        "onBrand": "#fcfcfc",
+        "brandText": "#2e7654",
+        "accent": "#227d96",
+        "onAccent": "#fcfcfc",
+        "inverted": "#232423",
+        "onInverted": "#fcfcfc",
+        "success": "#308639",
+        "warning": "#986600",
+        "danger": "#c13c36"
+      },
+      "scheme": "light",
+      "contrast": {
+        "textOnCanvas": 15.18,
+        "textOnSurface": 13.51,
+        "onBrandOnBrand": 4.5,
+        "mutedOnCanvas": 8.21
+      }
+    },
+    "typography": {
+      "heading": {
+        "family": "Manrope",
+        "stack": "\"Manrope\", Georgia, \"Iowan Old Style\", \"Times New Roman\", Times, serif",
+        "character": "serif",
+        "weights": [
+          400,
+          600,
+          700
+        ]
+      },
+      "body": {
+        "family": "Manrope",
+        "stack": "\"Manrope\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "character": "sans",
+        "weights": [
+          400,
+          500,
+          700
+        ]
+      },
+      "mono": null,
+      "ratio": 1.333,
+      "baseRem": 1.116,
+      "scale": {
+        "display": {
+          "name": "display",
+          "minRem": 2.852,
+          "maxRem": 4.695,
+          "lineHeight": 1.05,
+          "letterSpacing": -0.005,
+          "weight": 700
+        },
+        "h1": {
+          "name": "h1",
+          "minRem": 2.364,
+          "maxRem": 3.522,
+          "lineHeight": 1.05,
+          "letterSpacing": -0.005,
+          "weight": 700
+        },
+        "h2": {
+          "name": "h2",
+          "minRem": 1.959,
+          "maxRem": 2.642,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.0025,
+          "weight": 700
+        },
+        "h3": {
+          "name": "h3",
+          "minRem": 1.624,
+          "maxRem": 1.982,
+          "lineHeight": 1.25,
+          "letterSpacing": -0.0025,
+          "weight": 400
+        },
+        "h4": {
+          "name": "h4",
+          "minRem": 1.346,
+          "maxRem": 1.487,
+          "lineHeight": 1.35,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "bodyLarge": {
+          "name": "bodyLarge",
+          "minRem": 1.225,
+          "maxRem": 1.288,
+          "lineHeight": 1.6,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "body": {
+          "name": "body",
+          "minRem": 1.116,
+          "maxRem": 1.116,
+          "lineHeight": 1.6,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "small": {
+          "name": "small",
+          "minRem": 0.925,
+          "maxRem": 0.837,
+          "lineHeight": 1.5,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "caption": {
+          "name": "caption",
+          "minRem": 0.842,
+          "maxRem": 0.725,
+          "lineHeight": 1.5,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "eyebrow": {
+          "name": "eyebrow",
+          "minRem": 0.842,
+          "maxRem": 0.725,
+          "lineHeight": 1.5,
+          "letterSpacing": 0.12,
+          "weight": 400
+        }
+      },
+      "measureCh": 64,
+      "fluidRange": {
+        "minRem": 20,
+        "maxRem": 90
+      }
+    },
+    "spacing": {
+      "baseRem": 0.8,
+      "ratio": 1.5,
+      "scale": {
+        "3xs": {
+          "name": "3xs",
+          "minRem": 0.237,
+          "maxRem": 0.237
+        },
+        "2xs": {
+          "name": "2xs",
+          "minRem": 0.356,
+          "maxRem": 0.356
+        },
+        "xs": {
+          "name": "xs",
+          "minRem": 0.533,
+          "maxRem": 0.533
+        },
+        "sm": {
+          "name": "sm",
+          "minRem": 0.8,
+          "maxRem": 0.8
+        },
+        "md": {
+          "name": "md",
+          "minRem": 0.744,
+          "maxRem": 1.2
+        },
+        "lg": {
+          "name": "lg",
+          "minRem": 1.116,
+          "maxRem": 1.8
+        },
+        "xl": {
+          "name": "xl",
+          "minRem": 1.674,
+          "maxRem": 2.7
+        },
+        "2xl": {
+          "name": "2xl",
+          "minRem": 2.511,
+          "maxRem": 4.05
+        },
+        "3xl": {
+          "name": "3xl",
+          "minRem": 3.767,
+          "maxRem": 6.075
+        },
+        "4xl": {
+          "name": "4xl",
+          "minRem": 5.65,
+          "maxRem": 9.113
+        }
+      },
+      "sectionMinRem": 3,
+      "sectionMaxRem": 6
+    },
+    "radius": {
+      "style": "subtle",
+      "none": "0",
+      "sm": "0.1875rem",
+      "md": "0.3125rem",
+      "lg": "0.5rem",
+      "pill": "999rem"
+    },
+    "elevation": {
+      "style": "subtle",
+      "prefersBorders": false,
+      "levels": {
+        "none": {
+          "name": "none",
+          "shadow": "none"
+        },
+        "sm": {
+          "name": "sm",
+          "shadow": "0 0.063rem 0.125rem rgb(21 22 21 / 0.05)"
+        },
+        "md": {
+          "name": "md",
+          "shadow": "0 0.25rem 0.75rem rgb(21 22 21 / 0.06)"
+        },
+        "lg": {
+          "name": "lg",
+          "shadow": "0 0.75rem 2rem rgb(21 22 21 / 0.08)"
+        }
+      }
+    },
+    "motion": {
+      "level": "subtle",
+      "durationFastMs": 120,
+      "durationBaseMs": 200,
+      "durationSlowMs": 320,
+      "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "effects": [
+        "fade",
+        "rise"
+      ],
+      "respectReducedMotion": true
+    }
+  },
+  "layout": {
+    "hero": "editorial",
+    "footer": "minimal",
+    "sections": [
+      {
+        "index": 0,
+        "kind": "hero",
+        "variant": "stack",
+        "emphasis": "lead",
+        "density": "airy",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose stack for hero: the section has 0 items and 1 image.",
+        "frame": "stacked",
+        "background": "subtle"
+      },
+      {
+        "index": 1,
+        "kind": "services",
+        "variant": "cards",
+        "emphasis": "primary",
+        "density": "airy",
+        "columns": 3,
+        "fullBleed": false,
+        "rationale": "Chose cards for services: it is the general convention for a services section.",
+        "frame": "aside",
+        "background": "canvas"
+      },
+      {
+        "index": 3,
+        "kind": "hours",
+        "variant": "list",
+        "emphasis": "secondary",
+        "density": "airy",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for hours: the section has 1 item and 0 images.",
+        "frame": "statement",
+        "background": "subtle"
+      },
+      {
+        "index": 2,
+        "kind": "location",
+        "variant": "stack",
+        "emphasis": "secondary",
+        "density": "airy",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose stack for location: the section has 0 items and 0 images.",
+        "frame": "statement",
+        "background": "canvas"
+      },
+      {
+        "index": 4,
+        "kind": "contact",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose list for contact: the section has 3 items and 0 images.",
+        "frame": "aside",
+        "background": "subtle"
+      },
+      {
+        "index": 5,
+        "kind": "cta",
+        "variant": "banner",
+        "emphasis": "quiet",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "rationale": "Chose banner for cta: the section has 0 items and 0 images.",
+        "frame": "centered",
+        "background": "brand"
+      }
+    ],
+    "order": [
+      0,
+      1,
+      3,
+      2,
+      4,
+      5
+    ],
+    "stickyHeader": true,
+    "showNavigation": true,
+    "rationale": "Chose the editorial hero because the elegant direction leads with type."
+  },
+  "imagery": {
+    "treatment": "warm",
+    "heroCrop": "landscape",
+    "galleryCrop": "landscape",
+    "radius": "md",
+    "overlayOpacity": null,
+    "fallback": "solid"
+  },
+  "icons": {
+    "style": "line",
+    "strokeWidth": 1.75,
+    "sizeRem": 1.5
+  },
+  "responsive": {
+    "containerMaxRem": 68,
+    "containerWideRem": 84,
+    "breakpoints": {
+      "smRem": 30,
+      "mdRem": 48,
+      "lgRem": 64
+    },
+    "mobileColumns": 1,
+    "fluid": true
+  },
+  "accessibility": {
+    "targetLevel": "AA",
+    "minContrastBody": 4.5,
+    "minContrastLarge": 3,
+    "minTapTargetPx": 44,
+    "respectReducedMotion": true,
+    "focusStyle": "outline",
+    "semanticLandmarks": true
+  },
+  "notes": [
+    "Industry could not be determined; neutral defaults were used throughout.",
+    "Density is airy: the general category expects balanced and the elegant direction expects airy, over 6 sections.",
+    "Visual world: Bone — light throughout, ordered, one face, space instead of drama.",
+    "Sections were reordered for the general category; content itself is unchanged."
+  ]
+}

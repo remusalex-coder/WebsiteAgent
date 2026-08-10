@@ -1,0 +1,1174 @@
+{
+  "runId": "77c15289",
+  "input": {
+    "mapsUrl": "https://www.google.com/maps/search/River+Park+Events+Dragasani"
+  },
+  "discovery": {
+    "sourceUrl": "https://www.google.com/maps/search/River+Park+Events+Dragasani",
+    "canonicalUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+    "placeId": "0x4752ad9da60859f1:0x88a57b21e70290ae",
+    "name": "River Park Events Dragasani",
+    "category": "Function room facility",
+    "address": "Strada Regele Ferdinand 56, 245700 Drăgășani",
+    "phone": "0723607005",
+    "website": null,
+    "coordinates": {
+      "lat": 44.6605789,
+      "lng": 24.2519676
+    },
+    "rating": 4.7,
+    "reviewCount": null,
+    "hours": [
+      {
+        "dayOfWeek": 1,
+        "opens": "00:00",
+        "closes": "23:59"
+      }
+    ],
+    "socialLinks": {
+      "instagram": null,
+      "facebook": null,
+      "tiktok": null
+    },
+    "relatedLinks": [],
+    "discoveredAt": "2026-08-10T12:21:07.183Z"
+  },
+  "collected": {
+    "identity": {
+      "sourceUrl": "https://www.google.com/maps/search/River+Park+Events+Dragasani",
+      "canonicalUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+      "placeId": "0x4752ad9da60859f1:0x88a57b21e70290ae",
+      "name": "River Park Events Dragasani",
+      "category": "Function room facility",
+      "address": "Strada Regele Ferdinand 56, 245700 Drăgășani",
+      "phone": "0723607005",
+      "website": null,
+      "coordinates": {
+        "lat": 44.6605789,
+        "lng": 24.2519676
+      },
+      "rating": 4.7,
+      "reviewCount": null,
+      "hours": [
+        {
+          "dayOfWeek": 1,
+          "opens": "00:00",
+          "closes": "23:59"
+        }
+      ],
+      "socialLinks": {
+        "instagram": null,
+        "facebook": null,
+        "tiktok": null
+      },
+      "relatedLinks": [],
+      "discoveredAt": "2026-08-10T12:21:07.183Z"
+    },
+    "siteUrl": null,
+    "pages": [],
+    "attributes": [
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible car park",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      },
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible entrance",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      },
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible toilet",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      }
+    ],
+    "listingDescription": null,
+    "reviews": [],
+    "listingHours": [],
+    "listingRating": null,
+    "listingReviewCount": null,
+    "favicon": null,
+    "logo": null,
+    "hero": null,
+    "gallery": [
+      {
+        "url": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4RuOWfJeS43WU3mczinzvtwqVhy_rgJmvJKlzXSPNAT0S6uUqnD8jFgi6sM-4myrIWsVqUZWPfQRtvJJhPabom9P1tL_Jhf7Y5qjMgpo-jVCm=w1600-h1200-k-no",
+        "alt": null,
+        "width": null,
+        "height": null,
+        "role": "gallery",
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en",
+        "localPath": "assets/gallery-AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4-1c757004.jpg",
+        "bytes": 259422
+      }
+    ],
+    "navigation": [],
+    "services": [],
+    "emails": [],
+    "phones": [],
+    "socialProfiles": [],
+    "sources": [
+      "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+    ],
+    "collectedAt": "2026-08-10T12:21:13.845Z"
+  },
+  "profile": {
+    "name": {
+      "value": "River Park Events Dragasani",
+      "source": "maps",
+      "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+      "alternatives": []
+    },
+    "category": {
+      "value": "Function room facility",
+      "source": "maps",
+      "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+      "alternatives": []
+    },
+    "address": {
+      "value": {
+        "formatted": "Strada Regele Ferdinand 56, 245700 Drăgășani",
+        "street": "Strada Regele Ferdinand 56",
+        "locality": null,
+        "region": "245700 Drăgășani",
+        "postalCode": null,
+        "country": null
+      },
+      "source": "maps",
+      "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+      "alternatives": []
+    },
+    "coordinates": {
+      "value": {
+        "lat": 44.6605789,
+        "lng": 24.2519676
+      },
+      "source": "maps",
+      "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+      "alternatives": []
+    },
+    "website": null,
+    "phones": [
+      {
+        "value": {
+          "formatted": "0723607005",
+          "e164": null,
+          "digits": "0723607005"
+        },
+        "source": "maps",
+        "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+        "alternatives": []
+      }
+    ],
+    "emails": [],
+    "socialProfiles": [],
+    "hours": [
+      {
+        "dayOfWeek": 1,
+        "opens": "00:00",
+        "closes": "23:59"
+      }
+    ],
+    "rating": {
+      "value": 4.7,
+      "source": "maps",
+      "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+      "alternatives": []
+    },
+    "reviewCount": null,
+    "reviews": [],
+    "navigation": [],
+    "services": [],
+    "pages": [],
+    "attributes": [
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible car park",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      },
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible entrance",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      },
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible toilet",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      }
+    ],
+    "description": null,
+    "images": {
+      "logo": null,
+      "favicon": null,
+      "hero": {
+        "url": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4RuOWfJeS43WU3mczinzvtwqVhy_rgJmvJKlzXSPNAT0S6uUqnD8jFgi6sM-4myrIWsVqUZWPfQRtvJJhPabom9P1tL_Jhf7Y5qjMgpo-jVCm=w1600-h1200-k-no",
+        "alt": null,
+        "width": null,
+        "height": null,
+        "role": "gallery",
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en",
+        "localPath": "assets/gallery-AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4-1c757004.jpg",
+        "bytes": 259422
+      },
+      "gallery": []
+    },
+    "sources": [
+      "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+      "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+    ],
+    "normalizedAt": "2026-08-10T12:21:13.894Z",
+    "validation": {
+      "ok": true,
+      "issues": [
+        {
+          "field": "website",
+          "severity": "warning",
+          "message": "No website found on the listing"
+        },
+        {
+          "field": "images.logo",
+          "severity": "warning",
+          "message": "No logo found"
+        },
+        {
+          "field": "images.gallery",
+          "severity": "warning",
+          "message": "No gallery images found"
+        },
+        {
+          "field": "pages",
+          "severity": "warning",
+          "message": "No page text collected"
+        },
+        {
+          "field": "services",
+          "severity": "warning",
+          "message": "No services identified"
+        }
+      ]
+    }
+  },
+  "strategy": {
+    "businessName": "River Park Events Dragasani",
+    "category": {
+      "primary": "Function room facility",
+      "secondary": [
+        "Event venue",
+        "Wedding venue"
+      ],
+      "rationale": "The business is registered on Google Maps as a Function room facility in Drăgășani, operating as a dedicated venue for hosted events.",
+      "basis": "listing"
+    },
+    "goals": [
+      {
+        "title": "Direct Lead Generation via Phone and Inquiries",
+        "rationale": "With no existing website or email address listed, providing clear phone contact options and simple inquiry submission will capture prospective event organizers.",
+        "priority": "high",
+        "evidence": [
+          "Phones: 0723607005",
+          "Website: none",
+          "Category (from the Maps listing): Function room facility"
+        ]
+      },
+      {
+        "title": "Establish Digital Presence and Local Credibility",
+        "rationale": "A dedicated website will showcase the venue's strong rating and physical address, giving local clients confidence when choosing a venue for private functions.",
+        "priority": "high",
+        "evidence": [
+          "Rating: 4.7",
+          "Address: Strada Regele Ferdinand 56, 245700 Drăgășani",
+          "Website: none"
+        ]
+      }
+    ],
+    "audience": {
+      "primary": {
+        "name": "Local Event Hosts & Private Clients",
+        "description": "Individuals and families in Drăgășani and surrounding Valcea region planning weddings, parties, or family celebrations.",
+        "needs": [
+          "Find physical venue location and phone contact details",
+          "Submit event inquiry for date availability and capacity",
+          "Verify venue reputation and ratings"
+        ],
+        "rationale": "The business operates a function room facility in Drăgășani with phone contact details."
+      },
+      "secondary": [
+        {
+          "name": "Corporate & Organizational Event Planners",
+          "description": "Local businesses and community groups looking for a hall or function room for conferences, meetings, or dinners.",
+          "needs": [
+            "Check event venue location and contact management directly",
+            "Inquire about venue amenities and availability"
+          ],
+          "rationale": "Function room facilities commonly host both corporate and social events."
+        }
+      ]
+    },
+    "pages": [
+      {
+        "title": "Home",
+        "rationale": "Introduces River Park Events, highlights the 4.7 rating, provides address details, and encourages direct call or online inquiries.",
+        "priority": "high",
+        "evidence": [
+          "Name: River Park Events Dragasani",
+          "Category (from the Maps listing): Function room facility",
+          "Rating: 4.7",
+          "Hero image: yes"
+        ],
+        "path": "https://schema.org/",
+        "sections": [
+          "Hero section with venue name and quick contact call-to-action",
+          "Event venue overview and facility introduction",
+          "Customer rating and review highlight",
+          "Location summary and contact callout"
+        ]
+      },
+      {
+        "title": "Contact & Location",
+        "rationale": "Provides direct phone action buttons, map directions, and an event inquiry form for visitors seeking event bookings.",
+        "priority": "high",
+        "evidence": [
+          "Phones: 0723607005",
+          "Address: Strada Regele Ferdinand 56, 245700 Drăgășani"
+        ],
+        "path": "/contact",
+        "sections": [
+          "Contact phone details and click-to-call button",
+          "Interactive location map and full address details",
+          "Event inquiry web form"
+        ]
+      }
+    ],
+    "features": [
+      {
+        "title": "Direct Click-to-Call Phone Action",
+        "rationale": "Allows mobile site visitors to immediately phone the venue for quick inquiries.",
+        "priority": "high",
+        "evidence": [
+          "Phones: 0723607005"
+        ]
+      },
+      {
+        "title": "Event Inquiry Form",
+        "rationale": "Enables visitors to send event dates and guest counts to venue management easily without needing a published email.",
+        "priority": "high",
+        "evidence": [
+          "Emails: none found",
+          "Category (from the Maps listing): Function room facility"
+        ]
+      },
+      {
+        "title": "Interactive Location Map",
+        "rationale": "Helps clients locate the event hall accurately in Drăgășani.",
+        "priority": "medium",
+        "evidence": [
+          "Address: Strada Regele Ferdinand 56, 245700 Drăgășani"
+        ]
+      }
+    ],
+    "backendModules": [
+      {
+        "title": "Inquiry Form Processing Module",
+        "rationale": "Receives user inquiry submissions, validates inputs, and dispatches notification alerts to venue staff.",
+        "priority": "high",
+        "evidence": [
+          "Phones: 0723607005",
+          "Emails: none found"
+        ],
+        "layer": "backend",
+        "dependsOn": []
+      }
+    ],
+    "frontendModules": [
+      {
+        "title": "Call-to-Action & Contact Component",
+        "rationale": "Renders direct calling buttons and inquiry form triggers across mobile and desktop viewpoints.",
+        "priority": "high",
+        "evidence": [
+          "Phones: 0723607005"
+        ],
+        "layer": "frontend",
+        "dependsOn": []
+      },
+      {
+        "title": "Interactive Map Component",
+        "rationale": "Embeds dynamic mapping interface pinpointing the exact address in Drăgășani.",
+        "priority": "medium",
+        "evidence": [
+          "Address: Strada Regele Ferdinand 56, 245700 Drăgășani"
+        ],
+        "layer": "frontend",
+        "dependsOn": []
+      }
+    ],
+    "seoPriorities": [
+      {
+        "title": "Local Search Optimization for Drăgășani Event Venues",
+        "rationale": "Captures search intent for local users searching for event venues and function rooms in Drăgășani.",
+        "priority": "high",
+        "evidence": [
+          "Name: River Park Events Dragasani",
+          "Address: Strada Regele Ferdinand 56, 245700 Drăgășani",
+          "Category (from the Maps listing): Function room facility"
+        ],
+        "kind": "local",
+        "targetKeywords": [
+          "River Park Events Dragasani",
+          "sala evenimente Dragasani",
+          "sali de nunti Dragasani",
+          "function room Dragasani"
+        ]
+      },
+      {
+        "title": "EventVenue Structured Data Schema",
+        "rationale": "Ensures search engines accurately extract address, aggregate rating, and telephone contact details.",
+        "priority": "medium",
+        "evidence": [
+          "Address: Strada Regele Ferdinand 56, 245700 Drăgășani",
+          "Rating: 4.7",
+          "Phones: 0723607005"
+        ],
+        "kind": "schema",
+        "targetKeywords": [
+          "River Park Events location",
+          "River Park Events contact details"
+        ]
+      }
+    ],
+    "openQuestions": [
+      "What official email address should receive website inquiry notifications?",
+      "What are the specific venue guest capacities and event packages available (e.g., weddings, baptisms, corporate events)?",
+      "Are high-resolution venue photos and logo assets available to replace existing missing imagery?",
+      "What are the standard operating and booking office hours beyond the listed Monday schedule?"
+    ],
+    "model": "gemini-3.6-flash",
+    "generatedAt": "2026-08-10T12:21:34.735Z"
+  },
+  "content": {
+    "businessName": "River Park Events Dragasani",
+    "tagline": "Function room facility on Strada Regele Ferdinand in Drăgășani",
+    "voice": {
+      "tone": "direct and clear",
+      "palette": [
+        "#1b3b2b",
+        "#d4a359",
+        "#f8f9fa"
+      ],
+      "typography": {
+        "heading": "Space Grotesk",
+        "body": "Inter"
+      }
+    },
+    "sections": [
+      {
+        "kind": "hero",
+        "heading": "Function room and event space in Drăgășani",
+        "subheading": "A venue on Strada Regele Ferdinand for private gatherings and local events.",
+        "body": "River Park Events Dragasani offers event space at Strada Regele Ferdinand 56. Contact the venue directly to inquire about booking availability.",
+        "bullets": [],
+        "images": [
+          {
+            "url": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4RuOWfJeS43WU3mczinzvtwqVhy_rgJmvJKlzXSPNAT0S6uUqnD8jFgi6sM-4myrIWsVqUZWPfQRtvJJhPabom9P1tL_Jhf7Y5qjMgpo-jVCm=w1600-h1200-k-no",
+            "alt": null,
+            "width": null,
+            "height": null,
+            "role": "gallery",
+            "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en",
+            "localPath": "assets/gallery-AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4-1c757004.jpg",
+            "bytes": 259422
+          }
+        ],
+        "callToAction": {
+          "label": "Call 0723607005",
+          "href": "tel:0723607005"
+        }
+      },
+      {
+        "kind": "services",
+        "heading": "Venue accessibility and features",
+        "subheading": "Confirmed facility access details for guests.",
+        "body": "",
+        "bullets": [
+          "Wheelchair-accessible entrance — Step-free access into the main venue space",
+          "Wheelchair-accessible car park — Dedicated parking areas for step-free arrival",
+          "Wheelchair-accessible toilet — On-site accessible restroom facilities"
+        ],
+        "images": [],
+        "callToAction": null
+      },
+      {
+        "kind": "location",
+        "heading": "Located on Strada Regele Ferdinand",
+        "subheading": "Address and venue location details in Drăgășani.",
+        "body": "The venue is located at Strada Regele Ferdinand 56, postal code 245700, in Drăgășani.",
+        "bullets": [],
+        "images": [],
+        "callToAction": null
+      },
+      {
+        "kind": "hours",
+        "heading": "Opening hours",
+        "subheading": "Schedule for inquiries and venue access.",
+        "body": "Get in touch by phone to schedule site visits or discuss event dates.",
+        "bullets": [
+          "Monday — 00:00–23:59"
+        ],
+        "images": [],
+        "callToAction": {
+          "label": "Call to confirm",
+          "href": "tel:0723607005"
+        }
+      },
+      {
+        "kind": "contact",
+        "heading": "Contact River Park Events Dragasani",
+        "subheading": "Reach the venue directly for booking details.",
+        "body": "Call to ask about open dates, site visits, and hall reservations.",
+        "bullets": [
+          "Address — Strada Regele Ferdinand 56, 245700 Drăgășani",
+          "Phone — 0723607005",
+          "Rating — 4.7 on Google"
+        ],
+        "images": [],
+        "callToAction": {
+          "label": "Call 0723607005",
+          "href": "tel:0723607005"
+        }
+      },
+      {
+        "kind": "cta",
+        "heading": "Plan your event in Drăgășani",
+        "subheading": "Contact River Park Events Dragasani by phone to check date availability.",
+        "body": "",
+        "bullets": [],
+        "images": [],
+        "callToAction": {
+          "label": "Call 0723607005",
+          "href": "tel:0723607005"
+        }
+      }
+    ],
+    "trust": [
+      {
+        "kind": "rating",
+        "label": "4.7 on Google",
+        "source": "maps"
+      }
+    ],
+    "facts": [
+      "Function room facility",
+      "4.7 on Google",
+      "Wheelchair-accessible car park",
+      "Wheelchair-accessible entrance",
+      "Wheelchair-accessible toilet"
+    ],
+    "seo": {
+      "title": "River Park Events Dragasani | Event Venue in Drăgășani",
+      "description": "Function room facility at Strada Regele Ferdinand 56 in Drăgășani. Call 0723607005 to inquire about event dates and venue availability.",
+      "keywords": [
+        "River Park Events Dragasani",
+        "sala evenimente Dragasani",
+        "sali de nunti Dragasani",
+        "function room Dragasani",
+        "event venue Dragasani"
+      ],
+      "structuredData": {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "River Park Events Dragasani",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Strada Regele Ferdinand 56",
+          "addressRegion": "245700 Drăgășani"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 44.6605789,
+          "longitude": 24.2519676
+        },
+        "telephone": "0723607005",
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": "https://schema.org/Monday",
+            "opens": "00:00",
+            "closes": "23:59"
+          }
+        ],
+        "image": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4RuOWfJeS43WU3mczinzvtwqVhy_rgJmvJKlzXSPNAT0S6uUqnD8jFgi6sM-4myrIWsVqUZWPfQRtvJJhPabom9P1tL_Jhf7Y5qjMgpo-jVCm=w1600-h1200-k-no"
+      }
+    },
+    "unresolvedGaps": [
+      "Venue guest capacity limits need to be confirmed by the owner.",
+      "Specific event packages, menu offerings, and pricing need to be confirmed.",
+      "Standard operating and booking office hours beyond Monday need clarification.",
+      "An official email address for website inquiry notifications needs to be provided.",
+      "Opening hours are only known for 1 of seven days; the rest were not published where the pipeline could read them.",
+      "No email address was found for this business.",
+      "The star rating is shown on the page but not marked up as structured data: the review count is missing and schema.org requires both.",
+      "website: No website found on the listing",
+      "images.logo: No logo found",
+      "images.gallery: No gallery images found",
+      "pages: No page text collected",
+      "services: No services identified"
+    ]
+  },
+  "design": {
+    "version": 1,
+    "personality": {
+      "direction": "elegant",
+      "mood": {
+        "temperature": "warm",
+        "energy": "calm",
+        "formality": "neutral"
+      },
+      "density": "airy",
+      "contrast": "medium",
+      "rationale": "Direction was set explicitly to elegant.",
+      "evidence": [
+        "operator override"
+      ]
+    },
+    "industry": {
+      "id": "general",
+      "basis": "fallback",
+      "matchedOn": [],
+      "rationale": "Nothing in the listing, strategy, services or name identified an industry; using neutral defaults."
+    },
+    "patterns": [
+      "hero-typographic",
+      "type-grotesque-authority",
+      "type-display-statement",
+      "editorial-own-words",
+      "editorial-statement-break",
+      "marquee-verified-facts",
+      "marquee-wordmark",
+      "break-ground-shift",
+      "break-detail-rule",
+      "closing-invitation",
+      "closing-orphan-guard",
+      "motion-enter-rise",
+      "motion-hover-response"
+    ],
+    "world": "bone",
+    "tokens": {
+      "color": {
+        "ramps": {
+          "primary": {
+            "role": "primary",
+            "seed": "#4b916e",
+            "steps": [
+              "#fafcfb",
+              "#f4f8f5",
+              "#e9f1ec",
+              "#dce8e1",
+              "#cbdcd2",
+              "#b8cec1",
+              "#9fbdac",
+              "#81a993",
+              "#3b825f",
+              "#296c4d",
+              "#2e5742",
+              "#16291f"
+            ]
+          },
+          "secondary": {
+            "role": "secondary",
+            "seed": "#4b916e",
+            "steps": [
+              "#fafcfc",
+              "#f3f8f7",
+              "#e8f1f0",
+              "#dbe8e6",
+              "#cadcda",
+              "#b6cdcb",
+              "#9cbcb9",
+              "#7ea8a5",
+              "#31807c",
+              "#1e6b67",
+              "#295653",
+              "#142827"
+            ]
+          },
+          "accent": {
+            "role": "accent",
+            "seed": "#4b916e",
+            "steps": [
+              "#fafcfd",
+              "#f3f8f9",
+              "#e7f0f3",
+              "#d9e7ec",
+              "#c8dbe2",
+              "#b3ccd5",
+              "#98bbc6",
+              "#79a7b6",
+              "#227d96",
+              "#08687f",
+              "#225463",
+              "#11282f"
+            ]
+          },
+          "neutral": {
+            "role": "neutral",
+            "seed": "#4b916e",
+            "steps": [
+              "#fcfcfc",
+              "#f6f7f7",
+              "#eeefee",
+              "#e4e5e4",
+              "#d6d8d7",
+              "#c6c8c7",
+              "#b2b5b3",
+              "#9c9f9d",
+              "#6e7370",
+              "#5a5f5c",
+              "#4b4e4c",
+              "#232423"
+            ]
+          },
+          "success": {
+            "role": "success",
+            "seed": "#4b916e",
+            "steps": [
+              "#fafdfa",
+              "#f3f8f3",
+              "#e8f2e8",
+              "#dbe9db",
+              "#cadeca",
+              "#b5d0b5",
+              "#9cbf9c",
+              "#7dad7e",
+              "#308639",
+              "#1d7028",
+              "#295a2c",
+              "#132a15"
+            ]
+          },
+          "warning": {
+            "role": "warning",
+            "seed": "#4b916e",
+            "steps": [
+              "#fefbf8",
+              "#fbf6f0",
+              "#f6ede1",
+              "#f0e2d0",
+              "#e7d4bb",
+              "#dcc3a2",
+              "#d0ae81",
+              "#c19657",
+              "#986600",
+              "#7e5400",
+              "#694500",
+              "#331f00"
+            ]
+          },
+          "danger": {
+            "role": "danger",
+            "seed": "#4b916e",
+            "steps": [
+              "#fffbfa",
+              "#fef4f3",
+              "#fceae7",
+              "#f9ddda",
+              "#f3cec9",
+              "#eabab4",
+              "#e1a29a",
+              "#d7857c",
+              "#c13c36",
+              "#a52926",
+              "#7e302a",
+              "#3c1714"
+            ]
+          }
+        },
+        "semantic": {
+          "canvas": "#fcfcfc",
+          "canvasSubtle": "#f6f7f7",
+          "surface": "#eeefee",
+          "surfaceRaised": "#e4e5e4",
+          "border": "#c6c8c7",
+          "borderStrong": "#b2b5b3",
+          "text": "#232423",
+          "textMuted": "#4b4e4c",
+          "heading": "#232423",
+          "brand": "#3b825f",
+          "brandHover": "#296c4d",
+          "onBrand": "#fcfcfc",
+          "brandText": "#2e7654",
+          "accent": "#227d96",
+          "onAccent": "#fcfcfc",
+          "inverted": "#232423",
+          "onInverted": "#fcfcfc",
+          "success": "#308639",
+          "warning": "#986600",
+          "danger": "#c13c36"
+        },
+        "scheme": "light",
+        "contrast": {
+          "textOnCanvas": 15.18,
+          "textOnSurface": 13.51,
+          "onBrandOnBrand": 4.5,
+          "mutedOnCanvas": 8.21
+        }
+      },
+      "typography": {
+        "heading": {
+          "family": "Manrope",
+          "stack": "\"Manrope\", Georgia, \"Iowan Old Style\", \"Times New Roman\", Times, serif",
+          "character": "serif",
+          "weights": [
+            400,
+            600,
+            700
+          ]
+        },
+        "body": {
+          "family": "Manrope",
+          "stack": "\"Manrope\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+          "character": "sans",
+          "weights": [
+            400,
+            500,
+            700
+          ]
+        },
+        "mono": null,
+        "ratio": 1.333,
+        "baseRem": 1.116,
+        "scale": {
+          "display": {
+            "name": "display",
+            "minRem": 2.852,
+            "maxRem": 4.695,
+            "lineHeight": 1.05,
+            "letterSpacing": -0.005,
+            "weight": 700
+          },
+          "h1": {
+            "name": "h1",
+            "minRem": 2.364,
+            "maxRem": 3.522,
+            "lineHeight": 1.05,
+            "letterSpacing": -0.005,
+            "weight": 700
+          },
+          "h2": {
+            "name": "h2",
+            "minRem": 1.959,
+            "maxRem": 2.642,
+            "lineHeight": 1.15,
+            "letterSpacing": -0.0025,
+            "weight": 700
+          },
+          "h3": {
+            "name": "h3",
+            "minRem": 1.624,
+            "maxRem": 1.982,
+            "lineHeight": 1.25,
+            "letterSpacing": -0.0025,
+            "weight": 400
+          },
+          "h4": {
+            "name": "h4",
+            "minRem": 1.346,
+            "maxRem": 1.487,
+            "lineHeight": 1.35,
+            "letterSpacing": 0,
+            "weight": 400
+          },
+          "bodyLarge": {
+            "name": "bodyLarge",
+            "minRem": 1.225,
+            "maxRem": 1.288,
+            "lineHeight": 1.6,
+            "letterSpacing": 0,
+            "weight": 400
+          },
+          "body": {
+            "name": "body",
+            "minRem": 1.116,
+            "maxRem": 1.116,
+            "lineHeight": 1.6,
+            "letterSpacing": 0,
+            "weight": 400
+          },
+          "small": {
+            "name": "small",
+            "minRem": 0.925,
+            "maxRem": 0.837,
+            "lineHeight": 1.5,
+            "letterSpacing": 0,
+            "weight": 400
+          },
+          "caption": {
+            "name": "caption",
+            "minRem": 0.842,
+            "maxRem": 0.725,
+            "lineHeight": 1.5,
+            "letterSpacing": 0,
+            "weight": 400
+          },
+          "eyebrow": {
+            "name": "eyebrow",
+            "minRem": 0.842,
+            "maxRem": 0.725,
+            "lineHeight": 1.5,
+            "letterSpacing": 0.12,
+            "weight": 400
+          }
+        },
+        "measureCh": 64,
+        "fluidRange": {
+          "minRem": 20,
+          "maxRem": 90
+        }
+      },
+      "spacing": {
+        "baseRem": 0.8,
+        "ratio": 1.5,
+        "scale": {
+          "3xs": {
+            "name": "3xs",
+            "minRem": 0.237,
+            "maxRem": 0.237
+          },
+          "2xs": {
+            "name": "2xs",
+            "minRem": 0.356,
+            "maxRem": 0.356
+          },
+          "xs": {
+            "name": "xs",
+            "minRem": 0.533,
+            "maxRem": 0.533
+          },
+          "sm": {
+            "name": "sm",
+            "minRem": 0.8,
+            "maxRem": 0.8
+          },
+          "md": {
+            "name": "md",
+            "minRem": 0.744,
+            "maxRem": 1.2
+          },
+          "lg": {
+            "name": "lg",
+            "minRem": 1.116,
+            "maxRem": 1.8
+          },
+          "xl": {
+            "name": "xl",
+            "minRem": 1.674,
+            "maxRem": 2.7
+          },
+          "2xl": {
+            "name": "2xl",
+            "minRem": 2.511,
+            "maxRem": 4.05
+          },
+          "3xl": {
+            "name": "3xl",
+            "minRem": 3.767,
+            "maxRem": 6.075
+          },
+          "4xl": {
+            "name": "4xl",
+            "minRem": 5.65,
+            "maxRem": 9.113
+          }
+        },
+        "sectionMinRem": 3,
+        "sectionMaxRem": 6
+      },
+      "radius": {
+        "style": "subtle",
+        "none": "0",
+        "sm": "0.1875rem",
+        "md": "0.3125rem",
+        "lg": "0.5rem",
+        "pill": "999rem"
+      },
+      "elevation": {
+        "style": "subtle",
+        "prefersBorders": false,
+        "levels": {
+          "none": {
+            "name": "none",
+            "shadow": "none"
+          },
+          "sm": {
+            "name": "sm",
+            "shadow": "0 0.063rem 0.125rem rgb(21 22 21 / 0.05)"
+          },
+          "md": {
+            "name": "md",
+            "shadow": "0 0.25rem 0.75rem rgb(21 22 21 / 0.06)"
+          },
+          "lg": {
+            "name": "lg",
+            "shadow": "0 0.75rem 2rem rgb(21 22 21 / 0.08)"
+          }
+        }
+      },
+      "motion": {
+        "level": "subtle",
+        "durationFastMs": 120,
+        "durationBaseMs": 200,
+        "durationSlowMs": 320,
+        "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "effects": [
+          "fade",
+          "rise"
+        ],
+        "respectReducedMotion": true
+      }
+    },
+    "layout": {
+      "hero": "editorial",
+      "footer": "minimal",
+      "sections": [
+        {
+          "index": 0,
+          "kind": "hero",
+          "variant": "stack",
+          "emphasis": "lead",
+          "density": "airy",
+          "columns": null,
+          "fullBleed": false,
+          "rationale": "Chose stack for hero: the section has 0 items and 1 image.",
+          "frame": "stacked",
+          "background": "subtle"
+        },
+        {
+          "index": 1,
+          "kind": "services",
+          "variant": "cards",
+          "emphasis": "primary",
+          "density": "airy",
+          "columns": 3,
+          "fullBleed": false,
+          "rationale": "Chose cards for services: it is the general convention for a services section.",
+          "frame": "aside",
+          "background": "canvas"
+        },
+        {
+          "index": 3,
+          "kind": "hours",
+          "variant": "list",
+          "emphasis": "secondary",
+          "density": "airy",
+          "columns": null,
+          "fullBleed": false,
+          "rationale": "Chose list for hours: the section has 1 item and 0 images.",
+          "frame": "statement",
+          "background": "subtle"
+        },
+        {
+          "index": 2,
+          "kind": "location",
+          "variant": "stack",
+          "emphasis": "secondary",
+          "density": "airy",
+          "columns": null,
+          "fullBleed": false,
+          "rationale": "Chose stack for location: the section has 0 items and 0 images.",
+          "frame": "statement",
+          "background": "canvas"
+        },
+        {
+          "index": 4,
+          "kind": "contact",
+          "variant": "list",
+          "emphasis": "quiet",
+          "density": "balanced",
+          "columns": null,
+          "fullBleed": false,
+          "rationale": "Chose list for contact: the section has 3 items and 0 images.",
+          "frame": "aside",
+          "background": "subtle"
+        },
+        {
+          "index": 5,
+          "kind": "cta",
+          "variant": "banner",
+          "emphasis": "quiet",
+          "density": "balanced",
+          "columns": null,
+          "fullBleed": false,
+          "rationale": "Chose banner for cta: the section has 0 items and 0 images.",
+          "frame": "centered",
+          "background": "brand"
+        }
+      ],
+      "order": [
+        0,
+        1,
+        3,
+        2,
+        4,
+        5
+      ],
+      "stickyHeader": true,
+      "showNavigation": true,
+      "rationale": "Chose the editorial hero because the elegant direction leads with type."
+    },
+    "imagery": {
+      "treatment": "warm",
+      "heroCrop": "landscape",
+      "galleryCrop": "landscape",
+      "radius": "md",
+      "overlayOpacity": null,
+      "fallback": "solid"
+    },
+    "icons": {
+      "style": "line",
+      "strokeWidth": 1.75,
+      "sizeRem": 1.5
+    },
+    "responsive": {
+      "containerMaxRem": 68,
+      "containerWideRem": 84,
+      "breakpoints": {
+        "smRem": 30,
+        "mdRem": 48,
+        "lgRem": 64
+      },
+      "mobileColumns": 1,
+      "fluid": true
+    },
+    "accessibility": {
+      "targetLevel": "AA",
+      "minContrastBody": 4.5,
+      "minContrastLarge": 3,
+      "minTapTargetPx": 44,
+      "respectReducedMotion": true,
+      "focusStyle": "outline",
+      "semanticLandmarks": true
+    },
+    "notes": [
+      "Industry could not be determined; neutral defaults were used throughout.",
+      "Density is airy: the general category expects balanced and the elegant direction expects airy, over 6 sections.",
+      "Visual world: Bone — light throughout, ordered, one face, space instead of drama.",
+      "Sections were reordered for the general category; content itself is unchanged."
+    ]
+  },
+  "deployment": {
+    "projectId": "",
+    "liveUrl": null,
+    "editorUrl": null,
+    "status": "skipped",
+    "promptUsed": "LOVABLE_API_KEY is not set, so no deployment was attempted.",
+    "deployedAt": "2026-08-10T12:21:56.866Z"
+  },
+  "startedAt": "2026-08-10T12:20:56.555Z",
+  "finishedAt": "2026-08-10T12:21:56.871Z"
+}

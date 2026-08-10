@@ -591,7 +591,15 @@ export interface DeploymentResult {
   /** Public URL of the generated site, once it is live. */
   readonly liveUrl: string | null;
   readonly editorUrl: string | null;
-  readonly status: 'created' | 'building' | 'live' | 'failed';
+  /**
+   * `skipped` means no deployment was attempted because none is configured.
+   *
+   * A distinct state from `failed` on purpose: a run that produced a working
+   * site and was never asked to publish it has not failed, and recording it as
+   * a failure would make every local run look broken. The reason is carried in
+   * `promptUsed` so the artifact says why on its own.
+   */
+  readonly status: 'created' | 'building' | 'live' | 'failed' | 'skipped';
   /** The prompt actually sent, kept for reproducibility. */
   readonly promptUsed: string;
   readonly deployedAt: string;

@@ -1,0 +1,240 @@
+{
+  "verdict": "PASS",
+  "checkedAt": "2026-08-10T12:24:21.193Z",
+  "checks": [
+    {
+      "id": "page.loads",
+      "passed": true,
+      "detail": "no uncaught page errors"
+    },
+    {
+      "id": "page.no-console-errors",
+      "passed": true,
+      "detail": "console clean"
+    },
+    {
+      "id": "page.no-failed-requests",
+      "passed": true,
+      "detail": "every request resolved"
+    },
+    {
+      "id": "desktop.heading",
+      "passed": true,
+      "detail": "1 h1 — \"Function room and event space in Drăgășani\""
+    },
+    {
+      "id": "desktop.primary-cta",
+      "passed": true,
+      "detail": "2 primary CTA → tel:0723607005"
+    },
+    {
+      "id": "desktop.navigation",
+      "passed": true,
+      "detail": "5 in-page links, click resolved: true"
+    },
+    {
+      "id": "desktop.links-resolve",
+      "passed": true,
+      "detail": "11 links, 0 dead"
+    },
+    {
+      "id": "desktop.images-load",
+      "passed": true,
+      "detail": "1 images, 0 broken"
+    },
+    {
+      "id": "desktop.no-horizontal-overflow",
+      "passed": true,
+      "detail": "0px overflow"
+    },
+    {
+      "id": "desktop.content-rendered",
+      "passed": true,
+      "detail": "290 words across 6 sections"
+    },
+    {
+      "id": "desktop.screenshot",
+      "passed": true,
+      "detail": "artifacts/77c15289/screenshots/desktop.png (578192 bytes)"
+    },
+    {
+      "id": "desktop.a11y-landmarks",
+      "passed": true,
+      "detail": "lang=\"en\", main landmark: true, skip link: true"
+    },
+    {
+      "id": "desktop.a11y-image-alt",
+      "passed": true,
+      "detail": "0 images without alt"
+    },
+    {
+      "id": "mobile.heading",
+      "passed": true,
+      "detail": "1 h1 — \"Function room and event space in Drăgășani\""
+    },
+    {
+      "id": "mobile.primary-cta",
+      "passed": true,
+      "detail": "2 primary CTA → tel:0723607005"
+    },
+    {
+      "id": "mobile.navigation",
+      "passed": true,
+      "detail": "5 in-page links, click resolved: true"
+    },
+    {
+      "id": "mobile.links-resolve",
+      "passed": true,
+      "detail": "11 links, 0 dead"
+    },
+    {
+      "id": "mobile.images-load",
+      "passed": true,
+      "detail": "1 images, 0 broken"
+    },
+    {
+      "id": "mobile.no-horizontal-overflow",
+      "passed": true,
+      "detail": "0px overflow"
+    },
+    {
+      "id": "mobile.content-rendered",
+      "passed": true,
+      "detail": "290 words across 6 sections"
+    },
+    {
+      "id": "mobile.screenshot",
+      "passed": true,
+      "detail": "artifacts/77c15289/screenshots/mobile.png (504913 bytes)"
+    },
+    {
+      "id": "mobile.a11y-landmarks",
+      "passed": true,
+      "detail": "lang=\"en\", main landmark: true, skip link: true"
+    },
+    {
+      "id": "mobile.a11y-image-alt",
+      "passed": true,
+      "detail": "0 images without alt"
+    },
+    {
+      "id": "security.no-inline-handlers",
+      "passed": true,
+      "detail": "0 inline on* attributes"
+    },
+    {
+      "id": "security.no-javascript-urls",
+      "passed": true,
+      "detail": "0 javascript: hrefs"
+    },
+    {
+      "id": "security.no-mixed-content",
+      "passed": true,
+      "detail": "0 http:// subresources"
+    },
+    {
+      "id": "security.external-links-noopener",
+      "passed": true,
+      "detail": "0 target=_blank without rel=noopener"
+    },
+    {
+      "id": "security.no-external-scripts",
+      "passed": true,
+      "detail": "0 third-party scripts (1 script tags total)"
+    }
+  ],
+  "browser": {
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": [],
+    "viewports": [
+      {
+        "viewport": "desktop",
+        "width": 1440,
+        "height": 900,
+        "loadMs": 359,
+        "screenshot": "artifacts/77c15289/screenshots/desktop.png",
+        "screenshotBytes": 578192,
+        "navigationWorks": true,
+        "primaryCtaTarget": "tel:0723607005",
+        "title": "River Park Events Dragasani | Event Venue in Drăgășani",
+        "words": 290,
+        "images": 1,
+        "brokenImages": 0,
+        "imagesMissingAlt": 0,
+        "sections": 6,
+        "h1Count": 1,
+        "headingText": "Function room and event space in Drăgășani",
+        "links": 11,
+        "inPageLinks": 5,
+        "deadLinks": [],
+        "ctas": 4,
+        "primaryCtas": 2,
+        "actionable": [
+          "tel:0723607005",
+          "tel:0723607005",
+          "tel:0723607005",
+          "tel:0723607005",
+          "tel:0723607005"
+        ],
+        "lang": "en",
+        "hasSkipLink": true,
+        "hasMainLandmark": true,
+        "documentHeight": 3132,
+        "horizontalOverflowPx": 0
+      },
+      {
+        "viewport": "mobile",
+        "width": 390,
+        "height": 844,
+        "loadMs": 275,
+        "screenshot": "artifacts/77c15289/screenshots/mobile.png",
+        "screenshotBytes": 504913,
+        "navigationWorks": true,
+        "primaryCtaTarget": "tel:0723607005",
+        "title": "River Park Events Dragasani | Event Venue in Drăgășani",
+        "words": 290,
+        "images": 1,
+        "brokenImages": 0,
+        "imagesMissingAlt": 0,
+        "sections": 6,
+        "h1Count": 1,
+        "headingText": "Function room and event space in Drăgășani",
+        "links": 11,
+        "inPageLinks": 5,
+        "deadLinks": [],
+        "ctas": 4,
+        "primaryCtas": 2,
+        "actionable": [
+          "tel:0723607005",
+          "tel:0723607005",
+          "tel:0723607005",
+          "tel:0723607005",
+          "tel:0723607005"
+        ],
+        "lang": "en",
+        "hasSkipLink": true,
+        "hasMainLandmark": true,
+        "documentHeight": 3526,
+        "horizontalOverflowPx": 0
+      }
+    ]
+  },
+  "security": {
+    "inlineEventHandlers": [],
+    "javascriptUrls": [],
+    "dataUrls": [],
+    "insecureHttpResources": [],
+    "externalLinksWithoutNoopener": [],
+    "scriptTags": 1,
+    "externalScripts": [],
+    "iframes": 0,
+    "formsWithoutAction": 0
+  },
+  "performance": {
+    "loadMs": 359,
+    "domNodes": 160,
+    "images": 1,
+    "stylesheets": 1
+  }
+}

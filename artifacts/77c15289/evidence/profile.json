@@ -1,0 +1,140 @@
+{
+  "name": {
+    "value": "River Park Events Dragasani",
+    "source": "maps",
+    "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+    "alternatives": []
+  },
+  "category": {
+    "value": "Function room facility",
+    "source": "maps",
+    "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+    "alternatives": []
+  },
+  "address": {
+    "value": {
+      "formatted": "Strada Regele Ferdinand 56, 245700 Drăgășani",
+      "street": "Strada Regele Ferdinand 56",
+      "locality": null,
+      "region": "245700 Drăgășani",
+      "postalCode": null,
+      "country": null
+    },
+    "source": "maps",
+    "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+    "alternatives": []
+  },
+  "coordinates": {
+    "value": {
+      "lat": 44.6605789,
+      "lng": 24.2519676
+    },
+    "source": "maps",
+    "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+    "alternatives": []
+  },
+  "website": null,
+  "phones": [
+    {
+      "value": {
+        "formatted": "0723607005",
+        "e164": null,
+        "digits": "0723607005"
+      },
+      "source": "maps",
+      "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+      "alternatives": []
+    }
+  ],
+  "emails": [],
+  "socialProfiles": [],
+  "hours": [
+    {
+      "dayOfWeek": 1,
+      "opens": "00:00",
+      "closes": "23:59"
+    }
+  ],
+  "rating": {
+    "value": 4.7,
+    "source": "maps",
+    "sourceUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+    "alternatives": []
+  },
+  "reviewCount": null,
+  "reviews": [],
+  "navigation": [],
+  "services": [],
+  "pages": [],
+  "attributes": [
+    {
+      "group": "Accessibility",
+      "label": "Wheelchair-accessible car park",
+      "available": true,
+      "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+    },
+    {
+      "group": "Accessibility",
+      "label": "Wheelchair-accessible entrance",
+      "available": true,
+      "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+    },
+    {
+      "group": "Accessibility",
+      "label": "Wheelchair-accessible toilet",
+      "available": true,
+      "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+    }
+  ],
+  "description": null,
+  "images": {
+    "logo": null,
+    "favicon": null,
+    "hero": {
+      "url": "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4RuOWfJeS43WU3mczinzvtwqVhy_rgJmvJKlzXSPNAT0S6uUqnD8jFgi6sM-4myrIWsVqUZWPfQRtvJJhPabom9P1tL_Jhf7Y5qjMgpo-jVCm=w1600-h1200-k-no",
+      "alt": null,
+      "width": null,
+      "height": null,
+      "role": "gallery",
+      "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en",
+      "localPath": "assets/gallery-AHRPTWm6tc-cTiYvZSumfDzJG7U3zNXd_yshBYH4-1c757004.jpg",
+      "bytes": 259422
+    },
+    "gallery": []
+  },
+  "sources": [
+    "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+    "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+  ],
+  "normalizedAt": "2026-08-10T12:21:13.894Z",
+  "validation": {
+    "ok": true,
+    "issues": [
+      {
+        "field": "website",
+        "severity": "warning",
+        "message": "No website found on the listing"
+      },
+      {
+        "field": "images.logo",
+        "severity": "warning",
+        "message": "No logo found"
+      },
+      {
+        "field": "images.gallery",
+        "severity": "warning",
+        "message": "No gallery images found"
+      },
+      {
+        "field": "pages",
+        "severity": "warning",
+        "message": "No page text collected"
+      },
+      {
+        "field": "services",
+        "severity": "warning",
+        "message": "No services identified"
+      }
+    ]
+  }
+}

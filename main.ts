@@ -22,6 +22,7 @@ import { normalizerAgent } from './agents/normalizerAgent.js';
 import { businessAnalystAgent } from './agents/businessAnalystAgent.js';
 import { composeBaseline, writerAgent } from './agents/writerAgent.js';
 import { designAgent } from './agents/designAgent.js';
+import { directDesign } from './agents/designDirectorAgent.js';
 import { lovableAgent } from './agents/lovableAgent.js';
 
 import { loadConfig } from './lib/config.js';
@@ -40,6 +41,7 @@ import type { Platform } from './lib/platform/platform.js';
 import type {
   AgentContext,
   BusinessProfile,
+  DeploymentResult,
   DiscoveryInput,
   PipelineResult,
   WebsiteContent,
@@ -175,6 +177,10 @@ const STAGES = [
   'normalize',
   'analyze',
   'write',
+  // 5a. The AI art director. Off unless `DIRECTOR_ENABLED`, and a no-op when
+  // off — the stage still runs, produces no directive, and `design` composes
+  // from inference exactly as it did before this stage existed.
+  'direct',
   'design',
   'render',
   'deploy',
@@ -194,6 +200,7 @@ const ARTIFACTS = {
   normalize: '3-profile',
   analyze: '4-strategy',
   write: '5-content',
+  direct: '5a-directive',
   design: '5b-design',
   render: null,
   deploy: '6-deployment',
@@ -212,6 +219,10 @@ const ARTIFACT_KEYS = {
   normalize: ['name', 'pages', 'validation', 'normalizedAt'],
   analyze: ['businessName', 'category', 'pages'],
   write: ['businessName', 'tagline', 'voice', 'sections', 'seo'],
+  // `directive` and `provenance` are both present even when the director is
+  // off: the artifact then records a null directive and why, which is what
+  // makes "the model did not choose this" legible a month later.
+  direct: ['directive', 'provenance'],
   design: ['version', 'tokens', 'layout'],
   render: [],
   deploy: ['projectId', 'status'],
@@ -248,6 +259,7 @@ const ARTIFACT_DEFAULTS = {
   normalize: { attributes: [], description: null, reviews: [] },
   analyze: {},
   write: { trust: [], facts: [] },
+  direct: { directive: null, provenance: null },
   design: {},
   render: {},
   deploy: {},
@@ -390,8 +402,38 @@ async function executePipeline(
     const content = await step('write', () =>
       writerAgent.run({ profile, strategy }, contextFor(run, writerAgent.name)));
 
+    /*
+     * Stage 5a. The only model call in the design path, and the only stage
+     * that is off by default.
+     *
+     * It runs as a `step` even when disabled, so the artifact exists either
+     * way and records which it was. A run whose `5a-directive.json` says
+     * `"enabled": false` is legible; a run with no file at all is ambiguous
+     * between "the director was off" and "this ran before the director
+     * existed".
+     */
+    const directed = await step('direct', async () => {
+      if (!config.director.enabled) {
+        run.logger.info('design director skipped', { reason: 'DIRECTOR_ENABLED is false' });
+        return { directive: null, provenance: null };
+      }
+      const result = await directDesign(
+        { profile, strategy, content },
+        contextFor(run, 'designDirectorAgent'),
+      );
+      return { directive: result.directive, provenance: result.provenance };
+    });
+
     const design = await step('design', () =>
-      designAgent.run({ profile, strategy, content }, contextFor(run, designAgent.name)));
+      designAgent.run(
+        {
+          profile,
+          strategy,
+          content,
+          ...(directed.directive === null ? {} : { directive: directed.directive }),
+        },
+        contextFor(run, designAgent.name),
+      ));
 
     // Not a `step`: it persists no artifact, so there is nothing to load. It is
     // cheap and deterministic, so it re-runs whenever it is not being skipped.
@@ -399,8 +441,31 @@ async function executePipeline(
       await renderStage(run, content, design);
     }
 
-    const deployment = await step('deploy', () =>
-      lovableAgent.run(content, contextFor(run, lovableAgent.name)));
+    /*
+     * Stage 6. Skipped when nothing is configured to deploy to.
+     *
+     * The key is the switch, as it is for the Places source: two ways to be
+     * switched off is one way too many. Without this the pipeline spends every
+     * model call it needs, renders a working site, and *then* dies on a stage
+     * nobody asked for — which is an expensive way to learn that
+     * `LOVABLE_API_KEY` is unset.
+     */
+    const deployment = await step('deploy', async () => {
+      if (config.lovable.apiKey === '') {
+        run.logger.warn('deployment skipped', {
+          reason: 'LOVABLE_API_KEY is not set; the rendered site is the run output',
+        });
+        return {
+          projectId: '',
+          liveUrl: null,
+          editorUrl: null,
+          status: 'skipped',
+          promptUsed: 'LOVABLE_API_KEY is not set, so no deployment was attempted.',
+          deployedAt: new Date().toISOString(),
+        } satisfies DeploymentResult;
+      }
+      return lovableAgent.run(content, contextFor(run, lovableAgent.name));
+    });
 
     const result: PipelineResult = {
       runId,

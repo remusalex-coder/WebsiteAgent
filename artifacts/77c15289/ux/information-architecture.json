@@ -1,0 +1,71 @@
+{
+  "recommendedPages": [
+    {
+      "title": "Home",
+      "rationale": "Introduces River Park Events, highlights the 4.7 rating, provides address details, and encourages direct call or online inquiries.",
+      "priority": "high",
+      "evidence": [
+        "Name: River Park Events Dragasani",
+        "Category (from the Maps listing): Function room facility",
+        "Rating: 4.7",
+        "Hero image: yes"
+      ],
+      "path": "https://schema.org/",
+      "sections": [
+        "Hero section with venue name and quick contact call-to-action",
+        "Event venue overview and facility introduction",
+        "Customer rating and review highlight",
+        "Location summary and contact callout"
+      ]
+    },
+    {
+      "title": "Contact & Location",
+      "rationale": "Provides direct phone action buttons, map directions, and an event inquiry form for visitors seeking event bookings.",
+      "priority": "high",
+      "evidence": [
+        "Phones: 0723607005",
+        "Address: Strada Regele Ferdinand 56, 245700 Drăgășani"
+      ],
+      "path": "/contact",
+      "sections": [
+        "Contact phone details and click-to-call button",
+        "Interactive location map and full address details",
+        "Event inquiry web form"
+      ]
+    }
+  ],
+  "hero": "editorial",
+  "sectionOrder": [
+    {
+      "kind": "hero",
+      "variant": "stack",
+      "background": "subtle"
+    },
+    {
+      "kind": "services",
+      "variant": "cards",
+      "background": "canvas"
+    },
+    {
+      "kind": "hours",
+      "variant": "list",
+      "background": "subtle"
+    },
+    {
+      "kind": "location",
+      "variant": "stack",
+      "background": "canvas"
+    },
+    {
+      "kind": "contact",
+      "variant": "list",
+      "background": "subtle"
+    },
+    {
+      "kind": "cta",
+      "variant": "banner",
+      "background": "brand"
+    }
+  ],
+  "navigation": null
+}

@@ -18,7 +18,7 @@
  * downstream would stay deterministic given that value.
  */
 
-import { composeDesign } from '../lib/design/index.js';
+import { applyDirective, composeDesign } from '../lib/design/index.js';
 
 import type {
   Agent,
@@ -27,7 +27,7 @@ import type {
   BusinessStrategy,
   WebsiteContent,
 } from '../lib/types.js';
-import type { DesignDirection, WebsiteDesign } from '../lib/design/index.js';
+import type { DesignDirection, DesignDirective, WebsiteDesign } from '../lib/design/index.js';
 
 const NAME = 'designAgent';
 
@@ -38,6 +38,16 @@ export interface DesignInput {
   readonly strategy: BusinessStrategy;
   /** What the site says. Never modified — only read. */
   readonly content: WebsiteContent;
+  /**
+   * The art director's intent, when stage 5a ran.
+   *
+   * Absent means "compose from inference", which is what every run did before
+   * the director existed and what every run still does with
+   * `DIRECTOR_ENABLED` off. Present, it is translated to `ComposeOptions` by
+   * `applyDirective` — deterministically, and never by this agent reading
+   * fields off it itself.
+   */
+  readonly directive?: DesignDirective | undefined;
 }
 
 export interface DesignAgent extends Agent<DesignInput, WebsiteDesign> {}
@@ -66,12 +76,22 @@ export const designAgent: DesignAgent = {
   async run(input: DesignInput, ctx: AgentContext): Promise<WebsiteDesign> {
     const override = directionOverride(ctx);
 
+    // Operator override first, then the directive on top — `applyDirective`
+    // honours that precedence, so an operator forcing a direction still beats
+    // the model.
+    const options = applyDirective(
+      input.directive,
+      override === undefined ? {} : { direction: override },
+      ctx.logger,
+    );
+
     const design = composeDesign(
       { profile: input.profile, strategy: input.strategy, content: input.content },
-      override === undefined ? {} : { direction: override },
+      options,
     );
 
     ctx.logger.info('design composed', {
+      directed: input.directive !== undefined,
       direction: design.personality.direction,
       industry: design.industry.id,
       industryBasis: design.industry.basis,

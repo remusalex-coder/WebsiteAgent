@@ -1,0 +1,30 @@
+{
+  "sourceUrl": "https://www.google.com/maps/search/River+Park+Events+Dragasani",
+  "canonicalUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
+  "placeId": "0x4752ad9da60859f1:0x88a57b21e70290ae",
+  "name": "River Park Events Dragasani",
+  "category": "Function room facility",
+  "address": "Strada Regele Ferdinand 56, 245700 Drăgășani",
+  "phone": "0723607005",
+  "website": null,
+  "coordinates": {
+    "lat": 44.6605789,
+    "lng": 24.2519676
+  },
+  "rating": 4.7,
+  "reviewCount": null,
+  "hours": [
+    {
+      "dayOfWeek": 1,
+      "opens": "00:00",
+      "closes": "23:59"
+    }
+  ],
+  "socialLinks": {
+    "instagram": null,
+    "facebook": null,
+    "tiktok": null
+  },
+  "relatedLinks": [],
+  "discoveredAt": "2026-08-10T12:21:07.183Z"
+}
