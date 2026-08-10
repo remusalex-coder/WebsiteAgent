@@ -93,8 +93,24 @@ const NOT_AN_ATTRIBUTE = /^(add|suggest|claim|write|see|show|hide|more|learn)\b/
 /** Longer than a label, shorter than a page: the editorial paragraph shape. */
 const MIN_DESCRIPTION_CHARS = 80;
 
+/**
+ * Icon glyphs Maps ships inside the text it exposes to a reader.
+ *
+ * Every available amenity chip's accessible name begins with a Material Icons
+ * ligature codepoint — `U+E5CA` — in the same string as the label. It is a
+ * Private Use Area character: it means nothing outside Google's own font, so it
+ * reached a generated page as a tofu box in front of "Wheelchair-accessible
+ * entrance", in the hero marquee and again on every service card.
+ *
+ * Stripped at the single point every harvested string passes through, rather
+ * than at each of the places that read one. Removing the whole PUA block rather
+ * than the one codepoint is deliberate: which glyph Maps uses is a detail of a
+ * font we do not control, and the next one would arrive just as silently.
+ */
+const PRIVATE_USE_AREA = /[\uE000-\uF8FF]/g;
+
 function normalizeSpaces(value: string | null | undefined): string {
-  return (value ?? '').replace(/[   ]/g, ' ').replace(/\s+/g, ' ').trim();
+  return (value ?? '').replace(PRIVATE_USE_AREA, '').replace(/[   ]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 /* ------------------------------------------------------------------ */
