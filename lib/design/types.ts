@@ -477,6 +477,14 @@ export interface SectionDesign {
   readonly columns: number | null;
   /** Whether this section's media runs to the viewport edge. */
   readonly fullBleed: boolean;
+  /**
+   * Whether the renderer's transition primitive marks entry to this section.
+   *
+   * True for at most one section per page — the one `ComposeOptions.momentSection`
+   * nominated and this business's content actually has. See
+   * `lib/render/variants.ts`'s `.section--moment` rule.
+   */
+  readonly momentTransition: boolean;
   readonly rationale: string;
 }
 

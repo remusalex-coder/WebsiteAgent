@@ -12,13 +12,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { applyDirective } from '../../lib/design/directive.js';
+import { applyDirective, applyExperienceIntent } from '../../lib/design/directive.js';
 import { composeDesign } from '../../lib/design/index.js';
 import { profileFixture, strategyFixture } from '../fixtures/business.js';
 import { fullContent, minimalContent } from '../fixtures/content.js';
 
 import type { ComposeOptions } from '../../lib/design/compose.js';
-import type { DesignDirective } from '../../lib/design/directive.js';
+import type { DesignDirective, ExperienceIntent } from '../../lib/design/directive.js';
 import type { ComposeInput } from '../../lib/design/index.js';
 
 function baseInput(): ComposeInput {
@@ -421,5 +421,308 @@ describe('end-to-end: DesignDirective → composeDesign', () => {
       { profile: profileFixture(), strategy: strategyFixture(), content: minimalContent },
     );
     assert.deepEqual(withDirective, without);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* applyExperienceIntent — Experience Intent V1 (ADR 0005)             */
+/* ------------------------------------------------------------------ */
+
+describe('applyExperienceIntent – absent / determinism', () => {
+  it('returns no moment when experienceIntent is undefined', () => {
+    const result = applyExperienceIntent(undefined);
+    assert.deepEqual(result, { momentSection: undefined, momentTransition: false });
+  });
+
+  it('produces identical output for identical input', () => {
+    const intent: ExperienceIntent = {
+      mode: 'moment-led', moment: 'gallery', momentIntent: 'test', transitionAtMoment: true,
+    };
+    assert.deepEqual(applyExperienceIntent(intent), applyExperienceIntent(intent));
+  });
+
+  it('is a pure function — does not mutate the intent object', () => {
+    const intent: ExperienceIntent = {
+      mode: 'moment-led', moment: 'menu', momentIntent: 'test', transitionAtMoment: false,
+    };
+    const before = JSON.stringify(intent);
+    applyExperienceIntent(intent);
+    assert.equal(JSON.stringify(intent), before, 'experienceIntent was mutated');
+  });
+
+  it('does not call console.warn or console.info', () => {
+    const captured: string[] = [];
+    const origWarn = console.warn.bind(console);
+    const origInfo = console.info.bind(console);
+    console.warn = (...args: unknown[]) => { captured.push(`warn: ${args.join(' ')}`); origWarn(...args); };
+    console.info = (...args: unknown[]) => { captured.push(`info: ${args.join(' ')}`); origInfo(...args); };
+    try {
+      applyExperienceIntent({
+        mode: 'moment-led', moment: 'testimonials', momentIntent: 'a real review', transitionAtMoment: true,
+      });
+      applyExperienceIntent({ mode: 'standard', moment: null, momentIntent: null, transitionAtMoment: false });
+    } finally {
+      console.warn = origWarn;
+      console.info = origInfo;
+    }
+    assert.equal(captured.length, 0, `applyExperienceIntent called console: ${captured.join(', ')}`);
+  });
+});
+
+describe('applyExperienceIntent – mode "standard"', () => {
+  it('returns no moment for a well-formed standard intent', () => {
+    const result = applyExperienceIntent({
+      mode: 'standard', moment: null, momentIntent: null, transitionAtMoment: false,
+    });
+    assert.deepEqual(result, { momentSection: undefined, momentTransition: false });
+  });
+
+  it('ignores moment/momentIntent/transitionAtMoment set alongside mode "standard"', () => {
+    const { logger, warnings } = capturingLoggerForDirective();
+    const result = applyExperienceIntent(
+      { mode: 'standard', moment: 'gallery', momentIntent: 'inconsistent', transitionAtMoment: true },
+      logger,
+    );
+    assert.deepEqual(result, { momentSection: undefined, momentTransition: false });
+    assert.ok(warnings.length > 0, 'expected a warning for the inconsistent combination');
+  });
+});
+
+describe('applyExperienceIntent – mode "moment-led"', () => {
+  it('maps a valid moment nomination to momentSection', () => {
+    const result = applyExperienceIntent({
+      mode: 'moment-led',
+      moment: 'gallery',
+      momentIntent: 'The photography is the whole reason to visit.',
+      transitionAtMoment: true,
+    });
+    assert.deepEqual(result, { momentSection: 'gallery', momentTransition: true });
+  });
+
+  it('maps transitionAtMoment: false through unchanged', () => {
+    const result = applyExperienceIntent({
+      mode: 'moment-led', moment: 'menu', momentIntent: 'The dish is the draw.', transitionAtMoment: false,
+    });
+    assert.deepEqual(result, { momentSection: 'menu', momentTransition: false });
+  });
+
+  it('maps every SectionKind the schema allows', () => {
+    const kinds = [
+      'hero', 'statement', 'about', 'services', 'menu', 'gallery',
+      'testimonials', 'hours', 'location', 'contact', 'cta', 'faq',
+    ] as const;
+    for (const moment of kinds) {
+      const result = applyExperienceIntent({
+        mode: 'moment-led', moment, momentIntent: 'test', transitionAtMoment: false,
+      });
+      assert.equal(result.momentSection, moment, moment);
+    }
+  });
+
+  it('falls back to no moment when moment is null', () => {
+    const { logger, warnings } = capturingLoggerForDirective();
+    const result = applyExperienceIntent(
+      { mode: 'moment-led', moment: null, momentIntent: 'test', transitionAtMoment: false },
+      logger,
+    );
+    assert.deepEqual(result, { momentSection: undefined, momentTransition: false });
+    assert.ok(warnings.length > 0, 'expected a warning for a null moment');
+  });
+
+  it('falls back to no moment when momentIntent is null', () => {
+    const { logger, warnings } = capturingLoggerForDirective();
+    const result = applyExperienceIntent(
+      { mode: 'moment-led', moment: 'gallery', momentIntent: null, transitionAtMoment: false },
+      logger,
+    );
+    assert.deepEqual(result, { momentSection: undefined, momentTransition: false });
+    assert.ok(warnings.length > 0, 'expected a warning for a missing momentIntent');
+  });
+
+  it('falls back to no moment when momentIntent is blank', () => {
+    const result = applyExperienceIntent({
+      mode: 'moment-led', moment: 'gallery', momentIntent: '   ', transitionAtMoment: false,
+    });
+    assert.deepEqual(result, { momentSection: undefined, momentTransition: false });
+  });
+
+  it('falls back to no moment for an invalid mode value', () => {
+    const { logger, warnings } = capturingLoggerForDirective();
+    const result = applyExperienceIntent(
+      // @ts-expect-error — testing runtime guard
+      { mode: 'cinematic', moment: 'gallery', momentIntent: 'test', transitionAtMoment: false },
+      logger,
+    );
+    assert.deepEqual(result, { momentSection: undefined, momentTransition: false });
+    assert.ok(warnings.length > 0, 'expected a warning for an invalid mode');
+  });
+});
+
+/** Captures warn calls without depending on the designDirectorAgent test's private helper. */
+function capturingLoggerForDirective(): {
+  logger: import('../../lib/logger.js').Logger;
+  warnings: string[];
+} {
+  const warnings: string[] = [];
+  const logger: import('../../lib/logger.js').Logger = {
+    debug: () => {},
+    info: () => {},
+    warn: (msg: string) => { warnings.push(msg); },
+    error: () => {},
+    child: () => logger,
+    async time<T>(_label: string, fn: () => Promise<T>): Promise<T> { return fn(); },
+  };
+  return { logger, warnings };
+}
+
+/* ------------------------------------------------------------------ */
+/* applyDirective — experienceIntent integration                       */
+/* ------------------------------------------------------------------ */
+
+describe('applyDirective – experienceIntent integration', () => {
+  it('does not add momentSection when the directive has no experienceIntent', () => {
+    const result = applyDirective({ direction: 'luxury' });
+    assert.equal('momentSection' in result, false);
+    assert.equal('momentTransition' in result, false);
+  });
+
+  it('maps a moment-led experienceIntent into ComposeOptions.momentSection', () => {
+    const result = applyDirective({
+      direction: 'elegant',
+      experienceIntent: {
+        mode: 'moment-led',
+        moment: 'gallery',
+        momentIntent: 'The room, empty before an event, is the draw.',
+        transitionAtMoment: true,
+      },
+    });
+    assert.equal(result.momentSection, 'gallery');
+    assert.equal(result.momentTransition, true);
+  });
+
+  it('a standard experienceIntent does not add momentSection', () => {
+    const result = applyDirective({
+      direction: 'corporate',
+      experienceIntent: { mode: 'standard', moment: null, momentIntent: null, transitionAtMoment: false },
+    });
+    assert.equal('momentSection' in result, false);
+  });
+
+  it('operator momentSection overrides the directive\'s nomination', () => {
+    const result = applyDirective(
+      {
+        experienceIntent: {
+          mode: 'moment-led', moment: 'gallery', momentIntent: 'test', transitionAtMoment: true,
+        },
+      },
+      { momentSection: 'menu', momentTransition: false },
+    );
+    assert.equal(result.momentSection, 'menu');
+    assert.equal(result.momentTransition, false);
+  });
+
+  it('preserves operator momentSection when the directive has no experienceIntent', () => {
+    const result = applyDirective({ direction: 'friendly' }, { momentSection: 'testimonials' });
+    assert.equal(result.momentSection, 'testimonials');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* End-to-end: experienceIntent → composeDesign                       */
+/* ------------------------------------------------------------------ */
+
+describe('end-to-end: experienceIntent → composeDesign', () => {
+  it('every section has momentTransition: false when no moment is nominated', () => {
+    const design = composeDesign(baseInput(), applyDirective({}));
+    for (const section of design.layout.sections) {
+      assert.equal(section.momentTransition, false, `section ${section.kind} unexpectedly true`);
+    }
+  });
+
+  it('raises emphasis on the nominated section relative to the same page with no moment', () => {
+    const without = composeDesign(baseInput(), applyDirective({}));
+    const withMoment = composeDesign(
+      baseInput(),
+      applyDirective({
+        experienceIntent: {
+          mode: 'moment-led', moment: 'gallery', momentIntent: 'test', transitionAtMoment: false,
+        },
+      }),
+    );
+
+    const baseline = without.layout.sections.find((s) => s.kind === 'gallery');
+    const elevated = withMoment.layout.sections.find((s) => s.kind === 'gallery');
+    assert.ok(baseline !== undefined && elevated !== undefined, 'fixture must contain a gallery section');
+
+    const ladder = ['quiet', 'secondary', 'primary', 'lead'];
+    assert.ok(
+      ladder.indexOf(elevated!.emphasis) >= ladder.indexOf(baseline!.emphasis),
+      `emphasis should not drop: ${baseline!.emphasis} → ${elevated!.emphasis}`,
+    );
+    // It must actually move for this fixture and this section, or the test proves nothing.
+    assert.notEqual(elevated!.emphasis, baseline!.emphasis);
+  });
+
+  it('sets momentTransition only on the nominated section when transitionAtMoment is true', () => {
+    const design = composeDesign(
+      baseInput(),
+      applyDirective({
+        experienceIntent: {
+          mode: 'moment-led', moment: 'menu', momentIntent: 'test', transitionAtMoment: true,
+        },
+      }),
+    );
+    for (const section of design.layout.sections) {
+      assert.equal(section.momentTransition, section.kind === 'menu', `unexpected state for ${section.kind}`);
+    }
+  });
+
+  it('does not set momentTransition when transitionAtMoment is false, even with a moment', () => {
+    const design = composeDesign(
+      baseInput(),
+      applyDirective({
+        experienceIntent: {
+          mode: 'moment-led', moment: 'menu', momentIntent: 'test', transitionAtMoment: false,
+        },
+      }),
+    );
+    assert.ok(design.layout.sections.every((s) => s.momentTransition === false));
+  });
+
+  it('ignores a moment nomination for a section kind this business does not have', () => {
+    const minimalInput: ComposeInput = {
+      profile: profileFixture(), strategy: strategyFixture(), content: minimalContent,
+    };
+    const withoutMoment = composeDesign(minimalInput, applyDirective({}));
+    const design = composeDesign(
+      minimalInput,
+      applyDirective({
+        experienceIntent: {
+          mode: 'moment-led', moment: 'gallery', momentIntent: 'test', transitionAtMoment: true,
+        },
+      }),
+    );
+    // minimalContent has only a hero section — no gallery exists to nominate.
+    assert.ok(design.layout.sections.every((s) => s.momentTransition === false));
+    assert.deepEqual(
+      design.layout.sections.map((s) => s.emphasis),
+      withoutMoment.layout.sections.map((s) => s.emphasis),
+      'emphasis must be unaffected by a moment nomination this content cannot support',
+    );
+    assert.ok(
+      design.notes.some((n) => n.includes('no section of that kind')),
+      'expected a note explaining the moment was not honoured',
+    );
+  });
+
+  it('is deterministic with a moment nominated', () => {
+    const options = applyDirective({
+      experienceIntent: {
+        mode: 'moment-led', moment: 'testimonials', momentIntent: 'test', transitionAtMoment: true,
+      },
+    });
+    const a = composeDesign(baseInput(), options);
+    const b = composeDesign(baseInput(), options);
+    assert.deepEqual(a, b);
   });
 });

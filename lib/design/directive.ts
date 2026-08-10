@@ -30,6 +30,7 @@
 import type { ComposeOptions } from './compose.js';
 import type { Logger } from '../logger.js';
 import type { DesignDirection, HeroVariant, ImageTreatment, VisualDensity } from './types.js';
+import type { SectionKind } from '../types.js';
 
 /** A Logger that discards all records. Used when no logger is supplied. */
 const noopLogger: Logger = {
@@ -102,6 +103,37 @@ export interface TypographyIntent {
 export interface ImageryIntent {
   readonly intent: string;
   readonly treatment: ImageTreatment | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Experience intent                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A signature-moment nomination — the one narrow, closed-set slice of
+ * experiential capability the Director may exercise. See ADR 0005.
+ *
+ * `moment` references an existing `SectionKind`, never free text: the
+ * Director cannot invent a moment the business's content does not have.
+ * This type only enforces *shape*; whether the nominated kind actually
+ * exists in this business's own sections is checked downstream, by
+ * `planLayout`, which is the first place in the pipeline that has the
+ * content to check it against. Until then the nomination is advisory, like
+ * every other field in this contract.
+ *
+ * `mode: 'standard'` — with `moment`, `momentIntent` and `transitionAtMoment`
+ * at their null/false rest values — must be a common, unremarkable answer,
+ * not an edge case: most businesses have no single moment worth building
+ * emphasis around, and saying so plainly is the correct output for them.
+ */
+export interface ExperienceIntent {
+  readonly mode: 'standard' | 'moment-led';
+  /** Required when `mode` is `'moment-led'`; must be `null` for `'standard'`. */
+  readonly moment: SectionKind | null;
+  /** One sentence: why this section deserves emphasis. `null` for `'standard'`. */
+  readonly momentIntent: string | null;
+  /** Whether the deterministic transition primitive marks entry to the moment. */
+  readonly transitionAtMoment: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -215,6 +247,19 @@ export interface DesignDirective {
    * No threshold causes a hard failure.
    */
   readonly confidence?: number | undefined;
+
+  /**
+   * A signature-moment nomination, when the business's evidence supports one.
+   *
+   * Unlike the ten fields above, this one actually reaches `ComposeOptions`
+   * and changes layout (see `applyExperienceIntent`) rather than staying
+   * advisory-only — a deliberate, narrow widening recorded in ADR 0005.
+   * Optional so a historical directive, or a provider call that omits it,
+   * degrades to exactly the pre-existing behaviour: absent is equivalent to
+   * `{ mode: 'standard', moment: null, momentIntent: null,
+   * transitionAtMoment: false }`.
+   */
+  readonly experienceIntent?: ExperienceIntent | undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -354,6 +399,16 @@ export function applyDirective(
     logger.info(`DesignDirective: colorStrategy = "${directive.colorStrategy}" (advisory in V1)`);
   }
 
+  // --- Experience intent ------------------------------------------------
+
+  // Operator momentSection always wins, same precedence as direction and
+  // accessibilityLevel above. No operator hook exists for this yet, but the
+  // seam costs nothing to keep consistent.
+  const experience = applyExperienceIntent(directive.experienceIntent, logger);
+  const resolvedMoment = operatorOptions.momentSection !== undefined
+    ? operatorOptions.momentSection
+    : experience.momentSection;
+
   // --- Return resolved ComposeOptions ---------------------------------
 
   // Preserve any other operator options that have no directive equivalent —
@@ -364,5 +419,93 @@ export function applyDirective(
     ...operatorOptions,
     ...(resolvedDirection !== undefined ? { direction: resolvedDirection } : {}),
     ...(resolvedAccessibility !== undefined ? { accessibilityLevel: resolvedAccessibility } : {}),
+    ...(resolvedMoment !== undefined ? {
+      momentSection: resolvedMoment,
+      momentTransition: resolvedMoment === operatorOptions.momentSection
+        ? (operatorOptions.momentTransition ?? false)
+        : experience.momentTransition,
+    } : {}),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Experience intent — adapter                                        */
+/* ------------------------------------------------------------------ */
+
+/** What `applyExperienceIntent` resolves to, before being merged into `ComposeOptions`. */
+interface ResolvedExperience {
+  readonly momentSection: SectionKind | undefined;
+  readonly momentTransition: boolean;
+}
+
+const NO_MOMENT: ResolvedExperience = { momentSection: undefined, momentTransition: false };
+
+/**
+ * Translates `ExperienceIntent` into the two `ComposeOptions` fields
+ * `planLayout` reads.
+ *
+ * Pure and deterministic, same shape as `applyDirective`: a malformed or
+ * internally-inconsistent intent degrades to "no moment", with a warning,
+ * rather than throwing — an inconsistent nested field is not a failed stage.
+ * This function does not know whether `moment` actually exists in the
+ * business's content; that check needs `WebsiteContent` and belongs to
+ * `planLayout`, the first place in the pipeline that has it. This function
+ * only enforces the *shape* of the contract — the same division of labour
+ * `applyDirective` already uses for `direction` and `accessibilityTarget`.
+ *
+ * @param experienceIntent  The director's moment nomination. May be undefined.
+ * @param logger  Optional logger for observability. Defaults to a no-op logger.
+ */
+export function applyExperienceIntent(
+  experienceIntent: ExperienceIntent | undefined,
+  logger: Logger = noopLogger,
+): ResolvedExperience {
+  if (experienceIntent === undefined) return NO_MOMENT;
+
+  if (experienceIntent.mode === 'standard') {
+    /*
+     * moment/momentIntent are unconditionally ignored here, not treated as an
+     * inconsistency to warn about — the live schema cannot express null for
+     * either (Gemini's structured-output translator rejects a `type:
+     * ['string', 'null']` union), so a real model response always carries a
+     * real section kind and sentence even in "standard" mode, exactly the
+     * established pattern already used for heroIntent/typographyIntent/
+     * imageryIntent's own preference fields. Only transitionAtMoment can
+     * still express a genuine, worth-flagging inconsistency: a transition
+     * requested for a moment the mode says does not exist.
+     */
+    if (experienceIntent.transitionAtMoment) {
+      logger.warn(
+        'ExperienceIntent: mode is "standard" but transitionAtMoment was true; ignoring it',
+      );
+    }
+    return NO_MOMENT;
+  }
+
+  if (experienceIntent.mode !== 'moment-led') {
+    logger.warn(`ExperienceIntent: mode "${String(experienceIntent.mode)}" is not valid; ignoring`);
+    return NO_MOMENT;
+  }
+
+  if (experienceIntent.moment === null) {
+    logger.warn(
+      'ExperienceIntent: mode is "moment-led" but moment is null; falling back to standard',
+    );
+    return NO_MOMENT;
+  }
+
+  if (experienceIntent.momentIntent === null || experienceIntent.momentIntent.trim() === '') {
+    logger.warn(
+      'ExperienceIntent: mode is "moment-led" but momentIntent is missing; falling back to standard',
+    );
+    return NO_MOMENT;
+  }
+
+  logger.info(
+    `ExperienceIntent: moment = "${experienceIntent.moment}" — ${experienceIntent.momentIntent}`,
+  );
+  return {
+    momentSection: experienceIntent.moment,
+    momentTransition: experienceIntent.transitionAtMoment,
   };
 }

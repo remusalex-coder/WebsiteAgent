@@ -322,6 +322,69 @@ describe('consuming the layout plan', () => {
   });
 });
 
+describe('experience intent — moment rendering', () => {
+  it('marks only the nominated section with section--moment and data-moment', () => {
+    const base = designFor();
+    const sections = base.layout.sections.map((section) =>
+      (section.kind === 'gallery' ? { ...section, momentTransition: true } : section));
+    const design = { ...base, layout: { ...base.layout, sections } };
+    const html = renderSite(fullContent, { design }).files[0]?.contents ?? '';
+
+    const openTag = (kind: string): string => {
+      const match = new RegExp(`<section[^>]*class="[^"]*section--${kind}[^"]*"[^>]*>`).exec(html);
+      assert.ok(match !== null, `no opening tag found for section--${kind}`);
+      return match![0];
+    };
+
+    const galleryTag = openTag('gallery');
+    assert.ok(galleryTag.includes('section--moment'), 'gallery section should carry section--moment');
+    assert.ok(galleryTag.includes('data-moment="true"'), 'gallery section should carry data-moment');
+
+    for (const section of sections) {
+      if (section.kind === 'gallery') continue;
+      const tag = openTag(section.kind);
+      assert.ok(!tag.includes('section--moment'), `${section.kind} should not carry section--moment`);
+      assert.ok(!tag.includes('data-moment'), `${section.kind} should not carry data-moment`);
+    }
+  });
+
+  it('renders no section--moment or data-moment when no section is a moment', () => {
+    const design = designFor();
+    const html = renderSite(fullContent, { design }).files[0]?.contents ?? '';
+    assert.ok(!html.includes('section--moment'));
+    assert.ok(!html.includes('data-moment'));
+  });
+
+  it('the transition CSS exists, is bounded to one selector, and is reduced-motion safe', () => {
+    const stylesheet = css(fullContent);
+
+    const commentStart = stylesheet.indexOf('Moment transition');
+    assert.ok(commentStart >= 0, 'the moment-transition block should be present in the stylesheet');
+
+    // The block's own three-line header divider is well within 200 chars;
+    // search past it so this doesn't find its own closing rule instead of
+    // the next, unrelated section's.
+    const nextSectionComment = stylesheet.indexOf('/* ---', commentStart + 200);
+    const block = stylesheet.slice(commentStart, nextSectionComment > 0 ? nextSectionComment : undefined);
+
+    assert.ok(block.includes('@supports (animation-timeline: view())'), 'feature-detected, not assumed');
+    assert.ok(
+      block.includes('@media (prefers-reduced-motion: no-preference)'),
+      'must be gated behind the same reduced-motion guard as every other scroll-driven effect',
+    );
+    assert.ok(block.includes('.section--moment'), 'the selector this milestone introduced');
+    assert.ok(block.includes('pointer-events: none'), 'must never intercept a click or a tap');
+    assert.ok(!block.includes('<script'), 'no JS — CSS-only, per the milestone contract');
+
+    // Bounded: exactly one rule targets .section--moment (plus its ::before), not
+    // an open-ended set — this is one primitive, not a generic animation framework.
+    // (The comment header also names the selector once, for a reader — that's
+    // documentation, not a third rule, so this matches only actual CSS blocks.)
+    const ruleCount = (block.match(/\.section--moment(?:::before)? \{/g) ?? []).length;
+    assert.equal(ruleCount, 2, 'expected exactly .section--moment and .section--moment::before');
+  });
+});
+
 describe('consuming imagery, icons and accessibility', () => {
   it('applies the image treatment, crops and radius', () => {
     const stylesheet = css(fullContent);

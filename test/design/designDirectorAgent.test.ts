@@ -202,6 +202,135 @@ describe('DIRECTIVE_SCHEMA', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* DIRECTIVE_SCHEMA — experienceIntent (Experience Intent V1, ADR 0005) */
+/* ------------------------------------------------------------------ */
+
+describe('DIRECTIVE_SCHEMA – experienceIntent', () => {
+  it('is optional — a directive without it still validates', () => {
+    const problems = validateAgainstSchema(VALID_DIRECTIVE, DIRECTIVE_SCHEMA);
+    assert.deepEqual(problems, []);
+  });
+
+  it('accepts a well-formed standard experienceIntent', () => {
+    // moment/momentIntent are never null on the wire — Gemini's structured-output
+    // translator rejects a `type: ['string', 'null']` union (found live; see
+    // directive.ts's applyExperienceIntent comment). A real "standard" response
+    // still names some section and sentence; the deterministic adapter ignores
+    // both unconditionally when mode is "standard".
+    const withIntent = {
+      ...VALID_DIRECTIVE,
+      experienceIntent: { mode: 'standard', moment: 'hero', momentIntent: 'not applicable', transitionAtMoment: false },
+    };
+    assert.deepEqual(validateAgainstSchema(withIntent, DIRECTIVE_SCHEMA), []);
+  });
+
+  it('accepts a well-formed moment-led experienceIntent', () => {
+    const withIntent = {
+      ...VALID_DIRECTIVE,
+      experienceIntent: {
+        mode: 'moment-led',
+        moment: 'gallery',
+        momentIntent: 'The photography of the space is the strongest evidence this business has.',
+        transitionAtMoment: true,
+      },
+    };
+    assert.deepEqual(validateAgainstSchema(withIntent, DIRECTIVE_SCHEMA), []);
+  });
+
+  it('accepts every SectionKind as a moment value', () => {
+    const kinds = [
+      'hero', 'statement', 'about', 'services', 'menu', 'gallery',
+      'testimonials', 'hours', 'location', 'contact', 'cta', 'faq',
+    ];
+    for (const moment of kinds) {
+      const withIntent = {
+        ...VALID_DIRECTIVE,
+        experienceIntent: { mode: 'moment-led', moment, momentIntent: 'test', transitionAtMoment: false },
+      };
+      assert.deepEqual(validateAgainstSchema(withIntent, DIRECTIVE_SCHEMA), [], moment);
+    }
+  });
+
+  it('rejects an invalid mode value', () => {
+    const bad = {
+      ...VALID_DIRECTIVE,
+      experienceIntent: { mode: 'cinematic', moment: 'hero', momentIntent: 'test', transitionAtMoment: false },
+    };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.some((p) => p.includes('mode')), 'expected a mode error');
+  });
+
+  it('rejects a null moment — the live schema requires a real section kind even in standard mode', () => {
+    const bad = {
+      ...VALID_DIRECTIVE,
+      experienceIntent: { mode: 'standard', moment: null, momentIntent: 'test', transitionAtMoment: false },
+    };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.length > 0, 'expected a moment type error');
+  });
+
+  it('rejects a null momentIntent for the same reason', () => {
+    const bad = {
+      ...VALID_DIRECTIVE,
+      experienceIntent: { mode: 'standard', moment: 'hero', momentIntent: null, transitionAtMoment: false },
+    };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.length > 0, 'expected a momentIntent type error');
+  });
+
+  it('rejects a moment value that is not a real SectionKind', () => {
+    const bad = {
+      ...VALID_DIRECTIVE,
+      experienceIntent: {
+        mode: 'moment-led', moment: 'pricing', momentIntent: 'test', transitionAtMoment: false,
+      },
+    };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.some((p) => p.includes('moment')), 'expected a moment error');
+  });
+
+  it('rejects a missing required sub-field', () => {
+    const bad = {
+      ...VALID_DIRECTIVE,
+      experienceIntent: { mode: 'standard', moment: 'hero', momentIntent: 'test' },
+    };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.length > 0, 'expected a required-field violation');
+  });
+
+  it('rejects CSS, JS or arbitrary properties smuggled into experienceIntent', () => {
+    const bad = {
+      ...VALID_DIRECTIVE,
+      experienceIntent: {
+        mode: 'moment-led',
+        moment: 'gallery',
+        momentIntent: 'test',
+        transitionAtMoment: true,
+        // The whole point of additionalProperties: false on this object too.
+        css: '.section { animation: spin 1s; }',
+        onClick: 'alert(1)',
+        webgl: true,
+      },
+    };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.some((p) => p.includes('css')));
+    assert.ok(problems.some((p) => p.includes('onClick')));
+    assert.ok(problems.some((p) => p.includes('webgl')));
+  });
+
+  it('exposes exactly the four documented sub-fields, nothing more', () => {
+    const schema = DIRECTIVE_SCHEMA as unknown as {
+      properties: Record<string, { properties?: Record<string, unknown> }>;
+    };
+    const properties = schema.properties['experienceIntent']?.properties ?? {};
+    assert.deepEqual(
+      Object.keys(properties).sort(),
+      ['mode', 'moment', 'momentIntent', 'transitionAtMoment'],
+    );
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* buildDesignBrief                                                    */
 /* ------------------------------------------------------------------ */
 

@@ -175,6 +175,49 @@ export const DIRECTIVE_SCHEMA: JsonSchema = {
       enum: ['AA', 'AAA'],
       description: 'Target WCAG conformance level.',
     },
+    experienceIntent: {
+      type: 'object',
+      required: ['mode', 'moment', 'momentIntent', 'transitionAtMoment'],
+      additionalProperties: false,
+      description:
+        'Whether one section of this specific page deserves outsized emphasis. '
+        + 'Most businesses have no such section — "standard" is the common, correct '
+        + 'answer, not a fallback. Only choose "moment-led" when the business has a '
+        + 'genuine reason (real photography, a real fact, a real story) for one section '
+        + 'to lead the page, and only nominate a section kind actually present in the '
+        + '"Content sections" list above.',
+      properties: {
+        mode: {
+          type: 'string',
+          enum: ['standard', 'moment-led'],
+          description: 'standard: no section is emphasised beyond the deterministic default. moment-led: one is.',
+        },
+        moment: {
+          type: 'string',
+          enum: [
+            'hero', 'statement', 'about', 'services', 'menu', 'gallery',
+            'testimonials', 'hours', 'location', 'contact', 'cta', 'faq',
+          ],
+          description:
+            'The section kind that would be emphasised if mode were "moment-led" — a kind that '
+            + 'appears in the "Content sections" list in the brief, never one this business does not '
+            + 'have. Ignored by the deterministic system when mode is "standard"; pick any real kind '
+            + 'from the brief rather than leaving this unconsidered.',
+        },
+        momentIntent: {
+          type: 'string',
+          description:
+            'One concise sentence: why the nominated section would earn emphasis. Ignored by the '
+            + 'deterministic system when mode is "standard".',
+        },
+        transitionAtMoment: {
+          type: 'boolean',
+          description:
+            'Whether a brief visual transition should mark entry to the moment section. '
+            + 'False when mode is "standard".',
+        },
+      },
+    },
     rationale: {
       type: 'string',
       description: 'Two to four sentences explaining the overall visual strategy and its relationship to the business.',
@@ -209,6 +252,8 @@ Make decisions based on:
 Prefer coherent systems over isolated visual tricks. Every decision you make should reinforce the others — direction, density, typography and imagery should read as a single visual strategy, not a collection of unrelated preferences.
 
 When evidence is weak, use conservative design decisions and lower confidence rather than inventing brand characteristics. A thin profile warrants a restrained, broadly-applicable direction rather than a bold or distinctive one.
+
+Separately, decide whether this specific business has one section worth building emphasis around — a real photograph, a real fact, a real story that would be diminished by equal treatment with every other section. This is experienceIntent. Most businesses do not have this: a plumber, an accountant, a law firm usually should get mode "standard", and that is the correct, unremarkable answer, not a failure to find something more exciting. Only choose "moment-led" when the evidence genuinely supports it, and only nominate a section kind that already appears in the brief's "Content sections" list — never invent one, never nominate a kind this business's content does not have.
 
 The output must be implementable by a deterministic design system. You are choosing from closed sets of options — do not suggest values outside the listed enums. Do not output CSS, pixel values, colour hex codes, spacing values, font sizes, Tailwind classes, or any renderer instruction.`;
 

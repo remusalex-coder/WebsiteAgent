@@ -2861,6 +2861,51 @@ a {
   to { opacity: 1; transform: none; }
 }
 
+/* ------------------------------------------------------------------ */
+/* Moment transition — .section--moment                                */
+/* ------------------------------------------------------------------ */
+
+/*
+ * A brief wash marking entry to the one section ComposeOptions.momentSection
+ * nominated, when momentTransition was also requested. See ADR 0005 and
+ * lib/design/directive.ts's applyExperienceIntent.
+ *
+ * One pseudo-element, one keyframe: a low-opacity tint that fades to nothing
+ * as the section arrives. Generated content paints before an element's real
+ * children by construction, so the wash sits under the section's type without
+ * a z-index — a stacking rule rather than a convention someone could get
+ * wrong. pointer-events: none keeps it from ever intercepting a click or a
+ * tap; a decorative layer cannot trap a visitor. Bounded to the same
+ * @supports/prefers-reduced-motion guard as every scroll-driven effect above:
+ * unsupported or reduced, the section simply has no wash, which is the
+ * correct degradation, not a fallback to maintain separately.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .section--moment {
+      position: relative;
+    }
+
+    .section--moment::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--color-brand);
+      pointer-events: none;
+      animation: forge-moment-wash linear both;
+      animation-timeline: view();
+      /* Over well before the section is actually being read, the same
+         principle the entrance animations above already use. */
+      animation-range: entry 0% entry 45%;
+    }
+  }
+}
+
+@keyframes forge-moment-wash {
+  0% { opacity: 0.22; }
+  100% { opacity: 0; }
+}
+
 /*
  * Hover responses, so interactive things feel interactive.
  *

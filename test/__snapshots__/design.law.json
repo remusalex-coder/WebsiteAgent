@@ -434,6 +434,7 @@
         "density": "airy",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose stack for hero: the section has 0 items and 1 image.",
         "frame": "stacked",
         "background": "subtle"
@@ -446,6 +447,7 @@
         "density": "balanced",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose list for services: it is the law convention for a services section.",
         "frame": "aside",
         "background": "canvas"
@@ -458,6 +460,7 @@
         "density": "dense",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose list for menu: the section has 2 items and 0 images.",
         "frame": "offset",
         "background": "subtle"
@@ -470,6 +473,7 @@
         "density": "dense",
         "columns": 2,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose grid for gallery: the section has 0 items and 2 images.",
         "frame": "stacked",
         "background": "canvas"
@@ -482,6 +486,7 @@
         "density": "balanced",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose stack for about: the section has 0 items and 0 images.",
         "frame": "statement",
         "background": "subtle"
@@ -494,6 +499,7 @@
         "density": "balanced",
         "columns": 1,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose quotes for testimonials: it is the law convention for a testimonials section.",
         "frame": "aside",
         "background": "canvas"
@@ -506,6 +512,7 @@
         "density": "dense",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose list for hours: the section has 2 items and 0 images.",
         "frame": "offset",
         "background": "subtle"
@@ -518,6 +525,7 @@
         "density": "dense",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose list for faq: the section has 2 items and 0 images.",
         "frame": "aside",
         "background": "canvas"
@@ -530,6 +538,7 @@
         "density": "balanced",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose list for contact: the section has 2 items and 0 images.",
         "frame": "offset",
         "background": "subtle"
@@ -542,6 +551,7 @@
         "density": "dense",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose stack for location: the section has 0 items and 0 images.",
         "frame": "statement",
         "background": "canvas"
@@ -554,6 +564,7 @@
         "density": "dense",
         "columns": null,
         "fullBleed": false,
+        "momentTransition": false,
         "rationale": "Chose banner for cta: the section has 0 items and 0 images.",
         "frame": "centered",
         "background": "brand"

@@ -547,6 +547,36 @@ export interface LayoutInput {
   /** What the page is made of. See IndustryDefaults.ground. */
   readonly ground: 'clean' | 'warm' | 'atmospheric';
   readonly world: VisualWorld;
+  /**
+   * A section kind to give elevated emphasis, from `ComposeOptions.momentSection`.
+   *
+   * Honoured only if this business's content actually has a section of that
+   * kind — the deterministic system's own check, independent of whatever
+   * validated the nomination upstream. Absent, or matching no section here,
+   * this function behaves exactly as it did before this field existed.
+   */
+  readonly momentSection?: SectionKind | undefined;
+  /** Whether the moment section (if any) also gets the transition primitive. */
+  readonly momentTransition?: boolean | undefined;
+}
+
+/**
+ * One step up the emphasis ladder — never straight to the top.
+ *
+ * `'lead'` is otherwise earned only by whatever section lands at position 0
+ * (`emphasisFor`), which is effectively the hero. Stepping the moment section
+ * up by exactly one rung — rather than setting it to `'lead'` outright —
+ * keeps the elevation bounded and relative to wherever the deterministic
+ * system had already placed it, instead of always maximal regardless of the
+ * section's actual weight in the page.
+ */
+function stepUpEmphasis(emphasis: Emphasis): Emphasis {
+  switch (emphasis) {
+    case 'quiet': return 'secondary';
+    case 'secondary': return 'primary';
+    case 'primary': return 'lead';
+    case 'lead': return 'lead';
+  }
 }
 
 export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: readonly string[] } {
@@ -555,6 +585,13 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
 
   const order = orderSections(content, industry);
   const hero = chooseHero(content, theme, input.imageReliance);
+
+  // The moment may only land once — on the first section of the nominated
+  // kind the page actually contains. A second matching section (rare; most
+  // kinds appear at most once) stays at its ordinary emphasis, because a
+  // page with two "moments" has none: the whole point is a single thing
+  // worth building emphasis around.
+  let momentApplied = false;
 
   const partial = order.map((index, position) => {
     const section = content.sections[index];
@@ -567,13 +604,25 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
         density,
         columns: null,
         fullBleed: false,
+        momentTransition: false,
         rationale: 'Section index out of range.',
       };
     }
 
     const chosen = chooseVariant(section, industry, theme);
-    const emphasis = emphasisFor(industry, section.kind, position);
+    let emphasis = emphasisFor(industry, section.kind, position);
     const shape = shapeOf(section);
+
+    const isMoment = !momentApplied && input.momentSection !== undefined
+      && section.kind === input.momentSection;
+    if (isMoment) {
+      momentApplied = true;
+      emphasis = stepUpEmphasis(emphasis);
+      notes.push(
+        `Section ${index} (${section.kind}) is the nominated moment: emphasis raised to `
+        + `"${emphasis}".`,
+      );
+    }
 
     if (chosen.variant === 'stack' && section.kind !== 'hero' && shape.bullets === 0 && shape.bodyChars === 0) {
       notes.push(`Section ${index} (${section.kind}) has no body, bullets or images and will render as a heading alone.`);
@@ -587,9 +636,17 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
       density: densityFor(density, emphasis),
       columns: columnsFor(chosen.variant, shape),
       fullBleed: chosen.variant === 'collage' || (section.kind === 'gallery' && emphasis === 'lead'),
+      momentTransition: isMoment && (input.momentTransition ?? false),
       rationale: chosen.rationale,
     };
   });
+
+  if (input.momentSection !== undefined && !momentApplied) {
+    notes.push(
+      `A moment was nominated ("${input.momentSection}") but this business has no section of `
+      + 'that kind; no emphasis was changed.',
+    );
+  }
 
   /*
    * A journey, not an alternation.

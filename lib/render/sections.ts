@@ -1161,6 +1161,7 @@ export function renderSection(section: WebsiteSection, ctx: SectionContext): Htm
     `section--${section.kind}`,
     isHero ? `section--hero-${heroVariant}` : `section--${plan.variant}`,
     plan.fullBleed ? 'section--bleed' : null,
+    plan.momentTransition ? 'section--moment' : null,
   ].filter((entry): entry is string => entry !== null);
 
   // A bleeding section drops the measured container so its media can reach the
@@ -1189,6 +1190,7 @@ export function renderSection(section: WebsiteSection, ctx: SectionContext): Htm
       'data-emphasis': plan.emphasis,
       'data-density': plan.density,
       'data-bg': plan.background,
+      ...(plan.momentTransition ? { 'data-moment': 'true' } : {}),
     },
     element('div', { class: containerClass }, inner),
   );

@@ -36,7 +36,7 @@ import {
 } from './tokens.js';
 import { RAMP_ROLE } from './color.js';
 
-import type { BusinessProfile, BusinessStrategy, WebsiteContent } from '../types.js';
+import type { BusinessProfile, BusinessStrategy, SectionKind, WebsiteContent } from '../types.js';
 import type { ThemeDefinition } from './themes.js';
 import type {
   AccessibilityPreferences,
@@ -108,6 +108,18 @@ export interface ComposeOptions {
    * its inputs. See `lib/art/seed.ts`.
    */
   readonly photographicSeed?: string | null | undefined;
+  /**
+   * A section to give elevated emphasis, from `ExperienceIntent.moment`.
+   *
+   * Set by `applyExperienceIntent` (see `directive.ts`) or directly by an
+   * operator; either way this is the deterministic system's own decision by
+   * the time `planLayout` reads it — no raw AI output crosses this boundary.
+   * Silently has no effect if this business's content has no section of that
+   * kind; see `planLayout`.
+   */
+  readonly momentSection?: SectionKind | undefined;
+  /** Whether the deterministic transition primitive marks entry to `momentSection`. */
+  readonly momentTransition?: boolean | undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -523,6 +535,8 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     imageReliance: defaults.imageReliance,
     ground: defaults.ground,
     world,
+    momentSection: options.momentSection,
+    momentTransition: options.momentTransition ?? false,
   });
   notes.push(...layout.notes);
 
