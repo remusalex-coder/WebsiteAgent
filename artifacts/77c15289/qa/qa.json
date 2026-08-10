@@ -1,6 +1,6 @@
 {
   "verdict": "PASS",
-  "checkedAt": "2026-08-10T12:24:21.193Z",
+  "checkedAt": "2026-08-10T16:27:18.182Z",
   "checks": [
     {
       "id": "page.loads",
@@ -55,7 +55,7 @@
     {
       "id": "desktop.screenshot",
       "passed": true,
-      "detail": "artifacts/77c15289/screenshots/desktop.png (578192 bytes)"
+      "detail": "artifacts/77c15289/screenshots/desktop.png (578411 bytes)"
     },
     {
       "id": "desktop.a11y-landmarks",
@@ -105,7 +105,7 @@
     {
       "id": "mobile.screenshot",
       "passed": true,
-      "detail": "artifacts/77c15289/screenshots/mobile.png (504913 bytes)"
+      "detail": "artifacts/77c15289/screenshots/mobile.png (504843 bytes)"
     },
     {
       "id": "mobile.a11y-landmarks",
@@ -152,9 +152,9 @@
         "viewport": "desktop",
         "width": 1440,
         "height": 900,
-        "loadMs": 359,
+        "loadMs": 151,
         "screenshot": "artifacts/77c15289/screenshots/desktop.png",
-        "screenshotBytes": 578192,
+        "screenshotBytes": 578411,
         "navigationWorks": true,
         "primaryCtaTarget": "tel:0723607005",
         "title": "River Park Events Dragasani | Event Venue in Drăgășani",
@@ -187,9 +187,9 @@
         "viewport": "mobile",
         "width": 390,
         "height": 844,
-        "loadMs": 275,
+        "loadMs": 13,
         "screenshot": "artifacts/77c15289/screenshots/mobile.png",
-        "screenshotBytes": 504913,
+        "screenshotBytes": 504843,
         "navigationWorks": true,
         "primaryCtaTarget": "tel:0723607005",
         "title": "River Park Events Dragasani | Event Venue in Drăgășani",
@@ -232,7 +232,7 @@
     "formsWithoutAction": 0
   },
   "performance": {
-    "loadMs": 359,
+    "loadMs": 151,
     "domNodes": 160,
     "images": 1,
     "stylesheets": 1

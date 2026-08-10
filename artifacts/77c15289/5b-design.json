@@ -184,6 +184,8 @@
         "onAccent": "#fcfcfc",
         "inverted": "#232423",
         "onInverted": "#fcfcfc",
+        "onInvertedMuted": "#a9aba9",
+        "onInvertedAccent": "#66ad88",
         "success": "#308639",
         "warning": "#986600",
         "danger": "#c13c36"
@@ -193,7 +195,10 @@
         "textOnCanvas": 15.18,
         "textOnSurface": 13.51,
         "onBrandOnBrand": 4.5,
-        "mutedOnCanvas": 8.21
+        "mutedOnCanvas": 8.21,
+        "textOnInverted": 15.18,
+        "mutedOnInverted": 6.74,
+        "accentOnInverted": 5.86
       }
     },
     "typography": {

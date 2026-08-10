@@ -774,6 +774,8 @@ a:hover {
   --color-on-accent: #fcfcfc;
   --color-inverted: #232423;
   --color-on-inverted: #fcfcfc;
+  --color-on-inverted-muted: #a9aba9;
+  --color-on-inverted-accent: #66ad88;
   --color-success: #308639;
   --color-warning: #986600;
   --color-danger: #c13c36;
@@ -1257,34 +1259,66 @@ h4 {
 
 /* Ground ----------------------------------------------------------- */
 
-.section[data-bg="canvas"] { background: var(--color-canvas); }
-.section[data-bg="subtle"] { background: var(--color-canvas-subtle); }
+/*
+ * Five grounds, each carrying its own ink. See `ground()`.
+ *
+ * The list of `color: inherit` overrides that used to sit here — headings,
+ * eyebrows and subheadings named one by one for the two dark grounds — is gone
+ * with it. That list was the workaround: it existed because `--color-heading`
+ * meant the page's near-black even on a black band, so every element that read
+ * it had to be individually told not to. It also only ever covered the elements
+ * somebody remembered, which is why `.card__title` and `.detail-list__label`
+ * were not on it.
+ */
+.section[data-bg="canvas"] {
+  background: var(--color-canvas);
+  --color-text: #232423;
+  --color-heading: #232423;
+  --color-text-muted: #4b4e4c;
+  --color-muted: #4b4e4c;
+  --color-brand-text: #2e7654;
+  color: var(--color-text);
+}
+
+.section[data-bg="subtle"] {
+  background: var(--color-canvas-subtle);
+  --color-text: #232423;
+  --color-heading: #232423;
+  --color-text-muted: #4b4e4c;
+  --color-muted: #4b4e4c;
+  --color-brand-text: #2e7654;
+  color: var(--color-text);
+}
+
 .section[data-bg="surface"] {
   background: var(--color-surface);
+  --color-text: #232423;
+  --color-heading: #232423;
+  --color-text-muted: #4b4e4c;
+  --color-muted: #4b4e4c;
+  --color-brand-text: #2e7654;
+  color: var(--color-text);
   border-block: 1px solid var(--color-border);
 }
 
 .section[data-bg="brand"] {
   background: var(--color-brand);
-  color: var(--color-on-brand);
+  --color-text: #fcfcfc;
+  --color-heading: #fcfcfc;
+  --color-text-muted: #fcfcfc;
+  --color-muted: #fcfcfc;
+  --color-brand-text: #fcfcfc;
+  color: var(--color-text);
 }
 
 .section[data-bg="inverted"] {
   background: var(--color-inverted);
-  color: var(--color-on-inverted);
-}
-
-.section[data-bg="brand"] h1,
-.section[data-bg="brand"] h2,
-.section[data-bg="brand"] h3,
-.section[data-bg="brand"] .eyebrow,
-.section[data-bg="brand"] .section__subheading,
-.section[data-bg="inverted"] h1,
-.section[data-bg="inverted"] h2,
-.section[data-bg="inverted"] h3,
-.section[data-bg="inverted"] .eyebrow,
-.section[data-bg="inverted"] .section__subheading {
-  color: inherit;
+  --color-text: #fcfcfc;
+  --color-heading: #fcfcfc;
+  --color-text-muted: #a9aba9;
+  --color-muted: #a9aba9;
+  --color-brand-text: #66ad88;
+  color: var(--color-text);
 }
 
 .section[data-bg="brand"] .button,
@@ -1873,11 +1907,26 @@ h4 {
  * somewhere to be — a gradient that is dense where the words are and clear where
  * the picture is.
  */
+/*
+ * The scrim is this block's ground, so the ink is declared here.
+ *
+ * No `background`: what the copy actually sits on is the gradient in
+ * `.hero__scrim`, painted by a sibling behind it. The section's own colour is
+ * only what shows if the photograph never arrives. Either way the ground under
+ * these words is dark, and the whole ink family has to say so — not just the
+ * body colour, or the eyebrow goes back to being the page's brown on a
+ * photograph at dusk.
+ */
 .hero--full-bleed {
   min-height: min(78vh, 46rem);
   align-content: end;
   padding-block: var(--space-3xl) var(--space-2xl);
-  color: var(--color-on-inverted);
+  --color-text: #fcfcfc;
+  --color-heading: #fcfcfc;
+  --color-text-muted: #a9aba9;
+  --color-muted: #a9aba9;
+  --color-brand-text: #66ad88;
+  color: var(--color-text);
 }
 
 .hero--full-bleed .hero__backdrop {
@@ -1927,13 +1976,6 @@ h4 {
       transparent 60%
     );
   opacity: calc(0.55 + var(--overlay-opacity) * 0.45);
-}
-
-.hero--full-bleed h1,
-.hero--full-bleed .eyebrow,
-.hero--full-bleed .section__subheading,
-.hero--full-bleed .section__body {
-  color: var(--color-on-inverted);
 }
 
 /*
@@ -2095,12 +2137,28 @@ h4 {
  * reads as a box drawn around some text — the tell that separates a designed
  * card from a `<div>` with a stroke.
  */
+/*
+ * A card is a light ground wherever it lands, so it carries the page's ink with
+ * it.
+ *
+ * This is the half of the rule that is easy to forget. A band that goes dark is
+ * visibly a decision; a card that stays light *inside* that band is the same
+ * decision made silently, and it has the same obligation. Without this the card
+ * kept its own paper colour and inherited the band's near-white type, which is
+ * the 1.13:1 the services cards shipped at.
+ */
 .card {
   display: flex;
   flex-direction: column;
   gap: var(--space-2xs);
   padding: var(--space-lg) var(--space-md);
   background: var(--color-surface);
+  --color-text: #232423;
+  --color-heading: #232423;
+  --color-text-muted: #4b4e4c;
+  --color-muted: #4b4e4c;
+  --color-brand-text: #2e7654;
+  color: var(--color-text);
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   box-shadow: var(--shadow-md);
@@ -2138,8 +2196,15 @@ h4 {
   justify-content: flex-end;
 }
 
+/* Step 2 of the ramp is a near-white tint, so this cell is a light ground too. */
 .bento__cell--wide {
   background: var(--primary-2);
+  --color-text: #232423;
+  --color-heading: #232423;
+  --color-text-muted: #4b4e4c;
+  --color-muted: #4b4e4c;
+  --color-brand-text: #2e7654;
+  color: var(--color-text);
 }
 
 @media (min-width: 48rem) {
@@ -3021,11 +3086,15 @@ a.contact-block__value:hover {
 
 .site-footer--rich {
   background: var(--color-inverted);
-  color: var(--color-on-inverted);
+  --color-text: #fcfcfc;
+  --color-heading: #fcfcfc;
+  --color-text-muted: #a9aba9;
+  --color-muted: #a9aba9;
+  --color-brand-text: #66ad88;
+  color: var(--color-text);
 }
 
-.site-footer--rich .site-footer__name,
-.site-footer--rich .site-footer__title,
+/* Links keep the band's ink rather than the page's brand brown. */
 .site-footer--rich a {
   color: inherit;
 }
@@ -3330,7 +3399,12 @@ a {
 .facts-bar {
   overflow: hidden;
   background: var(--color-brand);
-  color: var(--color-on-brand, var(--color-on-primary));
+  --color-text: #fcfcfc;
+  --color-heading: #fcfcfc;
+  --color-text-muted: #fcfcfc;
+  --color-muted: #fcfcfc;
+  --color-brand-text: #fcfcfc;
+  color: var(--color-text);
 }
 
 /*
@@ -3607,6 +3681,12 @@ a {
  * Here the dark *is* the page for its first three scenes, so the photographs
  * are lit objects in a room rather than pictures on paper.
  */
+/*
+ * Night and dawn keep the ink the base ground already established: night is
+ * darker than `--color-inverted` and dawn is lighter than `--color-canvas`, so
+ * each moves *away* from the type sitting on it. The ink is a floor, and this
+ * world only ever raises it.
+ */
 [data-world="ember"] .section[data-bg="inverted"] {
   background: var(--ember-night);
 }
@@ -3625,18 +3705,23 @@ a {
  * still dark. The band is a stage of the arc, so it takes night's text
  * treatment with it and its rules go to the light instead of against it.
  */
+/*
+ * Dusk is the one band in this world that reverses its ground.
+ *
+ * `surface` is a pale card everywhere else, so it is the only ember ground that
+ * has to bring the whole inverted ink with it rather than inherit what the base
+ * rule already set. It used to do that by naming five selectors and setting them
+ * to `inherit`; the ground now carries its own ink and the list is unnecessary.
+ */
 [data-world="ember"] .section[data-bg="surface"] {
   background: var(--ember-dusk);
-  color: var(--color-on-inverted);
+  --color-text: #fcfcfc;
+  --color-heading: #fcfcfc;
+  --color-text-muted: #a9aba9;
+  --color-muted: #a9aba9;
+  --color-brand-text: #66ad88;
+  color: var(--color-text);
   border-block-color: color-mix(in srgb, var(--ember-dawn) 14%, transparent);
-}
-
-[data-world="ember"] .section[data-bg="surface"] h1,
-[data-world="ember"] .section[data-bg="surface"] h2,
-[data-world="ember"] .section[data-bg="surface"] h3,
-[data-world="ember"] .section[data-bg="surface"] .eyebrow,
-[data-world="ember"] .section[data-bg="surface"] .section__subheading {
-  color: inherit;
 }
 
 [data-world="ember"] .section[data-bg="surface"] .button {

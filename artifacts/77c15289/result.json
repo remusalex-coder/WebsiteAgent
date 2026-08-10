@@ -34,6 +34,31 @@
     "discoveredAt": "2026-08-10T12:21:07.183Z"
   },
   "collected": {
+    "attributes": [
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible car park",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      },
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible entrance",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      },
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible toilet",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      }
+    ],
+    "listingDescription": null,
+    "reviews": [],
+    "listingHours": [],
+    "listingRating": null,
+    "listingReviewCount": null,
     "identity": {
       "sourceUrl": "https://www.google.com/maps/search/River+Park+Events+Dragasani",
       "canonicalUrl": "https://www.google.com/maps/place/River+Park+Events+Dragasani/@44.6605789,24.2519676,17z/data=!3m1!4b1!4m6!3m5!1s0x4752ad9da60859f1:0x88a57b21e70290ae!8m2!3d44.6605789!4d24.2519676!16s%2Fg%2F11g9n30p21?hl=en&entry=ttu&g_ep=EgoyMDI2MDgwNS4xIKXMDSoASAFQAw%3D%3D",
@@ -66,31 +91,6 @@
     },
     "siteUrl": null,
     "pages": [],
-    "attributes": [
-      {
-        "group": "Accessibility",
-        "label": "Wheelchair-accessible car park",
-        "available": true,
-        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
-      },
-      {
-        "group": "Accessibility",
-        "label": "Wheelchair-accessible entrance",
-        "available": true,
-        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
-      },
-      {
-        "group": "Accessibility",
-        "label": "Wheelchair-accessible toilet",
-        "available": true,
-        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
-      }
-    ],
-    "listingDescription": null,
-    "reviews": [],
-    "listingHours": [],
-    "listingRating": null,
-    "listingReviewCount": null,
     "favicon": null,
     "logo": null,
     "hero": null,
@@ -117,6 +117,28 @@
     "collectedAt": "2026-08-10T12:21:13.845Z"
   },
   "profile": {
+    "attributes": [
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible car park",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      },
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible entrance",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      },
+      {
+        "group": "Accessibility",
+        "label": "Wheelchair-accessible toilet",
+        "available": true,
+        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
+      }
+    ],
+    "description": null,
+    "reviews": [],
     "name": {
       "value": "River Park Events Dragasani",
       "source": "maps",
@@ -180,31 +202,9 @@
       "alternatives": []
     },
     "reviewCount": null,
-    "reviews": [],
     "navigation": [],
     "services": [],
     "pages": [],
-    "attributes": [
-      {
-        "group": "Accessibility",
-        "label": "Wheelchair-accessible car park",
-        "available": true,
-        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
-      },
-      {
-        "group": "Accessibility",
-        "label": "Wheelchair-accessible entrance",
-        "available": true,
-        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
-      },
-      {
-        "group": "Accessibility",
-        "label": "Wheelchair-accessible toilet",
-        "available": true,
-        "sourceUrl": "https://www.google.com/maps/place/?ftid=0x4752ad9da60859f1%3A0x88a57b21e70290ae&hl=en"
-      }
-    ],
-    "description": null,
     "images": {
       "logo": null,
       "favicon": null,
@@ -453,6 +453,20 @@
     "generatedAt": "2026-08-10T12:21:34.735Z"
   },
   "content": {
+    "trust": [
+      {
+        "kind": "rating",
+        "label": "4.7 on Google",
+        "source": "maps"
+      }
+    ],
+    "facts": [
+      "Function room facility",
+      "4.7 on Google",
+      "Wheelchair-accessible car park",
+      "Wheelchair-accessible entrance",
+      "Wheelchair-accessible toilet"
+    ],
     "businessName": "River Park Events Dragasani",
     "tagline": "Function room facility on Strada Regele Ferdinand in Drăgășani",
     "voice": {
@@ -555,20 +569,6 @@
           "href": "tel:0723607005"
         }
       }
-    ],
-    "trust": [
-      {
-        "kind": "rating",
-        "label": "4.7 on Google",
-        "source": "maps"
-      }
-    ],
-    "facts": [
-      "Function room facility",
-      "4.7 on Google",
-      "Wheelchair-accessible car park",
-      "Wheelchair-accessible entrance",
-      "Wheelchair-accessible toilet"
     ],
     "seo": {
       "title": "River Park Events Dragasani | Event Venue in Drăgășani",
@@ -807,6 +807,8 @@
           "onAccent": "#fcfcfc",
           "inverted": "#232423",
           "onInverted": "#fcfcfc",
+          "onInvertedMuted": "#a9aba9",
+          "onInvertedAccent": "#66ad88",
           "success": "#308639",
           "warning": "#986600",
           "danger": "#c13c36"
@@ -816,7 +818,10 @@
           "textOnCanvas": 15.18,
           "textOnSurface": 13.51,
           "onBrandOnBrand": 4.5,
-          "mutedOnCanvas": 8.21
+          "mutedOnCanvas": 8.21,
+          "textOnInverted": 15.18,
+          "mutedOnInverted": 6.74,
+          "accentOnInverted": 5.86
         }
       },
       "typography": {
@@ -1167,8 +1172,8 @@
     "editorUrl": null,
     "status": "skipped",
     "promptUsed": "LOVABLE_API_KEY is not set, so no deployment was attempted.",
-    "deployedAt": "2026-08-10T12:21:56.866Z"
+    "deployedAt": "2026-08-10T16:27:00.968Z"
   },
-  "startedAt": "2026-08-10T12:20:56.555Z",
-  "finishedAt": "2026-08-10T12:21:56.871Z"
+  "startedAt": "2026-08-10T16:27:00.888Z",
+  "finishedAt": "2026-08-10T16:27:00.971Z"
 }
