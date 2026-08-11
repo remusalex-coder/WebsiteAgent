@@ -181,7 +181,7 @@
         "brand": "#a55b34",
         "brandHover": "#8c4923",
         "onBrand": "#fcfcfc",
-        "brandText": "#9f552e",
+        "brandText": "#984f28",
         "accent": "#008285",
         "onAccent": "#fcfcfc",
         "inverted": "#252423",
@@ -435,7 +435,36 @@
         "columns": null,
         "fullBleed": false,
         "momentTransition": false,
+        "role": "arrival",
         "rationale": "Chose stack for hero: the section has 0 items and 1 image.",
+        "frame": "stacked",
+        "background": "subtle"
+      },
+      {
+        "index": 1,
+        "kind": "about",
+        "variant": "stack",
+        "emphasis": "primary",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "momentTransition": false,
+        "role": "process",
+        "rationale": "Chose stack for about: the section has 0 items and 0 images.",
+        "frame": "statement",
+        "background": "canvas"
+      },
+      {
+        "index": 4,
+        "kind": "gallery",
+        "variant": "grid",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": 2,
+        "fullBleed": false,
+        "momentTransition": false,
+        "role": "space",
+        "rationale": "Chose grid for gallery: the section has 0 items and 2 images.",
         "frame": "stacked",
         "background": "subtle"
       },
@@ -448,6 +477,7 @@
         "columns": null,
         "fullBleed": false,
         "momentTransition": false,
+        "role": "breadth",
         "rationale": "Chose list for services: it is the law convention for a services section.",
         "frame": "aside",
         "background": "canvas"
@@ -461,35 +491,24 @@
         "columns": null,
         "fullBleed": false,
         "momentTransition": false,
+        "role": "breadth",
         "rationale": "Chose list for menu: the section has 2 items and 0 images.",
         "frame": "offset",
         "background": "subtle"
       },
       {
-        "index": 4,
-        "kind": "gallery",
-        "variant": "grid",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": 2,
-        "fullBleed": false,
-        "momentTransition": false,
-        "rationale": "Chose grid for gallery: the section has 0 items and 2 images.",
-        "frame": "stacked",
-        "background": "canvas"
-      },
-      {
-        "index": 1,
-        "kind": "about",
-        "variant": "stack",
-        "emphasis": "primary",
+        "index": 8,
+        "kind": "contact",
+        "variant": "list",
+        "emphasis": "secondary",
         "density": "balanced",
         "columns": null,
         "fullBleed": false,
         "momentTransition": false,
-        "rationale": "Chose stack for about: the section has 0 items and 0 images.",
-        "frame": "statement",
-        "background": "subtle"
+        "role": "conversion",
+        "rationale": "Chose list for contact: the section has 2 items and 0 images.",
+        "frame": "aside",
+        "background": "canvas"
       },
       {
         "index": 5,
@@ -500,20 +519,8 @@
         "columns": 1,
         "fullBleed": false,
         "momentTransition": false,
+        "role": "trust",
         "rationale": "Chose quotes for testimonials: it is the law convention for a testimonials section.",
-        "frame": "aside",
-        "background": "canvas"
-      },
-      {
-        "index": 6,
-        "kind": "hours",
-        "variant": "list",
-        "emphasis": "quiet",
-        "density": "dense",
-        "columns": null,
-        "fullBleed": false,
-        "momentTransition": false,
-        "rationale": "Chose list for hours: the section has 2 items and 0 images.",
         "frame": "offset",
         "background": "subtle"
       },
@@ -526,20 +533,22 @@
         "columns": null,
         "fullBleed": false,
         "momentTransition": false,
+        "role": "proof",
         "rationale": "Chose list for faq: the section has 2 items and 0 images.",
         "frame": "aside",
         "background": "canvas"
       },
       {
-        "index": 8,
-        "kind": "contact",
+        "index": 6,
+        "kind": "hours",
         "variant": "list",
-        "emphasis": "secondary",
-        "density": "balanced",
+        "emphasis": "quiet",
+        "density": "dense",
         "columns": null,
         "fullBleed": false,
         "momentTransition": false,
-        "rationale": "Chose list for contact: the section has 2 items and 0 images.",
+        "role": "context",
+        "rationale": "Chose list for hours: the section has 2 items and 0 images.",
         "frame": "offset",
         "background": "subtle"
       },
@@ -552,6 +561,7 @@
         "columns": null,
         "fullBleed": false,
         "momentTransition": false,
+        "role": "context",
         "rationale": "Chose stack for location: the section has 0 items and 0 images.",
         "frame": "statement",
         "background": "canvas"
@@ -565,6 +575,7 @@
         "columns": null,
         "fullBleed": false,
         "momentTransition": false,
+        "role": "conversion",
         "rationale": "Chose banner for cta: the section has 0 items and 0 images.",
         "frame": "centered",
         "background": "brand"
@@ -572,14 +583,14 @@
     ],
     "order": [
       0,
+      1,
+      4,
       2,
       3,
-      4,
-      1,
-      5,
-      6,
-      9,
       8,
+      5,
+      9,
+      6,
       7,
       10
     ],
@@ -620,9 +631,234 @@
     "focusStyle": "outline",
     "semanticLandmarks": true
   },
+  "experience": {
+    "mode": "brochure",
+    "signatureMoment": null,
+    "momentTransition": false,
+    "galleryLead": false,
+    "pacing": "compact",
+    "rationale": "Brochure: balanced, latent narrative potential — a clear, functional page is the honest answer.",
+    "evidence": [
+      "visualWeight:balanced",
+      "register:functional",
+      "narrative:latent",
+      "atmosphere:1"
+    ]
+  },
+  "conversion": {
+    "mode": "high-intent",
+    "primaryCta": "visit",
+    "secondaryCta": null,
+    "ctaPlacement": "persistent",
+    "contactProminence": "immediate",
+    "informationDensity": "compact",
+    "trustPlacement": "early",
+    "conversionMoment": "cta",
+    "frictionLevel": "low",
+    "basis": "creative-default",
+    "rationale": "high-intent conversion: a functional brochure business leads with \"visit\", contact immediate, friction low.",
+    "evidence": [
+      "register:functional",
+      "mode:brochure",
+      "phone:false"
+    ]
+  },
+  "interaction": {
+    "level": "subtle",
+    "ceiling": "subtle",
+    "basis": "evidence",
+    "rationale": "Interaction subtle: a brochure page with balanced weight over 11 sections.",
+    "evidence": [
+      "mode:brochure",
+      "visualWeight:balanced",
+      "sections:11",
+      "atmosphere:1"
+    ]
+  },
+  "assets": {
+    "hero": null,
+    "signature": null,
+    "gallerySequence": [],
+    "contrastPoints": [],
+    "reduceImagery": true,
+    "neverUse": [],
+    "referenceOnly": [],
+    "placements": [],
+    "rationale": "Restraint: a balanced brochure page carries minimal imagery on purpose.",
+    "evidence": [
+      "in:0",
+      "mode:brochure",
+      "weight:balanced"
+    ],
+    "notes": [
+      "Imagery intentionally reduced: the evidence is text-led or thin, so the page argues in words, not pictures."
+    ]
+  },
+  "experienceScript": {
+    "mode": "brochure",
+    "beats": [
+      {
+        "index": 0,
+        "kind": "hero",
+        "role": "arrival",
+        "emphasis": "lead",
+        "background": "subtle",
+        "pacing": "compact",
+        "visualIntensity": "loud",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "hero plays \"arrival\" at lead emphasis on subtle."
+      },
+      {
+        "index": 1,
+        "kind": "about",
+        "role": "process",
+        "emphasis": "primary",
+        "background": "canvas",
+        "pacing": "compact",
+        "visualIntensity": "measured",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "about plays \"process\" at primary emphasis on canvas."
+      },
+      {
+        "index": 4,
+        "kind": "gallery",
+        "role": "space",
+        "emphasis": "quiet",
+        "background": "subtle",
+        "pacing": "compact",
+        "visualIntensity": "quiet",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "gallery plays \"space\" at quiet emphasis on subtle."
+      },
+      {
+        "index": 2,
+        "kind": "services",
+        "role": "breadth",
+        "emphasis": "primary",
+        "background": "canvas",
+        "pacing": "compact",
+        "visualIntensity": "measured",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "services plays \"breadth\" at primary emphasis on canvas."
+      },
+      {
+        "index": 3,
+        "kind": "menu",
+        "role": "breadth",
+        "emphasis": "quiet",
+        "background": "subtle",
+        "pacing": "compact",
+        "visualIntensity": "quiet",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "menu plays \"breadth\" at quiet emphasis on subtle."
+      },
+      {
+        "index": 8,
+        "kind": "contact",
+        "role": "conversion",
+        "emphasis": "secondary",
+        "background": "canvas",
+        "pacing": "compact",
+        "visualIntensity": "measured",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "contact plays \"conversion\" at secondary emphasis on canvas."
+      },
+      {
+        "index": 5,
+        "kind": "testimonials",
+        "role": "trust",
+        "emphasis": "secondary",
+        "background": "subtle",
+        "pacing": "compact",
+        "visualIntensity": "measured",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "testimonials plays \"trust\" at secondary emphasis on subtle."
+      },
+      {
+        "index": 9,
+        "kind": "faq",
+        "role": "proof",
+        "emphasis": "quiet",
+        "background": "canvas",
+        "pacing": "compact",
+        "visualIntensity": "quiet",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "faq plays \"proof\" at quiet emphasis on canvas."
+      },
+      {
+        "index": 6,
+        "kind": "hours",
+        "role": "context",
+        "emphasis": "quiet",
+        "background": "subtle",
+        "pacing": "compact",
+        "visualIntensity": "quiet",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "hours plays \"context\" at quiet emphasis on subtle."
+      },
+      {
+        "index": 7,
+        "kind": "location",
+        "role": "context",
+        "emphasis": "quiet",
+        "background": "canvas",
+        "pacing": "compact",
+        "visualIntensity": "quiet",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "location plays \"context\" at quiet emphasis on canvas."
+      },
+      {
+        "index": 10,
+        "kind": "cta",
+        "role": "conversion",
+        "emphasis": "quiet",
+        "background": "brand",
+        "pacing": "compact",
+        "visualIntensity": "quiet",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "cta plays \"conversion\" at quiet emphasis on brand."
+      }
+    ],
+    "opening": "arrival",
+    "signature": null,
+    "conversionAt": 5,
+    "arc": [
+      "arrival",
+      "process",
+      "space",
+      "breadth",
+      "breadth",
+      "conversion",
+      "trust",
+      "proof",
+      "context",
+      "context",
+      "conversion"
+    ],
+    "basis": "creative-default",
+    "rationale": "brochure arc of 11 beats: arrival → process → space → breadth → breadth → conversion → trust → proof → context → context → conversion."
+  },
   "notes": [
     "Density is balanced: the law category expects airy and the corporate direction expects balanced, over 11 sections.",
     "Visual world: Bone — light throughout, ordered, one face, space instead of drama.",
-    "Sections were reordered for the law category; content itself is unchanged."
+    "Business character: balanced, functional register, single offering; 3 usable images across 1 framing give latent narrative potential around the gallery section.",
+    "Experience architecture: Brochure: balanced, latent narrative potential — a clear, functional page is the honest answer.",
+    "Conversion: high-intent conversion: a functional brochure business leads with \"visit\", contact immediate, friction low.",
+    "Interaction: Interaction subtle: a brochure page with balanced weight over 11 sections.",
+    "Assets: Restraint: a balanced brochure page carries minimal imagery on purpose.",
+    "Imagery intentionally reduced: the evidence is text-led or thin, so the page argues in words, not pictures.",
+    "Sections were ordered by narrative role (experience script); content itself is unchanged.",
+    "Experience script: brochure arc of 11 beats: arrival → process → space → breadth → breadth → conversion → trust → proof → context → context → conversion."
   ]
 }

@@ -166,6 +166,7 @@ const sections: readonly WebsiteSection[] = [
 export const fullContent: WebsiteContent = {
   businessName: 'Padaria Ana & Sons <Lisboa>',
   tagline: 'Bread, coffee & nothing else',
+  language: 'en',
   voice: {
     tone: 'warm',
     palette: ['#5b3a29', '#c98a3f', '#faf6f0'],
@@ -205,6 +206,7 @@ export const fullContent: WebsiteContent = {
 export const minimalContent: WebsiteContent = {
   businessName: 'Corner Shop',
   tagline: '',
+  language: 'en',
   voice: {
     tone: '',
     palette: [],

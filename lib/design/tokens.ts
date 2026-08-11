@@ -185,10 +185,23 @@ export function buildColorSystem(input: ColorInput): ColorResult {
   // alternating band, which are a step and two steps darker. Tuning against the
   // lightest one leaves the others a tenth short, which is exactly how far under
   // AA the hero eyebrow sat on a third of the generated sites.
+  /*
+   * …and with headroom, because `surface` is not the darkest light ground.
+   *
+   * A world repaints the page's grounds after the tokens are built — the ember
+   * world's morning band is a cream two steps below `surface` — and a value
+   * tuned to land *exactly* on 4.5:1 against `surface` lands under it there.
+   * River Park's "Rezervă" button measured **4.32:1** on the contact band: a
+   * real AA failure on the page's second most important control, produced by a
+   * token that passed every test it was given.
+   *
+   * Half a point of headroom is the same argument the inverted roles below
+   * already make, and it costs a barely perceptible darkening of one hue.
+   */
   const brandTextSeed = hexToOklch(brand);
   const brandText = brandTextSeed === null
     ? text
-    : oklchToHex(adjustForContrast(brandTextSeed, surface, accessibility.minContrastBody, 'darker'));
+    : oklchToHex(adjustForContrast(brandTextSeed, surface, accessibility.minContrastBody + 0.6, 'darker'));
 
   /*
    * The same two roles again, for a ground that is dark.

@@ -30,6 +30,8 @@ import type {
   DiscoveryResult,
   FieldSource,
   GeoPoint,
+  // (FieldSource already imported above; kept here as the anchor for the
+  // description-authority ranking added by Instagram Research V1.)
   ImageAsset,
   NavigationLink,
   OpeningHours,
@@ -42,6 +44,8 @@ import type {
   ValidationIssue,
   ValidationReport,
 } from '../lib/types.js';
+
+import type { CollectedSources } from '../lib/sources/collectedSources.js';
 
 const NAME = 'normalizerAgent';
 
@@ -528,10 +532,31 @@ function mergeHours(...sources: readonly (readonly OpeningHours[])[]): readonly 
   const byDay = new Map<number, OpeningHours>();
   for (const source of sources) {
     for (const entry of source) {
-      if (!byDay.has(entry.dayOfWeek)) byDay.set(entry.dayOfWeek, entry);
+      const day = canonicalDay(entry.dayOfWeek);
+      if (day === null) continue;
+      if (!byDay.has(day)) byDay.set(day, { ...entry, dayOfWeek: day });
     }
   }
   return [...byDay.values()].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+}
+
+/**
+ * Forces a weekday into the 0 = Sunday range `OpeningHours` documents.
+ *
+ * ISO-8601 numbers Sunday **7**, and a source that follows it reaches the
+ * renderer as a day nothing recognises: `hourBullets` walks Monday–Saturday and
+ * silently drops it, so a business open all week publishes "Monday to Saturday"
+ * — while `trustSignals`, which only counts distinct days, prints "Open seven
+ * days a week" in the same first screen. River Park Events shipped with exactly
+ * that contradiction, and both halves were derived from the same true data.
+ *
+ * A day outside 0–7 is discarded rather than guessed: an unknown index is not a
+ * day, and inventing one would publish a time the business never stated.
+ */
+function canonicalDay(dayOfWeek: number): number | null {
+  if (!Number.isInteger(dayOfWeek)) return null;
+  if (dayOfWeek === 7) return 0;
+  return dayOfWeek >= 0 && dayOfWeek <= 6 ? dayOfWeek : null;
 }
 
 /**
@@ -634,6 +659,12 @@ function dedupeServices(
 export interface NormalizerInput {
   readonly discovery: DiscoveryResult;
   readonly collected: CollectedBusiness;
+  /**
+   * Optional richer provenance gathered alongside the harvest. When present, the
+   * normalizer lifts `provenance` and `blockedSources` onto the `BusinessProfile`.
+   * Absent for legacy artifacts / resumable runs that predate this field.
+   */
+  readonly sources?: CollectedSources | undefined;
 }
 
 export interface NormalizerAgent extends Agent<NormalizerInput, BusinessProfile> {}
@@ -811,6 +842,11 @@ export const normalizerAgent: NormalizerAgent = {
       images,
       sources: [...new Set([mapsUrl, ...(siteUrl ? [siteUrl] : []), ...collected.sources])],
       normalizedAt: new Date().toISOString(),
+      // A1: lift richer provenance onto the profile when the collector supplied it.
+      // Opt-in and additive — absent for legacy/resumable runs (backfilled by
+      // ARTIFACT_DEFAULTS), so no existing artifact breaks.
+      provenance: input.sources?.provenance ?? {},
+      blockedSources: input.sources?.blockedSources ?? [],
     };
 
     const profile: BusinessProfile = { ...draft, validation: validate(draft) };

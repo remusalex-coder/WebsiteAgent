@@ -9,12 +9,12 @@
  * Layout: full-bleed hero, corporate footer, contrast target AA (body 4.5:1, large 3:1, measured 15.1:1)
  *   Chose the full-bleed hero because this industry sells atmosphere and the hero has 1 usable image, so the photograph leads at full width.
  *     hero → stack (lead, subtle): Chose stack for hero: the section has 0 items and 1 image.
- *     services → cards (primary, inverted): Chose cards for services: it is the bakery convention for a services section.
- *     menu → list (primary, surface): Chose list for menu: it is the bakery convention for a menu section.
- *     gallery → grid (secondary, subtle): Chose grid for gallery: the section has 0 items and 2 images.
- *     testimonials → quotes (quiet, canvas): Chose quotes for testimonials: the section has 1 item and 0 images.
- *     faq → list (quiet, subtle): Chose list for faq: the section has 2 items and 0 images.
- *     about → stack (secondary, canvas): Chose stack for about: the section has 0 items and 0 images.
+ *     about → stack (secondary, inverted): Chose stack for about: the section has 0 items and 0 images.
+ *     gallery → grid (secondary, surface): Chose grid for gallery: the section has 0 items and 2 images.
+ *     services → cards (primary, subtle): Chose cards for services: it is the bakery convention for a services section.
+ *     menu → list (primary, canvas): Chose list for menu: it is the bakery convention for a menu section.
+ *     testimonials → quotes (quiet, subtle): Chose quotes for testimonials: the section has 1 item and 0 images.
+ *     faq → list (quiet, canvas): Chose list for faq: the section has 2 items and 0 images.
  *     hours → list (quiet, subtle): Chose list for hours: the section has 2 items and 0 images.
  *     location → stack (quiet, canvas): Chose stack for location: the section has 0 items and 0 images.
  *     contact → list (quiet, subtle): Chose list for contact: the section has 2 items and 0 images.
@@ -22,7 +22,14 @@
  *
  * Compromises the composer reported:
  *   - Visual world: Before light — the page opens in the dark and arrives in daylight.
- *   - Sections were reordered for the bakery category; content itself is unchanged.
+ *   - Business character: balanced, warm register, single offering; 3 usable images across 1 framing give latent narrative potential around the menu section.
+ *   - Experience architecture: Brochure: balanced, latent narrative potential — a clear, functional page is the honest answer.
+ *   - Conversion: direct conversion: a warm brochure business leads with "order" and offers "visit", contact standard, friction moderate.
+ *   - Interaction: Interaction subtle: a brochure page with balanced weight over 11 sections.
+ *   - Assets: Restraint: a balanced brochure page carries minimal imagery on purpose.
+ *   - Imagery intentionally reduced: the evidence is text-led or thin, so the page argues in words, not pictures.
+ *   - Sections were ordered by narrative role (experience script); content itself is unchanged.
+ *   - Experience script: brochure arc of 11 beats: arrival → reveal → space → breadth → breadth → trust → proof → context → context → conversion → conversion.
  */
 
 /* ------------------------------------------------------------------ */
@@ -772,7 +779,7 @@ a:hover {
   --color-brand: #ad5622;
   --color-brand-hover: #93430e;
   --color-on-brand: #fcfcfc;
-  --color-brand-text: #a6501b;
+  --color-brand-text: #a04a12;
   --color-accent: #2376b9;
   --color-on-accent: #fcfcfc;
   --color-inverted: #252423;
@@ -1264,6 +1271,35 @@ h4 {
   letter-spacing: var(--text-h1-tracking, normal);
 }
 
+/*
+ * The signature beat is set larger than anything but the hero.
+ *
+ * A page with a beginning, a development, a peak and a close only reads that
+ * way if the peak is *visibly* the peak. Before this rule the narrative layer
+ * nominated a signature moment, the layout gave it `lead` emphasis — and it
+ * arrived at the same h1 step as the about section three bands above it, while
+ * a contact heading elsewhere in the stylesheet was set half again as large.
+ * The story was in the artifact and not on the page.
+ *
+ * Keyed on `data-role`, so it applies to whichever kind of section this
+ * business's evidence made its signature. Capped against the viewport because
+ * the heading is the business's own words and their length is not ours to
+ * choose: a fifty-character line at display scale would otherwise fill a
+ * screen on its own.
+ *
+ * The `:not(.section--hero)` is not decoration — it is what gives this rule the
+ * same specificity as the `data-emphasis="lead"` rule above, which a signature
+ * beat always also matches. Written without it, the earlier rule won and the
+ * page's peak came out at 67px against its reveal section's 62px: a difference
+ * nobody can see, on the one decision the whole narrative layer exists to make.
+ */
+.section[data-role="signature"]:not(.section--hero) .section__head h2 {
+  font-size: min(var(--text-display-size), 7.5vw);
+  line-height: 1.02;
+  letter-spacing: var(--text-display-tracking, -0.02em);
+  max-width: 18ch;
+}
+
 /* Ground ----------------------------------------------------------- */
 
 /*
@@ -1283,7 +1319,7 @@ h4 {
   --color-heading: #252423;
   --color-text-muted: #504c4b;
   --color-muted: #504c4b;
-  --color-brand-text: #a6501b;
+  --color-brand-text: #a04a12;
   color: var(--color-text);
 }
 
@@ -1293,7 +1329,7 @@ h4 {
   --color-heading: #252423;
   --color-text-muted: #504c4b;
   --color-muted: #504c4b;
-  --color-brand-text: #a6501b;
+  --color-brand-text: #a04a12;
   color: var(--color-text);
 }
 
@@ -1303,7 +1339,7 @@ h4 {
   --color-heading: #252423;
   --color-text-muted: #504c4b;
   --color-muted: #504c4b;
-  --color-brand-text: #a6501b;
+  --color-brand-text: #a04a12;
   color: var(--color-text);
   border-block: 1px solid var(--color-border-strong);
 }
@@ -2164,7 +2200,7 @@ h4 {
   --color-heading: #252423;
   --color-text-muted: #504c4b;
   --color-muted: #504c4b;
-  --color-brand-text: #a6501b;
+  --color-brand-text: #a04a12;
   color: var(--color-text);
   border-radius: var(--radius-md);
   border: 1px solid transparent;
@@ -2210,7 +2246,7 @@ h4 {
   --color-heading: #252423;
   --color-text-muted: #504c4b;
   --color-muted: #504c4b;
-  --color-brand-text: #a6501b;
+  --color-brand-text: #a04a12;
   color: var(--color-text);
 }
 
@@ -3982,14 +4018,20 @@ a {
 }
 
 /*
- * The scene title steps aside for it.
+ * The scene title steps aside for it — unless the title is worth reading.
  *
- * "Photographs" set as a heading in the middle of an atmospheric sequence is a
- * content-model label wearing a serif. The scene number carries the position and
- * the photographs carry the rest, so the heading stays in the document for the
- * landmark and leaves the composition.
+ * Written when every gallery on every page was headed **"Photographs"**: a
+ * content-model label wearing a serif, which the scene number and the
+ * photographs both said better. That is still true of a supporting gallery, so
+ * the rule stays for one.
+ *
+ * It is no longer true of the *signature* beat. Its heading is now the
+ * business's own words about what the photograph shows — "Sala mare cu
+ * candelabru floral și arcade filigranate" — and hiding it threw away the one
+ * line on the page that only this venue could have written. A later layer must
+ * not erase an earlier one's intelligence; the exception is the fix.
  */
-[data-world="ember"] .section--gallery .section__head h2 {
+[data-world="ember"] .section--gallery:not([data-role="signature"]) .section__head h2 {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -4025,8 +4067,18 @@ a {
   padding-block: clamp(4.5rem, 9vw, 8rem);
 }
 
+/*
+ * Large, but never the largest.
+ *
+ * This was `display * 1.15`, which put the word "Contact" at 109px on a page
+ * whose signature beat was set at 67px — a practical, closing label shouting
+ * over the moment the whole narrative builds to. The intent behind the rule was
+ * right (the contact scene had been a grey table nobody could find) and it is
+ * kept: the address below is still set at reading scale. Only the heading is
+ * brought back under the peak, which is what makes the peak one.
+ */
 [data-world="ember"] .section--contact .section__head h2 {
-  font-size: min(calc(var(--text-display-size) * 1.15), 8vw);
+  font-size: min(var(--text-display-size), 6vw);
   line-height: 1;
 }
 

@@ -361,10 +361,11 @@ describe('buildDesignBrief', () => {
     assert.ok(brief.includes('Tone:'), 'brief should include tone label');
   });
 
-  it('includes imagery availability', () => {
+  it('includes image content signals, not just counts', () => {
     const brief = buildDesignBrief(profileFixture(), strategyFixture(), fullContent, 2_000);
     assert.ok(brief.includes('Logo:'), 'brief should include logo availability');
-    assert.ok(brief.includes('Hero image:'), 'brief should include hero availability');
+    assert.ok(brief.includes('Image content signals'), 'brief should include the image content signals section');
+    assert.ok(brief.includes('Usable photographs'), 'brief should report usable photographs, not a raw gallery count');
   });
 
   it('includes content sections', () => {

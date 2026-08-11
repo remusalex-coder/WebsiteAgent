@@ -1,6 +1,139 @@
 # Project Status
 
-_Last updated: 2026-08-10_
+_Last updated: 2026-08-11_
+
+## The content system — the page now says business-specific things (2026-08-11)
+
+**The gap the experience system left.** ADR 0006 made River Park's *order* a
+narrative and scored it 99/100 — then rendered that narrative with the words
+"What we offer", "Photographs", "Opening hours" and "Visit River Park Events
+Drăgășani in Drăgășani", every button reading "Call us", all of it English on a
+venue whose every published word is Romanian. The structure said "this venue";
+the prose said "a website".
+
+A deterministic **Content Director** now sits between the narrative plan and the
+composer. Full reference: [docs/content-system.md](docs/content-system.md);
+decision: [ADR 0007](docs/decisions/0007-content-is-directed-by-narrative-role-and-written-in-the-evidence-language.md).
+
+```
+Evidence
+  → planNarrative      lib/design/plan.ts        character · experience · conversion · roles (derived ONCE)
+  → indexEvidence      lib/content/evidence.ts   what may be said
+  → detectLanguage     lib/content/language.ts   what language to say it in (closed set: en, ro)
+  → directContent      lib/content/director.ts   what each beat says
+  → auditContent       lib/content/quality.ts    may it say that?
+  → composeDesign(…, plan) → renderer
+```
+
+**Three bases, enforced by tests.** `quoted` (verbatim from the business),
+`composed` (facts joined by a closed-set frame), `framing` (a lexicon label keyed
+to the narrative role). A frame may compose facts; it may never supply them. A
+`quoted` value must appear verbatim in the evidence index and a `composed` one may
+contain no word that is neither evidence nor lexicon — both asserted for every
+benchmark business.
+
+**Language follows evidence.** Function-word detection with a margin, English as
+the recorded default, and a `Lexicon` per language covering every string the
+platform authors: role labels, CTA verbs, contact captions, weekday names, nav
+labels, the section eyebrow, the skip link. `WebsiteContent.language` reaches
+`<html lang>`. Evidence is never translated.
+
+**No feedback loop.** `deriveCharacter` read the emotional register off the
+*page's* prose, which with a director writing that prose would let a page talk
+itself into being romantic. It now reads the business's own material only, the
+plan is derived once before direction, and the benchmark asserts the plan is
+identical before and after direction for all seven businesses.
+
+**`NarrativeRole` reaches the stylesheet** as `data-role`. The signature beat is
+set at display scale (River Park: 114 → **95** → 62 → 10px down the page); a
+`context` beat on a cinematic page steps down; two `[data-world="ember"]` rules
+written in the era of "Photographs" headings were scoped rather than deleted.
+
+**Defects this found and fixed in passing**, each general rather than
+business-specific: a source numbering Sunday `7` (ISO) made a page print "Open
+seven days a week" eight lines above "Monday to Saturday" and publish a duplicate
+Monday in its JSON-LD; `--color-brand-text` was tuned against `surface` and
+measured 4.32:1 on a world-repainted ground; a four-image masonry left an orphan
+row; the section eyebrow printed the TypeScript identifier; `EventVenue` was
+missing from the schema.org table.
+
+**Rendered result.** River Park: `Locație de evenimente în Drăgășani · Despre
+River Park Events · Ce oferim · Sala mare cu candelabru floral și arcade
+filigranate · Program · Contact · Rezervă la River Park Events`. Zero JavaScript,
+no horizontal overflow at 390px or 1440px, every button ≥ 4.7:1 contrast, a 3px
+focus outline, LCP image eager with `fetchpriority=high` and everything below the
+fold lazy, all seven headings in document order with no level skipped.
+
+## The experience system — character-driven experience + narrative order (2026-08-11)
+
+**The biggest change since the design-vocabulary engine.** BusinessForge no longer
+produces `Hero → About → Services → Gallery → Contact` with different styling. A
+deterministic experience layer now sits above the section engine and makes
+distinctiveness a function of **business character**, not industry. Full technical
+reference: [docs/experience-system.md](docs/experience-system.md); decision:
+[ADR 0006](docs/decisions/0006-experience-is-character-driven-and-order-is-a-narrative.md).
+
+The chain, all deterministic and €0 (runs inside `--compose`, no model):
+
+```
+Evidence
+  → BusinessCharacter        lib/design/character.ts
+  → ExperienceArchitecture   lib/design/experience.ts   mode: brochure|showcase|narrative|immersive
+  → AssetChoreography        lib/design/assets.ts        hero/signature/sequence/contrast/rights
+  → ConversionStrategy       lib/design/conversion.ts    posture/CTA/placement/friction
+  → InteractionStrategy      lib/design/interaction.ts   static|subtle|guided|immersive (capped at guided)
+  → ExperienceScript         lib/design/script.ts        NarrativeRole per section → narrative order
+  → AI Director (optional)   agents/designDirectorAgent  validated closed-set overrides + image-content signals
+  → composeDesign → renderer (existing, unchanged)
+  → quality gate             lib/design/quality.ts       score + template-smell + narrative-coherence
+```
+
+Everything is observable on `WebsiteDesign` (`experience`, `assets`, `conversion`,
+`interaction`, `experienceScript`), every decision carries `rationale`+`evidence`
+and a `basis: evidence | creative-default` (distinguishing factual-unknown from
+creative-freedom). The AI Director is an **improver, not a single point of
+failure**: it may override the floor only through decisions validated against
+closed sets, and it now receives per-image content signals (dimensions,
+orientation, subject, rights) rather than a raw count.
+
+**Order is now a narrative.** `script.ts` assigns each section a closed-set
+`NarrativeRole` (arrival/emotion/reveal/process/signature/space/breadth/proof/
+trust/context/conversion/coda) from character, then orders the page along a story
+spine — hero pinned first, closing CTA last, the middle carrying the narrative. A
+high-intent trade puts contact just after its offering; a narrative venue opens on
+emotion, builds to a signature, and converts last. **Two businesses in one industry
+diverge** when their evidence differs.
+
+**Proof (`test/design/benchmark.test.ts`, no manual edits):**
+
+```
+bakery      [showcase]  arrival → reveal → reveal → breadth → context → conversion
+restaurant  [showcase]  arrival → reveal → breadth → trust → conversion
+hotel       [narrative] emotion → reveal → signature → breadth → conversion
+barber      [brochure]  arrival → breadth → conversion → context → conversion
+mechanic    [brochure]  arrival → breadth → conversion → context → context → conversion
+hotelThin   [brochure]  arrival → breadth → conversion → context → context → conversion   ← same industry as hotel, different script
+eventVenue  [narrative] emotion → reveal → signature → breadth → context → conversion
+```
+
+**River Park, autonomous `--compose`:** `narrative` / gallery signature /
+editorial-book / arc `emotion → reveal → signature → breadth → context →
+conversion`, rendered `hero → about → gallery(full-bleed, moment) → services →
+hours → contact → cta`, narrative score **99/100**, coherence clean. No manual
+content edits.
+
+**Tests: 580/580 pass, typecheck clean, €0.** The quality gate: `scoreExperience`
+(explainability, business-specificity, narrative, coherence, conversion, asset
+intent, accessibility), `genericityReport` (fails if identity axes collapse across
+businesses), `narrativeCoherence` (fails asking-too-early, a missing signature, a
+buried gallery, a fake narrative on thin evidence).
+
+**Known limitations of this layer:** section *copy* is still `composeBaseline`'s
+generic labels — the order is business-specific, the prose is not yet (the next
+bottleneck: a character-aware writer). `pacing` and `imageryStrategy` are
+validated-but-advisory. The scroll-as-time **runtime** (Bakery V2's `Scene[]`) is
+audited but intentionally unbuilt. Two rich atmospheric businesses (hotel, venue)
+produce similar arcs by design.
 
 ## AI Design Director — integrated into the production pipeline
 

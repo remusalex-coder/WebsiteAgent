@@ -32,6 +32,8 @@ import { createPlatform } from './lib/platform/platform.js';
 import { renderSite, writeRenderedSite } from './lib/render/index.js';
 import { brandSeedFor } from './lib/art/seed.js';
 import { composeDesign } from './lib/design/compose.js';
+import { planNarrative } from './lib/design/plan.js';
+import { directContent, auditContent } from './lib/content/index.js';
 import { AgentError, InvalidInputError } from './lib/errors.js';
 
 import type { AppConfig } from './lib/config.js';
@@ -41,12 +43,15 @@ import type { Platform } from './lib/platform/platform.js';
 import type {
   AgentContext,
   BusinessProfile,
+  BusinessStrategy,
   DeploymentResult,
   DiscoveryInput,
   PipelineResult,
   WebsiteContent,
   WebsiteDesign,
 } from './lib/types.js';
+import type { NarrativePlan } from './lib/design/plan.js';
+import type { ContentAudit } from './lib/content/index.js';
 
 const SOURCE = 'main';
 
@@ -256,9 +261,11 @@ const ARTIFACT_DEFAULTS = {
     listingRating: null,
     listingReviewCount: null,
   },
-  normalize: { attributes: [], description: null, reviews: [] },
+  normalize: { attributes: [], description: null, reviews: [], provenance: {}, blockedSources: [] },
   analyze: {},
-  write: { trust: [], facts: [] },
+  // `language` and `facts` were added to `WebsiteContent` after runs existed;
+  // a saved artifact from before either is still renderable, in English.
+  write: { trust: [], facts: [], language: 'en' },
   direct: { directive: null, provenance: null },
   design: {},
   render: {},
@@ -394,13 +401,33 @@ async function executePipeline(
       collectorAgent.run(discovery, contextFor(run, collectorAgent.name)));
 
     const profile = await step('normalize', () =>
-      normalizerAgent.run({ discovery, collected }, contextFor(run, normalizerAgent.name)));
+      normalizerAgent.run(
+        { discovery, collected, sources: collected.provenanceSources },
+        contextFor(run, normalizerAgent.name),
+      ));
 
     const strategy = await step('analyze', () =>
       businessAnalystAgent.run(profile, contextFor(run, businessAnalystAgent.name)));
 
-    const content = await step('write', () =>
-      writerAgent.run({ profile, strategy }, contextFor(run, writerAgent.name)));
+    /*
+     * Stage 5. The writer produces the facts and the structure; the Content
+     * Director then decides what each beat of the page should actually *say*.
+     *
+     * Both halves are persisted as one artifact, because they are one answer to
+     * one question: a `5-content.json` holding pre-direction copy would render
+     * a page the pipeline never produced, and `--render` exists to reproduce
+     * what shipped. See `directPageCopy`.
+     */
+    const content = await step('write', async () => {
+      const written = await writerAgent.run({ profile, strategy }, contextFor(run, writerAgent.name));
+      const { content: copy, audit } = directPageCopy(profile, written, strategy);
+      for (const issue of audit.issues) {
+        const log = issue.severity === 'error' ? run.logger.warn : run.logger.debug;
+        log.call(run.logger, `content ${issue.severity}: ${issue.message}`, { kind: issue.kind, quote: issue.quote });
+      }
+      run.logger.info('content directed', { score: audit.score, specificity: audit.specificity, language: copy.language });
+      return copy;
+    });
 
     /*
      * Stage 5a. The only model call in the design path, and the only stage
@@ -704,6 +731,38 @@ export async function renderStandalone(
 }
 
 /**
+ * Runs the Content Director over a written page.
+ *
+ * One function, called from both paths into a page — the model writer's and the
+ * composer's — so a composed page and a written one are directed identically
+ * and neither can drift into being a second, quietly different pipeline. That
+ * is the same reason `assembleContent` is a free function.
+ *
+ * The plan is derived here, from the *undirected* content, and handed to both
+ * the director and the composer. See `lib/design/plan.ts` for why it is derived
+ * once rather than twice.
+ */
+export function directPageCopy(
+  profile: BusinessProfile,
+  written: WebsiteContent,
+  strategy?: BusinessStrategy,
+): { content: WebsiteContent; plan: NarrativePlan; audit: ContentAudit } {
+  const plan = planNarrative(profile, written, {
+    ...(strategy === undefined
+      ? {}
+      : { categories: [strategy.category.primary, ...strategy.category.secondary] }),
+  });
+  const directed = directContent(profile, written, plan);
+  const audit = auditContent({
+    content: directed.content,
+    evidence: directed.evidence,
+    roles: plan.roles,
+    conversion: plan.conversion,
+  });
+  return { content: directed.content, plan, audit };
+}
+
+/**
  * Composes a run's page from its profile alone, then renders it.
  *
  * No provider, no key, no network. It reads `3-profile.json`, writes the same
@@ -727,7 +786,7 @@ export async function composeStandalone(
   }
 
   const profile = await readArtifact<BusinessProfile>(outputDir, 'normalize');
-  const content = composeBaseline(profile);
+  const { content, plan, audit } = directPageCopy(profile, composeBaseline(profile));
 
   await fs.writeFile(
     path.join(outputDir, `${ARTIFACTS.write}.json`),
@@ -750,7 +809,7 @@ export async function composeStandalone(
   // industry's colour, exactly as before.
   const seed = await brandSeedFor(profile, outputDir);
 
-  const design = composeDesign({ profile, content }, { photographicSeed: seed.hex });
+  const design = composeDesign({ profile, content }, { photographicSeed: seed.hex, plan });
   await fs.writeFile(
     path.join(outputDir, `${ARTIFACTS.design}.json`),
     `${JSON.stringify(design, null, 2)}\n`,
@@ -767,6 +826,10 @@ export async function composeStandalone(
     warnings: [
       ...site.warnings,
       ...missingAssets.map((asset) => `asset not found in ${outputDir}: ${asset}`),
+      // Content defects are reported beside render warnings rather than thrown:
+      // a page with a weak heading is still a page, and hiding the finding
+      // would make the gate decorative.
+      ...audit.issues.map((issue) => `content ${issue.severity} (${issue.kind}): ${issue.message}`),
     ],
   };
 }

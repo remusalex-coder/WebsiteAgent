@@ -29,7 +29,13 @@ import {
   harvestPlacesApi,
   mergeHarvests,
   EMPTY_HARVEST,
+  foldProvenance,
+  type CollectedSources,
+  type SourceProvenance,
+  type BlockedSource,
+  type ProvenanceNote,
 } from '../lib/sources/index.js';
+import { harvestInstagramProfile, isInstagramProfileUrl, toListingHarvest } from '../lib/sources/instagramProfile.js';
 
 import type { BrowserSession, PageHandle } from '../lib/browser.js';
 import type { Logger } from '../lib/logger.js';
@@ -38,10 +44,12 @@ import type { ListingHarvest } from '../lib/sources/index.js';
 import type {
   Agent,
   AgentContext,
+  AttributedValue,
   BusinessAttribute,
   CollectedBusiness,
   ContactPoint,
   DiscoveryResult,
+  FieldSource,
   ImageAsset,
   ImageRole,
   NavigationLink,
@@ -664,7 +672,7 @@ async function collectListing(
 }
 
 /**
- * Every content source for this business, merged into one harvest.
+ * Every Maps-side content source for this business, merged into one harvest.
  *
  * The order is the authority order `mergeHarvests` resolves conflicts by. The
  * Places API leads because it *states* what the scraper *infers*: accessibility
@@ -678,15 +686,51 @@ async function collectListing(
  * superset of the other, and the merge is per field precisely so the platform
  * does not have to choose.
  *
- * Adding a third source is another entry in this array.
+ * Instagram is deliberately not folded in here — see `collectInstagram` below
+ * and its call site in `run`. `description` needs per-source attribution that
+ * `mergeHarvests` does not carry (it resolves scalars to a single winner), so
+ * the caller keeps that one field separate rather than widening the merge
+ * policy for every source that will ever exist.
  */
+
+/**
+ * A1: turns one `ListingHarvest` into a `SourceProvenance` contribution.
+ *
+ * Each observed fact on the harvest becomes a `ProvenanceNote` at a single,
+ * conservative confidence (a harvest that returned a value is `single-source`
+ * unless more than one source class reports the same field, which `foldProvenance`
+ * upgrades to `multi-source`). The source class (`maps`, `places`, `hermes`, …)
+ * is what `FIELD_AUTHORITY` ranks during folding — it never feeds `mergeHarvests`.
+ * `status` is `agreed` here (one candidate); `foldProvenance` raises it to
+ * `conflicting`/`partial` when several candidates disagree.
+ */
+function harvestProvenance(harvest: ListingHarvest, sourceClass: string): SourceProvenance {
+  const sourceUrl = harvest.sources[0] ?? '';
+  const fields: Record<string, Omit<ProvenanceNote, 'sources'>> = {};
+
+  const note = (value: string, confidence: ProvenanceNote['confidence']): Omit<ProvenanceNote, 'sources'> => ({
+    confidence,
+    status: 'agreed',
+    note: value,
+  });
+
+  if (harvest.rating !== null) fields['rating'] = note(`rating ${harvest.rating}`, 'single-source');
+  if (harvest.reviewCount !== null) fields['reviewCount'] = note(`reviewCount ${harvest.reviewCount}`, 'single-source');
+  if (harvest.description !== null) fields['description'] = note(harvest.description.slice(0, 120), 'single-source');
+  if (harvest.attributes.length > 0) fields['attributes'] = note(`${harvest.attributes.length} attributes`, 'single-source');
+  if (harvest.photos.length > 0) fields['images'] = note(`${harvest.photos.length} photos`, 'single-source');
+  if (harvest.hours.length > 0) fields['hours'] = note(`${harvest.hours.length} days`, 'single-source');
+
+  return { sourceClass, sourceUrl, fields };
+}
+
 async function collectSources(
   identity: DiscoveryResult,
   session: BrowserSession,
   config: AppConfig,
   signal: AbortSignal,
   logger: Logger,
-): Promise<ListingHarvest> {
+): Promise<CollectedSources> {
   const places =
     identity.placeId === null
       ? EMPTY_HARVEST
@@ -707,7 +751,72 @@ async function collectSources(
 
   const listing = await collectListing(identity, session, logger);
 
-  return mergeHarvests([places, listing]);
+  // A1: build per-source provenance from the PRE-merge candidates, so conflicts
+  // (e.g. address 56 vs 87) survive into the provenance map even though
+  // `mergeHarvests` discards the loser. `mergeHarvests` is unchanged below.
+  const parts: SourceProvenance[] = [];
+  if (places !== EMPTY_HARVEST) {
+    parts.push(harvestProvenance(places, 'places'));
+  }
+  parts.push(harvestProvenance(listing, 'maps'));
+
+  const provenance = foldProvenance(parts);
+  const blockedSources: BlockedSource[] = [];
+
+  return {
+    harvest: mergeHarvests([places, listing]),
+    provenance,
+    blockedSources,
+  };
+}
+
+/**
+ * The one Instagram profile worth reading for this business, if the business
+ * itself has pointed at one.
+ *
+ * Never a search, never a guess at a handle from the business name — that
+ * would risk reading a stranger's profile as this business's own words. The
+ * candidate must be a link the business's own Maps listing or its own website
+ * actually published. First match wins; a business linking two different
+ * Instagram profiles is not a case this module tries to arbitrate.
+ */
+function instagramCandidate(
+  identity: DiscoveryResult,
+  siteSocialProfiles: readonly SocialProfile[],
+): string | null {
+  const fromMaps = identity.socialLinks.instagram;
+  if (fromMaps && isInstagramProfileUrl(fromMaps)) return fromMaps;
+
+  const fromSite = siteSocialProfiles.find(
+    (profile) => profile.platform === 'instagram' && isInstagramProfileUrl(profile.url),
+  );
+  return fromSite?.url ?? null;
+}
+
+/**
+ * Reads the discovered Instagram profile for content, on its own page.
+ *
+ * Mirrors `collectListing`: a failure here is logged and discarded, because
+ * Instagram is a bonus source exactly as the Maps listing's content and the
+ * Places API are — losing it must never cost anything already collected.
+ */
+async function collectInstagram(
+  profileUrl: string,
+  session: BrowserSession,
+  logger: Logger,
+): Promise<ListingHarvest> {
+  try {
+    const result = await session.withPage((page) =>
+      harvestInstagramProfile(page, { profileUrl }, logger),
+    );
+    return toListingHarvest(result);
+  } catch (error) {
+    logger.warn('instagram profile could not be read for content', {
+      profileUrl,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return EMPTY_HARVEST;
+  }
 }
 
 /** Listing photographs enter the same ranking and download path as the site's. */
@@ -848,10 +957,11 @@ export const collectorAgent: CollectorAgent = {
     // and unconditionally, so a business with no website still reaches the
     // writer with photography, stated attributes, its customers' own words and
     // whatever prose Google publishes about it.
-    const listing = await logger.time('read listing', () =>
+    const listingSources = await logger.time('read listing', () =>
       collectSources(input, session, config, ctx.signal, logger),
     );
     ctx.signal.throwIfAborted();
+    const listing = listingSources.harvest;
 
     // Source three: the website, when there is one.
     const visited = new Set<string>();
@@ -905,11 +1015,48 @@ export const collectorAgent: CollectorAgent = {
       });
     }
 
-    const listingUrl = listing.sources[0] ?? input.canonicalUrl;
+    // Source four: the business's own Instagram bio, when Maps or the site
+    // itself pointed at one. Never a search, never a fallback path — it runs
+    // only against a link the business actually published, found above.
+    const siteSocialProfiles = mergeUnique(harvests, (h) => h.socialProfiles, (item) => item.url);
+    const instagramUrl = instagramCandidate(input, siteSocialProfiles);
+    const instagram =
+      instagramUrl === null
+        ? EMPTY_HARVEST
+        : await logger.time('read instagram', () => collectInstagram(instagramUrl, session, logger));
+    ctx.signal.throwIfAborted();
+
+    // Every source that had a description, attributed and un-merged — so a
+    // real disagreement between Maps and Instagram survives as far as the
+    // normalizer rather than being resolved here where it cannot be audited.
+    const descriptionCandidates: AttributedValue<string>[] = [];
+    if (listing.description !== null) {
+      descriptionCandidates.push({
+        value: listing.description,
+        source: 'maps' as FieldSource,
+        sourceUrl: listing.sources[0] ?? input.canonicalUrl,
+      });
+    }
+    if (instagram.description !== null && instagramUrl !== null) {
+      descriptionCandidates.push({
+        value: instagram.description,
+        source: 'instagram' as FieldSource,
+        sourceUrl: instagram.sources[0] ?? instagramUrl,
+      });
+    }
+
+    // Merged for everything else — attributes (the highlight labels arrive
+    // here), photos (none from Instagram in V1) and `sources`. Maps and Places
+    // keep the authority order `collectSources` already established; Instagram
+    // is strictly last, so it can only add a fact neither of them stated, never
+    // override one they did.
+    const mergedListing = instagramUrl === null ? listing : mergeHarvests([listing, instagram]);
+
+    const listingUrl = mergedListing.sources[0] ?? input.canonicalUrl;
     const images = await downloadImages(
       // Site images first: where the two sources hold the same photograph, the
       // site's copy keeps its role, which is the more specific of the two.
-      [...mergeImages(harvests), ...listingImages(listing, listingUrl)],
+      [...mergeImages(harvests), ...listingImages(mergedListing, listingUrl)],
       session,
       config.collector,
       outputDir,
@@ -920,12 +1067,13 @@ export const collectorAgent: CollectorAgent = {
       identity: input,
       siteUrl,
       pages: harvests.map((harvest) => harvest.page),
-      attributes: listing.attributes,
-      listingDescription: listing.description,
-      reviews: listing.reviews,
-      listingHours: listing.hours,
-      listingRating: listing.rating,
-      listingReviewCount: listing.reviewCount,
+      attributes: mergedListing.attributes,
+      listingDescription: mergedListing.description,
+      listingDescriptionCandidates: descriptionCandidates,
+      reviews: mergedListing.reviews,
+      listingHours: mergedListing.hours,
+      listingRating: mergedListing.rating,
+      listingReviewCount: mergedListing.reviewCount,
       favicon: pickByRole(images, 'favicon'),
       logo: pickByRole(images, 'logo'),
       hero: pickByRole(images, 'hero'),
@@ -934,9 +1082,13 @@ export const collectorAgent: CollectorAgent = {
       services: mergeUnique(harvests, (h) => h.services, (item) => item.name.toLowerCase()),
       emails: mergeUnique(harvests, (h) => h.emails, (item) => item.value.toLowerCase()),
       phones: mergeUnique(harvests, (h) => h.phones, (item) => digitsOf(item.value)),
-      socialProfiles: mergeUnique(harvests, (h) => h.socialProfiles, (item) => item.url),
-      sources: [...harvests.map((harvest) => harvest.page.url), ...listing.sources],
+      socialProfiles: siteSocialProfiles,
+      sources: [...harvests.map((harvest) => harvest.page.url), ...mergedListing.sources],
       collectedAt: new Date().toISOString(),
+      // A1: carry the richer provenance alongside the collected business so the
+      // normalizer can lift it onto the BusinessProfile without changing the
+      // CollectedBusiness contract used by everything else.
+      provenanceSources: listingSources,
     };
 
     const textPath = await writeContentMarkdown(result, outputDir);

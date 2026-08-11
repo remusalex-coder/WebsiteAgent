@@ -216,9 +216,11 @@ export interface BusinessAttribute extends Sourced {
  * what the *content* sources add. Nothing here is generated: every string was
  * present on a page, and every one carries its source.
  *
- * Two sources feed it today, and neither is required: the business's own
- * website, and the Maps listing read as content rather than as identity. A
- * business with no website is thin, not empty.
+ * Three sources can feed it, none required: the business's own website, the
+ * Maps listing read as content rather than as identity, and — since
+ * Instagram Research V1 — the business's own public Instagram bio, when the
+ * collector found a link to one. A business with no website is thin, not
+ * empty.
  */
 export interface CollectedBusiness {
   readonly identity: DiscoveryResult;
@@ -232,10 +234,22 @@ export interface CollectedBusiness {
   readonly attributes: readonly BusinessAttribute[];
   /**
    * The listing's own description of the business, verbatim, when it carries
-   * one. Google writes these editorially; they are public, factual and are the
-   * only prose available at all for a business with no website.
+   * one — the highest-authority candidate from `listingDescriptionCandidates`,
+   * kept here unwrapped for the human-readable `content.md`. Google writes
+   * these editorially; a business's own Instagram bio is its own words. Either
+   * is public, factual prose, and often the only prose available at all for a
+   * business with no website.
    */
   readonly listingDescription: string | null;
+  /**
+   * Every source that offered a description, attributed and in the order
+   * collected — not merged into one, so the normalizer can keep a real
+   * disagreement between sources auditable instead of silently picking a
+   * winner. Empty when no source had one; one entry is the normal case even
+   * with three sources configured, since most businesses' Maps listing and
+   * Instagram bio do not both carry editorial prose.
+   */
+  readonly listingDescriptionCandidates: readonly AttributedValue<string>[];
   /**
    * Customer reviews, verbatim and attributed, from whichever source could
    * quote them.
@@ -263,14 +277,27 @@ export interface CollectedBusiness {
   readonly sources: readonly string[];
   /** ISO 8601 timestamp of collection. */
   readonly collectedAt: string;
+  /**
+   * Optional richer provenance gathered alongside the harvest (A1). Carried here so
+   * it can be passed to the normalizer without changing the `CollectedBusiness`
+   * shape used everywhere else. Absent for legacy artifacts.
+   */
+  readonly provenanceSources?: import('./sources/collectedSources.js').CollectedSources | undefined;
 }
 
 /* ------------------------------------------------------------------ */
 /* Stage 3 — normalization                                             */
 /* ------------------------------------------------------------------ */
 
-/** Which stage supplied a value. */
-export type FieldSource = 'maps' | 'website';
+/**
+ * Which stage supplied a value.
+ *
+ * `'instagram'` added for Instagram Research V1 — a public Instagram profile,
+ * read by `lib/sources/instagramProfile.ts`. Its presence in this union is
+ * not a claim about authority: `normalizerAgent`'s scoring functions decide
+ * per field whether Instagram outranks Maps, and V1 never assumes it does.
+ */
+export type FieldSource = 'maps' | 'website' | 'instagram';
 
 export interface AttributedValue<T> {
   readonly value: T;
@@ -371,6 +398,15 @@ export interface BusinessProfile {
   /** Every URL that contributed to this profile. */
   readonly sources: readonly string[];
   readonly normalizedAt: string;
+  /**
+   * Optional per-field provenance, keyed by the profile field name it annotates
+   * (e.g. "address", "rating", "website", "socialProfiles"). Absent key = legacy
+   * source, confidence unknown. Supplementary to `Attributed<T>` — it annotates the
+   * chosen value, it never replaces it. Opt-in; no downstream reader requires it.
+   */
+  readonly provenance?: Readonly<Record<string, import('./sources/types.js').ProvenanceNote>> | undefined;
+  /** Sources attempted and blocked/inaccessible, preserved for audit and re-run. */
+  readonly blockedSources?: readonly import('./sources/types.js').BlockedSource[] | undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -542,6 +578,17 @@ export interface TrustSignal {
 export interface WebsiteContent {
   readonly businessName: string;
   readonly tagline: string;
+  /**
+   * BCP 47 tag for the language the page is written in, e.g. `en`, `ro`.
+   *
+   * A property of the *content*, not a render option, because it is decided
+   * from the evidence: a business whose description, services and photograph
+   * captions are Romanian gets a Romanian page, and the platform's own labels
+   * follow. It reaches `<html lang>`, which is what a screen reader uses to
+   * choose a voice — a Romanian page announced in English is unusable, and no
+   * amount of visual polish compensates. See `lib/content/language.ts`.
+   */
+  readonly language: string;
   readonly voice: BrandVoice;
   readonly sections: readonly WebsiteSection[];
   /**

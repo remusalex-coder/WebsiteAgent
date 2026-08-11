@@ -9,12 +9,28 @@
 
 import { element, empty, join, jsonLd, raw, text } from './html.js';
 import { safeHref } from './assets.js';
+import { LANGUAGES, lexiconFor } from '../content/language.js';
+
+import type { ContentLanguage } from '../content/language.js';
 
 import type { Html } from './html.js';
 import type { ImageAsset, SectionKind, TrustSignal, WebsiteContent } from '../types.js';
 import type { AssetPlan, ResolvedImage } from './assets.js';
 import type { WebsiteDesign } from '../design/types.js';
 import type { ResolvedRenderOptions } from './types.js';
+
+/**
+ * The skip link's words, in the page's language.
+ *
+ * An unsupported tag falls back to English rather than failing: a page in a
+ * language the lexicon does not cover yet still needs a working skip link, and
+ * an English one is usable where a missing one is not.
+ */
+function skipLabel(content: WebsiteContent): string {
+  const tag = (content.language ?? 'en').slice(0, 2).toLowerCase();
+  const known = LANGUAGES.find((language) => language === tag);
+  return lexiconFor((known ?? 'en') as ContentLanguage).furniture.skipToContent;
+}
 
 /** One entry in the header navigation: a section that can be jumped to. */
 export interface NavItem {
@@ -384,7 +400,9 @@ export function renderDocument(input: DocumentInput): string {
   const favicon = faviconAsset === null ? null : assets.resolve(faviconAsset, null);
 
   const body = element('body', {}, [
-    element('a', { class: 'skip-link', href: '#main' }, text('Skip to content')),
+    // The one string in the shell a visitor reads, so it follows the page's
+    // language like every other label the platform authored.
+    element('a', { class: 'skip-link', href: '#main' }, text(skipLabel(content))),
     renderHeader(input, logo),
     element('main', { id: 'main', class: 'site-main', tabindex: '-1' },
       input.sections.length === 0

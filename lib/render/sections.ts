@@ -25,6 +25,8 @@
 
 import { element, empty, join, paragraphs, text } from './html.js';
 import { safeHref } from './assets.js';
+import { fold } from '../content/evidence.js';
+import { LANGUAGES, lexiconFor } from '../content/language.js';
 
 import type { Html } from './html.js';
 import type { SectionKind, TrustSignal, WebsiteSection } from '../types.js';
@@ -72,6 +74,8 @@ export interface SectionContext {
   readonly alternate: boolean;
   /** The site tagline. Only the leading hero uses it. */
   readonly tagline: string | null;
+  /** BCP 47 tag from `WebsiteContent.language`, for the labels the page owns. */
+  readonly language: string | null;
   /**
    * Verified reassurance. Only the leading hero renders it — a trust bar in
    * the footer is a trust bar nobody reads.
@@ -328,10 +332,36 @@ function renderHeading(section: WebsiteSection, ctx: SectionContext): Html {
 function renderEyebrow(section: WebsiteSection, ctx: SectionContext): Html {
   const tagline = ctx.tagline?.trim();
   if (tagline !== undefined && tagline !== '') {
-    return element('p', { class: 'eyebrow' }, text(tagline));
+    /*
+     * Not when the headline already says it.
+     *
+     * The same rule `withoutEcho` applies to the trust bar, for the same
+     * reason: an eyebrow repeating the words directly beneath it is not
+     * emphasis, it is the sentence twice, two lines apart. River Park's first
+     * screen read "Locație de evenimente" over "Locație de evenimente în
+     * Drăgășani" once the content director started naming the trade in the
+     * business's own words.
+     */
+    const echoes = fold(section.heading).includes(fold(tagline));
+    if (!echoes) return element('p', { class: 'eyebrow' }, text(tagline));
+    return empty;
   }
-  if (ctx.plan === null || ctx.plan.emphasis === 'quiet' || section.kind === 'cta') return empty;
-  return element('p', { class: 'eyebrow' }, text(section.kind));
+  // A hero never labels itself: `hero` is a kind, not a word anybody wrote, and
+  // a business with no published category would otherwise print it.
+  if (ctx.plan === null || ctx.plan.emphasis === 'quiet' || section.kind === 'cta' || section.kind === 'hero') return empty;
+  return element('p', { class: 'eyebrow' }, text(kindLabel(section.kind, ctx.language)));
+}
+
+/**
+ * The section-kind eyebrow, in the page's language.
+ *
+ * An unsupported tag falls back to English, which is what this printed for
+ * every page before the lexicon existed.
+ */
+function kindLabel(kind: SectionKind, language: string | null): string {
+  const tag = (language ?? 'en').slice(0, 2).toLowerCase();
+  const known = LANGUAGES.find((candidate) => candidate === tag) ?? 'en';
+  return lexiconFor(known).kind[kind];
 }
 
 /**
@@ -1190,6 +1220,9 @@ export function renderSection(section: WebsiteSection, ctx: SectionContext): Htm
       'data-emphasis': plan.emphasis,
       'data-density': plan.density,
       'data-bg': plan.background,
+      // The beat this section plays, so the stylesheet can treat the page's
+      // peak as a peak rather than treating "a gallery" as a gallery.
+      ...(plan.role === null ? {} : { 'data-role': plan.role }),
       ...(plan.momentTransition ? { 'data-moment': 'true' } : {}),
     },
     element('div', { class: containerClass }, inner),

@@ -20,10 +20,18 @@
  * being deterministic the moment somebody adds an early exit.
  */
 
-import { classifyIndustry, defaultsFor } from './industries.js';
+import { defaultsFor } from './industries.js';
 import { selectPatterns } from './patterns.js';
 import { worldFor } from './worlds.js';
 import { planLayout } from './layout.js';
+import { planInteraction } from './interaction.js';
+import { choreographAssets } from './assets.js';
+import { buildScript } from './script.js';
+import { planNarrative } from './plan.js';
+import type { ExperienceMode } from './experience.js';
+import type { ConversionMode } from './conversion.js';
+import type { InteractionLevel } from './interaction.js';
+import type { NarrativePlan } from './plan.js';
 import { themeFor } from './themes.js';
 import {
   buildColorSystem,
@@ -120,6 +128,27 @@ export interface ComposeOptions {
   readonly momentSection?: SectionKind | undefined;
   /** Whether the deterministic transition primitive marks entry to `momentSection`. */
   readonly momentTransition?: boolean | undefined;
+  /**
+   * Validated AI-Director overrides for the experience layers.
+   *
+   * Each replaces the deterministic floor's own decision, and each has already
+   * been checked against its closed set by `applyDirective` — no raw model
+   * output reaches here. Absent (the `--compose` case), the floor stands.
+   */
+  readonly experienceMode?: ExperienceMode | undefined;
+  readonly conversionMode?: ConversionMode | undefined;
+  readonly interactionLevel?: InteractionLevel | undefined;
+  /**
+   * A narrative plan derived earlier, from the *undirected* content.
+   *
+   * Passed in by any caller that already ran `planNarrative` — the Content
+   * Director must, because it needs each beat's role before it can write for
+   * it. Reusing it here is not an optimisation: `deriveCharacter` reads the
+   * register of the page's prose, so re-deriving from directed content would
+   * let the platform's own copy feed back in as evidence about the business.
+   * Absent, the plan is derived here exactly as it always was.
+   */
+  readonly plan?: NarrativePlan | undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -410,20 +439,21 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
   const categories = categoriesOf(input);
   const notes: string[] = [];
 
-  const classification = classifyIndustry({
-    listingCategory: profile.category?.value ?? null,
-    strategyCategories: categories,
-    services: profile.services.map((service) => service.name),
-    name: profile.name.value,
+  /*
+   * One derivation, shared with the Content Director.
+   *
+   * When a caller already planned the narrative (which it must, to write copy
+   * for each beat), that plan is reused verbatim rather than re-derived from
+   * content the platform has since rewritten. See `ComposeOptions.plan`.
+   */
+  const plan = options.plan ?? planNarrative(profile, content, {
+    ...(options.experienceMode === undefined ? {} : { experienceMode: options.experienceMode }),
+    ...(options.conversionMode === undefined ? {} : { conversionMode: options.conversionMode }),
+    categories,
   });
 
-  const industry: IndustryClassification = {
-    id: classification.id,
-    basis: classification.basis,
-    matchedOn: classification.matchedOn,
-    rationale: classification.rationale,
-  };
-  if (classification.basis === 'fallback') {
+  const industry: IndustryClassification = plan.industry;
+  if (industry.basis === 'fallback') {
     notes.push('Industry could not be determined; neutral defaults were used throughout.');
   }
 
@@ -527,6 +557,61 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
   );
   const motion = buildMotion(theme);
 
+  /*
+   * The experience architecture: what visiting this page feels like as a
+   * sequence, decided from the business's *character* rather than its category.
+   *
+   * This is the deterministic floor. It reads how much usable photography the
+   * business has, how varied it is, how broad the offering and what register
+   * the words carry, and turns that into a mode (brochure/showcase/narrative)
+   * that drives the existing layout levers — a gallery lead, a signature
+   * moment, its transition. It runs with no model, so `--compose` produces a
+   * business-specific experience on its own; a Director that nominates a moment
+   * still overrides the floor (see the precedence below), exactly as an
+   * operator direction overrides inferred direction.
+   */
+  const { character, experience } = plan;
+  notes.push(`Business character: ${character.rationale}`);
+  notes.push(`Experience architecture: ${experience.rationale}`);
+
+  /*
+   * The three strategy layers that read the same character the visual system
+   * does, so a page's ask, its motion and its use of photography stay coherent
+   * with its look. All deterministic; all a floor the Director may override
+   * through validated decisions. Observable on the artifact so every decision
+   * is explainable from evidence (acceptance criterion H).
+   */
+  const conversion = plan.conversion;
+  const interaction = planInteraction(character, experience, content, {
+    respectsReducedMotion: accessibility.respectReducedMotion,
+  }, { level: options.interactionLevel });
+  const assetImages = [
+    ...(profile.images.hero !== null ? [profile.images.hero] : []),
+    ...profile.images.gallery,
+  ];
+  const assets = choreographAssets(assetImages, character, experience);
+  notes.push(`Conversion: ${conversion.rationale}`);
+  notes.push(`Interaction: ${interaction.rationale}`);
+  notes.push(`Assets: ${assets.rationale}`);
+  notes.push(...assets.notes);
+
+  // An operator/Director moment nomination wins; absent one, the evidence-read
+  // floor provides the moment. The transition follows whichever source set it.
+  const resolvedMoment = options.momentSection ?? experience.signatureMoment ?? undefined;
+  const resolvedMomentTransition = options.momentSection !== undefined
+    ? (options.momentTransition ?? false)
+    : experience.momentTransition;
+
+  /*
+   * The narrative order: why the sections appear where they do. Roles are read
+   * from character + experience (a gallery is a signature for one business and a
+   * space for another), then the page is ordered along a story spine instead of
+   * the industry-priority sort. Two businesses in one industry diverge here when
+   * their evidence differs. Computed before layout because layout consumes the
+   * order; the script is assembled after, from the layout the renderer will use.
+   */
+  const { order, roles } = plan;
+
   const layout = planLayout({
     content,
     industry: industry.id,
@@ -535,10 +620,17 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     imageReliance: defaults.imageReliance,
     ground: defaults.ground,
     world,
-    momentSection: options.momentSection,
-    momentTransition: options.momentTransition ?? false,
+    order,
+    roles,
+    pacing: experience.pacing,
+    momentSection: resolvedMoment,
+    momentTransition: resolvedMomentTransition,
+    galleryLead: experience.galleryLead,
   });
   notes.push(...layout.notes);
+
+  const experienceScript = buildScript(experience.mode, order, roles, layout.plan.sections, content, experience);
+  notes.push(`Experience script: ${experienceScript.rationale}`);
 
   return {
     version: 1,
@@ -552,6 +644,11 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     icons: iconsFor(theme),
     responsive: responsiveFor(theme),
     accessibility,
+    experience,
+    conversion,
+    interaction,
+    assets,
+    experienceScript,
     notes,
   };
 }

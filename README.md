@@ -37,6 +37,16 @@ Underneath the pipeline sits a **capability platform**: pluggable AI providers, 
 and MCP servers. Agents ask it for what they need and never learn how it is provided —
 see [docs/architecture.md](docs/architecture.md).
 
+Beside the design stage sits the **experience system** — the layer that makes each site
+feel conceived for its business rather than styled from a template. It reads the
+business's *character* from evidence and turns it into an experience mode, an asset
+choreography, a conversion and interaction strategy, and a **narrative order** (the page
+is sequenced by story role, not by category). It is fully deterministic — it runs with
+no model, so `--compose` produces a business-specific experience at €0 — and the AI
+Design Director is an optional improver that may only override it through validated
+closed-set decisions. Full reference: [docs/experience-system.md](docs/experience-system.md);
+decision: [ADR 0006](docs/decisions/0006-experience-is-character-driven-and-order-is-a-narrative.md).
+
 ## Layout
 
 ```
@@ -68,6 +78,21 @@ lib/
     telemetry.ts     latency, availability and error accounting
     skills/          registry, loader, manager, 38 built-in capability ids
     mcp/             connector contract, manager, http + stdio transports
+  design/            profile + content -> WebsiteDesign. Deterministic, no model
+    compose.ts       the composer: industry -> direction -> tokens -> experience -> layout
+    industries.ts    category classification and per-industry defaults
+    worlds.ts        visual worlds and the ground journey
+    patterns.ts      the design vocabulary (named compositions)
+    layout.ts        hero/variant/frame/emphasis/order per section
+    directive.ts     the AI Director contract + validated overrides (applyDirective)
+    character.ts     BusinessCharacter, read from evidence
+    experience.ts    ExperienceArchitecture: mode, signature moment, gallery-lead, pacing
+    assets.ts        AssetChoreography: hero/signature/sequence/contrast/rights
+    conversion.ts    ConversionStrategy: posture, CTA, placement, friction
+    interaction.ts   InteractionStrategy: static|subtle|guided|immersive
+    script.ts        ExperienceScript: NarrativeRole per section -> narrative order
+    quality.ts       scoreExperience + genericity (template-smell) + narrative-coherence
+  art/               photographic relevance: served-width, subject, curation, brand seed
   render/            WebsiteContent -> a static site. Deterministic, no I/O
     index.ts         the public surface: renderSite, writeRenderedSite
     html.ts          escaping and element construction

@@ -22,6 +22,11 @@
  */
 
 import type { SectionKind } from '../types.js';
+import type { ExperienceArchitecture } from './experience.js';
+import type { ConversionStrategy } from './conversion.js';
+import type { InteractionStrategy } from './interaction.js';
+import type { AssetChoreography } from './assets.js';
+import type { ExperienceScript, NarrativeRole } from './script.js';
 
 /* ------------------------------------------------------------------ */
 /* Personality                                                         */
@@ -485,6 +490,20 @@ export interface SectionDesign {
    * `lib/render/variants.ts`'s `.section--moment` rule.
    */
   readonly momentTransition: boolean;
+  /**
+   * What this section is doing in the story, from `planNarrativeOrder`.
+   *
+   * Carried onto the layout — and from there onto the rendered element as
+   * `data-role` — so the stylesheet can reason about *beats* rather than about
+   * section kinds. That distinction is the whole point: "a gallery" is a
+   * content type and every business's is styled the same; "the signature beat"
+   * is a position in this business's narrative and deserves the page's loudest
+   * treatment whether it happens to be a gallery, a menu or a story.
+   *
+   * `null` when the caller planned no narrative, which is the pre-script
+   * behaviour and still valid.
+   */
+  readonly role: NarrativeRole | null;
   readonly rationale: string;
 }
 
@@ -582,6 +601,37 @@ export interface WebsiteDesign {
   readonly icons: IconSystem;
   readonly responsive: ResponsiveSystem;
   readonly accessibility: AccessibilityPreferences;
+  /**
+   * The experience architecture — the page's narrative shape, decided from the
+   * business's character. See `lib/design/character.ts` and
+   * `lib/design/experience.ts`. Present so a reviewer can see *why* one business
+   * became a showcase and another a brochure, the same way `personality` and
+   * `industry` are recorded.
+   */
+  readonly experience: ExperienceArchitecture;
+  /**
+   * How the page turns a visitor into an action — the CTA verb, its placement,
+   * contact prominence, friction. Decided from character, separate from looks.
+   * See `lib/design/conversion.ts`.
+   */
+  readonly conversion: ConversionStrategy;
+  /**
+   * How much the page moves and responds — `static`/`subtle`/`guided`/
+   * `immersive`, capped at what the renderer can deliver today. Observable now,
+   * consumed by a future runtime. See `lib/design/interaction.ts`.
+   */
+  readonly interaction: InteractionStrategy;
+  /**
+   * Which photographs the page uses, where, and which are reference-only until
+   * their rights are confirmed. See `lib/design/assets.ts`.
+   */
+  readonly assets: AssetChoreography;
+  /**
+   * The narrative order — why the sections appear where they do. Assigns each a
+   * closed-set narrative role and orders the page along a story spine rather than
+   * an industry list. See `lib/design/script.ts`.
+   */
+  readonly experienceScript: ExperienceScript;
   /**
    * What the composer had to work around or could not satisfy — an unreachable
    * contrast target, a section kind with no good variant for this direction.

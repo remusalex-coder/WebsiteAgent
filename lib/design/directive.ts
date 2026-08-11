@@ -31,6 +31,14 @@ import type { ComposeOptions } from './compose.js';
 import type { Logger } from '../logger.js';
 import type { DesignDirection, HeroVariant, ImageTreatment, VisualDensity } from './types.js';
 import type { SectionKind } from '../types.js';
+import type { ExperienceMode } from './experience.js';
+import type { ConversionMode } from './conversion.js';
+import type { InteractionLevel } from './interaction.js';
+
+/** Director-facing pacing vocabulary (mapped to the internal `Pacing`). */
+export type DirectorPacing = 'restrained' | 'measured' | 'cinematic' | 'immersive';
+/** Director-facing imagery vocabulary. Advisory in this version. */
+export type ImageryStrategy = 'functional' | 'editorial' | 'gallery-led' | 'hero-led' | 'atmospheric';
 
 /** A Logger that discards all records. Used when no logger is supplied. */
 const noopLogger: Logger = {
@@ -260,6 +268,26 @@ export interface DesignDirective {
    * transitionAtMoment: false }`.
    */
   readonly experienceIntent?: ExperienceIntent | undefined;
+
+  /* ----------------------------------------------------------------
+   * Experience-system decision surface (this version).
+   *
+   * These let the Director reason over the whole experience — not just one
+   * moment — from image-content signals now present in the brief. Each is a
+   * closed set, validated in `applyDirective`, and overrides the deterministic
+   * floor only when valid. `experienceMode`, `conversionStrategy` and
+   * `interactionStrategy` reach `ComposeOptions` and change the design;
+   * `signatureMoment` reaches it as the moment nomination; `pacing` and
+   * `imageryStrategy` are validated and recorded but advisory in this version
+   * (their effects are derived deterministically from mode), pending the
+   * runtime that would consume them.
+   * ---------------------------------------------------------------- */
+  readonly experienceMode?: ExperienceMode | undefined;
+  readonly signatureMoment?: SectionKind | null | undefined;
+  readonly pacing?: DirectorPacing | undefined;
+  readonly imageryStrategy?: ImageryStrategy | undefined;
+  readonly interactionStrategy?: InteractionLevel | undefined;
+  readonly conversionStrategy?: ConversionMode | undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -272,6 +300,35 @@ const VALID_DIRECTIONS = new Set<string>([
 ]);
 
 const VALID_DENSITIES = new Set<string>(['airy', 'balanced', 'dense']);
+const VALID_EXPERIENCE_MODES = new Set<string>(['brochure', 'showcase', 'narrative', 'immersive']);
+const VALID_CONVERSION_MODES = new Set<string>(['direct', 'editorial', 'balanced', 'high-intent']);
+const VALID_INTERACTION_LEVELS = new Set<string>(['static', 'subtle', 'guided', 'immersive']);
+const VALID_PACING = new Set<string>(['restrained', 'measured', 'cinematic', 'immersive']);
+const VALID_IMAGERY_STRATEGIES = new Set<string>(['functional', 'editorial', 'gallery-led', 'hero-led', 'atmospheric']);
+const VALID_SECTION_KINDS = new Set<string>([
+  'hero', 'statement', 'about', 'services', 'menu', 'gallery',
+  'testimonials', 'hours', 'location', 'contact', 'cta', 'faq',
+]);
+
+/**
+ * Validates one closed-set directive field.
+ *
+ * Returns the value when it is in the set, `undefined` (with a warning) when it
+ * is not — the same fail-soft contract every other field in this adapter uses.
+ * An invalid experience decision is not a failed stage; it is a decision the
+ * deterministic floor makes instead.
+ */
+function validated<T extends string>(
+  value: string | null | undefined,
+  set: ReadonlySet<string>,
+  field: string,
+  logger: Logger,
+): T | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (set.has(value)) return value as T;
+  logger.warn(`DesignDirective: ${field} "${value}" is not a valid value; falling back to the deterministic floor`);
+  return undefined;
+}
 
 /**
  * Translates a `DesignDirective` into `ComposeOptions`.
@@ -405,9 +462,25 @@ export function applyDirective(
   // accessibilityLevel above. No operator hook exists for this yet, but the
   // seam costs nothing to keep consistent.
   const experience = applyExperienceIntent(directive.experienceIntent, logger);
+
+  // Experience-system decisions, each validated against its closed set. An
+  // explicit `signatureMoment` outranks the older experienceIntent moment; an
+  // operator override outranks both.
+  const experienceMode = validated<ExperienceMode>(directive.experienceMode, VALID_EXPERIENCE_MODES, 'experienceMode', logger);
+  const conversionMode = validated<ConversionMode>(directive.conversionStrategy, VALID_CONVERSION_MODES, 'conversionStrategy', logger);
+  const interactionLevel = validated<InteractionLevel>(directive.interactionStrategy, VALID_INTERACTION_LEVELS, 'interactionStrategy', logger);
+  const directedMoment = validated<SectionKind>(directive.signatureMoment ?? undefined, VALID_SECTION_KINDS, 'signatureMoment', logger);
+  // Validated-but-advisory in this version; recorded for the trail, not yet wired.
+  const pacing = validated<DirectorPacing>(directive.pacing, VALID_PACING, 'pacing', logger);
+  const imagery = validated<ImageryStrategy>(directive.imageryStrategy, VALID_IMAGERY_STRATEGIES, 'imageryStrategy', logger);
+  if (pacing !== undefined) logger.info(`DesignDirective: pacing = "${pacing}" (advisory this version)`);
+  if (imagery !== undefined) logger.info(`DesignDirective: imageryStrategy = "${imagery}" (advisory this version)`);
+
   const resolvedMoment = operatorOptions.momentSection !== undefined
     ? operatorOptions.momentSection
-    : experience.momentSection;
+    : directedMoment !== undefined
+      ? directedMoment
+      : experience.momentSection;
 
   // --- Return resolved ComposeOptions ---------------------------------
 
@@ -423,8 +496,13 @@ export function applyDirective(
       momentSection: resolvedMoment,
       momentTransition: resolvedMoment === operatorOptions.momentSection
         ? (operatorOptions.momentTransition ?? false)
-        : experience.momentTransition,
+        : directedMoment !== undefined
+          ? true
+          : experience.momentTransition,
     } : {}),
+    ...(experienceMode !== undefined ? { experienceMode } : {}),
+    ...(conversionMode !== undefined ? { conversionMode } : {}),
+    ...(interactionLevel !== undefined ? { interactionLevel } : {}),
   };
 }
 

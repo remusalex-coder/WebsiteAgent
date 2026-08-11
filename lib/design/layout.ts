@@ -20,6 +20,8 @@ import { assignJourney } from './worlds.js';
 import type { SectionKind, WebsiteContent, WebsiteSection } from '../types.js';
 import type { ThemeDefinition } from './themes.js';
 import type { VisualWorld } from './worlds.js';
+import type { NarrativeRole } from './script.js';
+import type { Pacing } from './experience.js';
 import type {
   Emphasis,
   FooterVariant,
@@ -558,6 +560,49 @@ export interface LayoutInput {
   readonly momentSection?: SectionKind | undefined;
   /** Whether the moment section (if any) also gets the transition primitive. */
   readonly momentTransition?: boolean | undefined;
+  /**
+   * The render order, as indices into `content.sections`, from the experience
+   * script (`planNarrativeOrder`). When present it replaces the industry-priority
+   * sort — the page is ordered by narrative role, not category. Absent, the
+   * legacy `orderSections` sort is used, so a caller that has no script still
+   * gets a valid page.
+   */
+  readonly order?: readonly number[] | undefined;
+  /**
+   * Promote the gallery to the page's subject, from the experience architecture
+   * (`ExperienceArchitecture.galleryLead`).
+   *
+   * When set and the page has a gallery, that gallery is given `'lead'`
+   * emphasis outright — not the single-rung step a moment nomination gives —
+   * which is what trips the existing full-bleed rule below and turns a gallery
+   * from an illustration between paragraphs into the thing the page is about.
+   * A `showcase`/`narrative` business earns this; a `brochure` never asks for
+   * it, so the default (absent) is exactly the pre-existing behaviour.
+   */
+  readonly galleryLead?: boolean | undefined;
+  /**
+   * The narrative role of each section, from `planNarrativeOrder`.
+   *
+   * Order alone made the *sequence* business-specific; this makes the
+   * *treatment* business-specific too. A beat that plays `signature` is the one
+   * moment the page is built around and must read as a peak rather than as
+   * another band of the same weight — and a peak only reads as one if what
+   * precedes it is quieter, which is the second rule below. Absent, emphasis is
+   * decided exactly as it was before roles existed.
+   */
+  readonly roles?: ReadonlyMap<number, NarrativeRole> | undefined;
+  /** How the page spends space, from the experience architecture. */
+  readonly pacing?: Pacing | undefined;
+}
+
+/** One step down the emphasis ladder. The counterpart of `stepUpEmphasis`. */
+function stepDownEmphasis(emphasis: Emphasis): Emphasis {
+  switch (emphasis) {
+    case 'lead': return 'primary';
+    case 'primary': return 'secondary';
+    case 'secondary': return 'quiet';
+    case 'quiet': return 'quiet';
+  }
 }
 
 /**
@@ -583,7 +628,7 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
   const { content, industry, theme, density } = input;
   const notes: string[] = [];
 
-  const order = orderSections(content, industry);
+  const order = input.order ?? orderSections(content, industry);
   const hero = chooseHero(content, theme, input.imageReliance);
 
   // The moment may only land once — on the first section of the nominated
@@ -605,6 +650,7 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
         columns: null,
         fullBleed: false,
         momentTransition: false,
+        role: null,
         rationale: 'Section index out of range.',
       };
     }
@@ -624,6 +670,43 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
       );
     }
 
+    // The gallery becomes the subject in a showcase or narrative. Set outright
+    // rather than stepped: a full-bleed gallery needs `'lead'`, and a one-rung
+    // step from `'secondary'` would only reach `'primary'` and never trip the
+    // full-bleed rule below.
+    if (input.galleryLead === true && section.kind === 'gallery' && emphasis !== 'lead') {
+      emphasis = 'lead';
+      notes.push(`Section ${index} (gallery) leads the page: emphasis set to "lead" (showcase/narrative).`);
+    }
+
+    /*
+     * The signature beat is the page's peak, whatever kind of section it is.
+     *
+     * `galleryLead` above only ever promotes a gallery, because that is the
+     * only kind the showcase rule knew about. A business whose signature is its
+     * menu, its testimonials or its story deserves the same elevation — the
+     * narrative already decided this beat is the one thing the page is built
+     * around, and rendering it at the same weight as the hours is the later
+     * layer erasing the earlier one.
+     */
+    const role = input.roles?.get(index);
+    if (role === 'signature' && emphasis !== 'lead') {
+      emphasis = 'lead';
+      notes.push(`Section ${index} (${section.kind}) plays the signature beat: emphasis set to "lead" — it is the page's peak.`);
+    }
+
+    /*
+     * A cinematic page keeps its practical beats quiet.
+     *
+     * Pacing is not only vertical space; it is which beats are allowed to be
+     * loud. On a page built to build to something, the opening hours competing
+     * with the peak is what flattens an arc back into a stack of bands.
+     */
+    if (input.pacing === 'cinematic' && role === 'context' && emphasis !== 'quiet') {
+      emphasis = stepDownEmphasis(emphasis);
+      notes.push(`Section ${index} (${section.kind}) is practical context on a cinematic page: emphasis lowered to "${emphasis}".`);
+    }
+
     if (chosen.variant === 'stack' && section.kind !== 'hero' && shape.bullets === 0 && shape.bodyChars === 0) {
       notes.push(`Section ${index} (${section.kind}) has no body, bullets or images and will render as a heading alone.`);
     }
@@ -637,9 +720,38 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
       columns: columnsFor(chosen.variant, shape),
       fullBleed: chosen.variant === 'collage' || (section.kind === 'gallery' && emphasis === 'lead'),
       momentTransition: isMoment && (input.momentTransition ?? false),
+      role: role ?? null,
       rationale: chosen.rationale,
     };
   });
+
+  /*
+   * A peak needs a breath before it.
+   *
+   * Contrast is what makes a signature read as a signature: if the beat before
+   * it is also shouting, the reader arrives at the peak already saturated and
+   * feels nothing. So the beat immediately preceding the signature steps down
+   * one rung — never the hero, which is pinned, and never on a page too short
+   * to have a shape at all.
+   */
+  const signatureAt = partial.findIndex((design) => input.roles?.get(design.index) === 'signature');
+  if (signatureAt > 1 && partial.length >= 5) {
+    const before = partial[signatureAt - 1];
+    if (before !== undefined && (before.emphasis === 'lead' || before.emphasis === 'primary')) {
+      const lowered = stepDownEmphasis(before.emphasis);
+      partial[signatureAt - 1] = {
+        ...before,
+        emphasis: lowered,
+        density: densityFor(density, lowered),
+        // Full bleed was earned by the emphasis it no longer has.
+        fullBleed: before.variant === 'collage' || (before.kind === 'gallery' && lowered === 'lead'),
+      };
+      notes.push(
+        `Section ${before.index} (${before.kind}) steps down to "${lowered}": it precedes the signature beat, `
+        + 'and a peak only reads as one against a quieter approach.',
+      );
+    }
+  }
 
   if (input.momentSection !== undefined && !momentApplied) {
     notes.push(
@@ -675,7 +787,11 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
 
   const reordered = order.some((index, position) => index !== position);
   if (reordered) {
-    notes.push(`Sections were reordered for the ${industry} category; content itself is unchanged.`);
+    notes.push(
+      input.order !== undefined
+        ? 'Sections were ordered by narrative role (experience script); content itself is unchanged.'
+        : `Sections were reordered for the ${industry} category; content itself is unchanged.`,
+    );
   }
 
   return {
@@ -706,6 +822,12 @@ function columnsFor(variant: SectionVariant, shape: SectionShape): number | null
     case 'grid':
       return shape.images >= 6 ? 3 : 2;
     case 'masonry':
+      // Four across three columns leaves one photograph alone on a second row,
+      // which reads as the grid running out rather than as a composition — the
+      // same failure `cards` already guards against, and worse here because the
+      // orphan is a full photograph. Two-by-two is what a person would have laid
+      // out. River Park's signature gallery shipped with the orphan.
+      if (shape.images === 4) return 2;
       return shape.images >= 8 ? 4 : 3;
     case 'quotes':
       return shape.bullets >= 3 ? 3 : shape.bullets;

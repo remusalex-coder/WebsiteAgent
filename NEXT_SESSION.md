@@ -1,13 +1,89 @@
 # Next Session
 
-_Rewritten 2026-08-10, after Experience Intent V1 shipped — `DesignDirective`
-now has an `experienceIntent` field, verified deterministically and with one
-real Director call. See PROJECT_STATUS.md for the full account; this is the
-thirty-second version._
+_Rewritten 2026-08-11, after the content system shipped — BusinessForge now
+derives `Evidence → Character → Intent → Narrative → Content → Composition`, and
+the words on the page are as business-specific as its order. See
+[docs/content-system.md](docs/content-system.md); this is the thirty-second
+version._
 
 > **Canonical documentation is BusinessForge HQ in Notion.**
 
-## Start here (2026-08-10)
+## Start here (2026-08-11, content system)
+
+**Look at two pages, in this order.** Both are real businesses through the real
+pipeline, no manual edits:
+
+```bash
+npx tsx main.ts --compose riverpark && npx tsx scripts/shoot.ts riverpark riverpark
+```
+
+```bash
+npx tsx main.ts --compose 25e648c7 && npx tsx scripts/shoot.ts 25e648c7 tartine
+```
+
+River Park is Romanian and reads Romanian — `Locație de evenimente în Drăgășani ·
+Despre River Park Events · Ce oferim · **Sala mare cu candelabru floral și arcade
+filigranate** · Program · Contact · Rezervă la River Park Events`, every button
+"Rezervă", `<html lang="ro">`, `EventVenue` structured data. The bold line is the
+signature beat: its heading is the caption on its own strongest photograph, set
+at display scale (114 → **95** → 62 → 10px down the page), over a full-bleed 2×2
+gallery. Before this session every one of those strings was an English template
+label and the signature heading was hidden by a stylesheet rule.
+
+Tartine is the control: English, thinner evidence, honestly plainer copy. Its
+`specificity` score is lower than River Park's and that is the right answer.
+
+**What changed, in one line each:** `lib/content/` is new (language, evidence
+index, director, gate); `lib/design/plan.ts` derives the narrative once so the
+copy can never feed back in as evidence; `NarrativeRole` reaches the stylesheet as
+`data-role`. [ADR 0007](docs/decisions/0007-content-is-directed-by-narrative-role-and-written-in-the-evidence-language.md)
+is the decision record.
+
+**The next bottleneck is `classifyIndustry`.** There is no `venue` category, so an
+event venue lands on `general` (`imageReliance: supporting`) and cannot reach the
+narrative mode. River Park only reaches it because one of its six services is
+literally "Cazare — River Park Hotel". That accident is load-bearing for the best
+page the platform has produced, which is not a state to leave it in. After that:
+imagery strategy is still advisory, and image alt text — now the director's
+strongest content source — is only as good as research made it.
+
+## Previous start (2026-08-11, experience system)
+
+**The experience system is the current state.** Distinctiveness is now a function
+of business *character*, not industry: `character.ts → experience.ts → assets.ts →
+conversion.ts → interaction.ts → script.ts`, all deterministic and €0, all
+observable on `WebsiteDesign`, with the AI Director as an optional validated
+improver. The page **order is a narrative** (`script.ts` — `NarrativeRole` per
+section along a story spine), not an industry sort.
+
+Look first at the benchmark — six businesses, materially different experiences,
+including two same-industry hotels that diverge:
+
+```bash
+node --import tsx --test test/design/benchmark.test.ts
+```
+
+Then River Park through the actual autonomous pipeline (no manual edits):
+
+```bash
+npx tsx main.ts --compose riverpark && npm run preview -- riverpark
+```
+
+Its script is `emotion → reveal → signature → breadth → context → conversion`,
+rendered `hero → about → gallery(full-bleed, moment) → services → hours → contact
+→ cta`, score 99/100.
+
+**The next bottleneck is copy, not structure.** The order is business-specific;
+the section *prose* is still `composeBaseline`'s generic labels ("What we offer",
+"Photographs"). A character-aware writer — deterministic templates keyed to
+narrative role + evidence, with the AI writer as an optional validated improver —
+is the last thing between "this looks bespoke" and "this reads bespoke." Also
+open: `pacing`/`imageryStrategy` are validated-but-advisory; the scroll-as-time
+runtime is audited (`docs/experience-system.md`) but unbuilt.
+
+`docs/decisions/0006-*` records the architecture decision. 580/580 tests pass.
+
+## Start here (2026-08-10, previous)
 
 **Look at River Park first**, the first real business the Director actually
 directed in production, not a harness:

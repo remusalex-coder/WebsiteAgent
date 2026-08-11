@@ -34,6 +34,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { GALLERY_BUDGET, arrangeSequence, chooseForSection, curateGallery, photoIdentity } from '../lib/art/direction.js';
+import { detectLanguage } from '../lib/content/language.js';
 import { UpstreamError } from '../lib/errors.js';
 import { VENDORED_FACES } from '../lib/render/fontManifest.js';
 import { assignIds } from '../lib/render/site.js';
@@ -65,6 +66,33 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 
 /** Monday first: how a business writes its own opening hours. */
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+/**
+ * Opening hours with every weekday in the 0 = Sunday range the type documents.
+ *
+ * ISO-8601 numbers Sunday **7**, and a source that follows it used to reach
+ * three different consumers that each mishandled it differently: `hourBullets`
+ * walks `WEEK_ORDER` and dropped the day, `trustSignals` counts distinct
+ * indices and accepted it, and the JSON-LD's `DAY_NAMES[7] ?? 'Monday'` emitted
+ * Monday twice. River Park Events shipped with a page that said **"Open seven
+ * days a week"** eight lines above a timetable reading **"Monday to
+ * Saturday"** — two contradictory statements, both derived from one true set of
+ * hours.
+ *
+ * Normalised on the way *in* to every consumer rather than only in the
+ * normalizer, so a profile saved before that fix still renders a consistent
+ * page. A weekday outside 0–7 is dropped: an unrecognised index is not a day,
+ * and mapping it to one would publish a time the business never stated.
+ */
+export function canonicalHours(hours: readonly OpeningHours[]): readonly OpeningHours[] {
+  const out: OpeningHours[] = [];
+  for (const entry of hours) {
+    if (!Number.isInteger(entry.dayOfWeek)) continue;
+    if (entry.dayOfWeek === 7) out.push({ ...entry, dayOfWeek: 0 });
+    else if (entry.dayOfWeek >= 0 && entry.dayOfWeek <= 6) out.push(entry);
+  }
+  return out;
+}
 
 /* ------------------------------------------------------------------ */
 /* Output schema                                                       */
@@ -501,9 +529,10 @@ function assertDraftShape(value: unknown): asserts value is Draft {
  * is reported as a gap, never filled in.
  */
 export function hourBullets(hours: readonly OpeningHours[]): readonly string[] {
+  const week = canonicalHours(hours);
   const spans = new Map<number, string>();
   for (const day of WEEK_ORDER) {
-    const forDay = hours.filter((entry) => entry.dayOfWeek === day);
+    const forDay = week.filter((entry) => entry.dayOfWeek === day);
     if (forDay.length === 0) continue;
     spans.set(day, forDay.map((entry) => `${entry.opens}–${entry.closes}`).join(', '));
   }
@@ -574,7 +603,7 @@ export function hourBullets(hours: readonly OpeningHours[]): readonly string[] {
  * Maps pane is most of them.
  */
 export function hoursDisclosure(hours: readonly OpeningHours[]): string {
-  const days = new Set(hours.map((entry) => entry.dayOfWeek));
+  const days = new Set(canonicalHours(hours).map((entry) => entry.dayOfWeek));
   if (days.size === 0 || days.size >= 7) return '';
 
   const known = days.size === 1 ? 'one day' : `${days.size} days`;
@@ -768,7 +797,7 @@ export function trustSignals(profile: BusinessProfile): readonly TrustSignal[] {
   // Seven distinct days means seven days with opening times, because a closed
   // day produces no entry. Anything less is not a claim that can be made — and
   // the reduced Maps pane usually yields one day, so this rarely fires.
-  const days = new Set(profile.hours.map((entry) => entry.dayOfWeek));
+  const days = new Set(canonicalHours(profile.hours).map((entry) => entry.dayOfWeek));
   if (days.size === 7) {
     signals.push({ kind: 'hours', label: 'Open seven days a week', source: 'maps' });
   }
@@ -851,8 +880,12 @@ export function buildStructuredData(
   const email = profile.emails[0]?.value;
   if (email !== undefined) data.email = email;
 
-  if (profile.hours.length > 0) {
-    data.openingHoursSpecification = profile.hours.map((entry) => ({
+  // Canonicalised first: `DAY_NAMES[7] ?? 'Monday'` used to publish a second
+  // Monday for any source that numbers Sunday 7, which is structured data that
+  // contradicts the timetable printed beside it.
+  const week = canonicalHours(profile.hours);
+  if (week.length > 0) {
+    data.openingHoursSpecification = week.map((entry) => ({
       '@type': 'OpeningHoursSpecification',
       dayOfWeek: `https://schema.org/${DAY_NAMES[entry.dayOfWeek] ?? 'Monday'}`,
       opens: entry.opens,
@@ -894,6 +927,12 @@ function schemaTypeFor(category: string | null): string {
     [['bar', 'pub', 'brewery', 'winery'], 'BarOrPub'],
     [['restaurant', 'bistro', 'pizzeria', 'diner', 'steakhouse'], 'Restaurant'],
     [['hotel', 'inn', 'hostel', 'lodging', 'guest house'], 'Hotel'],
+    // Before the generic trades, because "Event & wedding venue" also contains
+    // no word any later row matches and would fall through to `LocalBusiness`.
+    // `EventVenue` is the most specific type schema.org offers for a hall that
+    // hosts weddings and celebrations, and search engines read it.
+    [['event venue', 'wedding venue', 'banquet', 'conference centre', 'conference center', 'function room'], 'EventVenue'],
+    [['auto repair', 'car repair', 'body shop'], 'AutoRepair'],
     [['dentist', 'dental'], 'Dentist'],
     [['doctor', 'clinic', 'medical', 'physician'], 'MedicalClinic'],
     [['lawyer', 'law firm', 'solicitor', 'attorney'], 'LegalService'],
@@ -2549,10 +2588,26 @@ function assembleContent(
     derivedGaps.push(`${issue.field}: ${issue.message}`);
   }
 
+  /*
+   * The language the evidence is written in, read once, here.
+   *
+   * Set on the floor rather than only by the Content Director so that *any*
+   * path to a page — the model writer, the composer, a resumed artifact —
+   * carries a truthful `<html lang>`. The director may refine nothing about it;
+   * it reads the same corpus and gets the same answer.
+   */
+  const language = detectLanguage([
+    profile.description?.value ?? '',
+    ...profile.pages.map((page) => page.text),
+    ...profile.services.map((service) => `${service.name} ${service.description ?? ''}`),
+    ...profile.attributes.filter((attribute) => attribute.available).map((attribute) => attribute.label),
+  ].join('\n'));
+
   const content: WebsiteContent = {
     // The verified name, not the model's rendering of it.
     businessName: profile.name.value,
     tagline: written.tagline.trim(),
+    language: language.language,
     voice: {
       tone: written.voice.tone.trim(),
       palette: written.voice.palette,

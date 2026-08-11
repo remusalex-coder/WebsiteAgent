@@ -45,6 +45,8 @@ import type {
 } from '../lib/types.js';
 import type { DesignDirective } from '../lib/design/directive.js';
 import type { JsonSchema } from '../lib/ai/types.js';
+import { subjectOf } from '../lib/art/direction.js';
+import type { ImageAsset } from '../lib/types.js';
 
 const NAME = 'designDirectorAgent';
 
@@ -218,6 +220,45 @@ export const DIRECTIVE_SCHEMA: JsonSchema = {
         },
       },
     },
+    experienceMode: {
+      type: 'string',
+      enum: ['brochure', 'showcase', 'narrative', 'immersive'],
+      description:
+        'The page\'s overall shape. brochure: a clear functional directory (a plumber, a notary). '
+        + 'showcase: the business leads with imagery, the gallery is the subject. narrative: the evidence '
+        + 'supports an arc built to a signature moment. immersive: a continuous scroll experience (rare; '
+        + 'the renderer caps this at narrative today). Choose from the IMAGE CONTENT SIGNALS and character, '
+        + 'not the category — a venue with a dramatic room and varied photography earns narrative; a trade '
+        + 'with a logo does not.',
+    },
+    signatureMoment: {
+      type: 'string',
+      enum: ['hero', 'statement', 'about', 'services', 'menu', 'gallery', 'testimonials', 'hours', 'location', 'contact', 'cta', 'faq'],
+      description: 'The one section the experience builds to. Must be a kind present in "Content sections". Ignored when experienceMode is brochure.',
+    },
+    pacing: {
+      type: 'string',
+      enum: ['restrained', 'measured', 'cinematic', 'immersive'],
+      description: 'How much room the page gives each beat. Advisory this version.',
+    },
+    imageryStrategy: {
+      type: 'string',
+      enum: ['functional', 'editorial', 'gallery-led', 'hero-led', 'atmospheric'],
+      description: 'How photography is used, from the image signals. Advisory this version.',
+    },
+    interactionStrategy: {
+      type: 'string',
+      enum: ['static', 'subtle', 'guided', 'immersive'],
+      description: 'How much the page moves. Conservative by default; immersive is capped at guided by the renderer.',
+    },
+    conversionStrategy: {
+      type: 'string',
+      enum: ['direct', 'editorial', 'balanced', 'high-intent'],
+      description:
+        'The conversion posture. high-intent: press the action early (a mechanic, an emergency trade). '
+        + 'editorial: earn the visitor first, ask at the end (a wedding venue, a boutique hotel). '
+        + 'balanced/direct in between.',
+    },
     rationale: {
       type: 'string',
       description: 'Two to four sentences explaining the overall visual strategy and its relationship to the business.',
@@ -255,6 +296,8 @@ When evidence is weak, use conservative design decisions and lower confidence ra
 
 Separately, decide whether this specific business has one section worth building emphasis around — a real photograph, a real fact, a real story that would be diminished by equal treatment with every other section. This is experienceIntent. Most businesses do not have this: a plumber, an accountant, a law firm usually should get mode "standard", and that is the correct, unremarkable answer, not a failure to find something more exciting. Only choose "moment-led" when the evidence genuinely supports it, and only nominate a section kind that already appears in the brief's "Content sections" list — never invent one, never nominate a kind this business's content does not have.
 
+Decide the experience architecture from the IMAGE CONTENT SIGNALS and the business character, not from the category. Set experienceMode (brochure/showcase/narrative/immersive), a signatureMoment (a section actually present), conversionStrategy (how hard and when to ask for the action), and interactionStrategy (how much the page moves). A business with several varied, atmospheric photographs and an emotional register earns a narrative built to a signature moment; a functional trade with a logo earns a brochure that presses the action early. Never invent photographs or facts to justify a richer mode — if the images are thin, the honest mode is the plainer one, and a strong deterministic floor will still produce an intentional page. These decisions are validated against closed sets and override the deterministic floor only when valid.
+
 The output must be implementable by a deterministic design system. You are choosing from closed sets of options — do not suggest values outside the listed enums. Do not output CSS, pixel values, colour hex codes, spacing values, font sizes, Tailwind classes, or any renderer instruction.`;
 
 /* ------------------------------------------------------------------ */
@@ -263,6 +306,55 @@ The output must be implementable by a deterministic design system. You are choos
 
 function truncate(text: string, limit: number): string {
   return text.length <= limit ? text : `${text.slice(0, limit)}\n…[truncated]`;
+}
+
+/** Hosts whose images are the business's own social/directory posts — usable but rights-unconfirmed. */
+const REFERENCE_HOSTS = ['facebook', 'fbcdn', 'instagram', 'cdninstagram', 'honeypot', 'restaurantguru', 'weddingo', 'googleusercontent', 'ggpht'];
+
+/**
+ * Describes the business's photography as content signals, not a count.
+ *
+ * Deterministic — dimensions, orientation, a subject tag from `lib/art`, and a
+ * rights heuristic from the host. No vision model is required; the contract is
+ * shaped so a vision-derived `visual category / atmosphere / brightness / quality`
+ * can be appended later without changing the Director's schema.
+ */
+function describeImageSignals(profile: BusinessProfile): string {
+  const logo = profile.images.logo !== null;
+  const images: readonly ImageAsset[] = [
+    ...(profile.images.hero !== null ? [profile.images.hero] : []),
+    ...profile.images.gallery,
+  ].filter((i) => i.role !== 'logo' && i.role !== 'favicon');
+
+  if (images.length === 0) {
+    return `Logo: ${logo ? 'yes' : 'no'}\nUsable photographs: 0 — a text-led page; do not force a gallery or an image-led hero.`;
+  }
+
+  const orient = (i: ImageAsset): string => {
+    if (i.width == null || i.height == null || i.height === 0) return 'unknown';
+    const r = i.width / i.height;
+    return r > 1.15 ? 'landscape' : r < 0.87 ? 'portrait' : 'square';
+  };
+  const rights = (i: ImageAsset): string => {
+    const host = `${(() => { try { return new URL(i.url).host; } catch { return ''; } })()} ${(() => { try { return new URL(i.sourceUrl).host; } catch { return ''; } })()}`.toLowerCase();
+    return REFERENCE_HOSTS.some((h) => host.includes(h)) ? 'reference-only(rights?)' : 'usable';
+  };
+
+  const orientations = new Set(images.map(orient));
+  const refOnly = images.filter((i) => rights(i) === 'reference-only(rights?)').length;
+  const lines = images.slice(0, 12).map((i, n) => {
+    const dims = i.width != null && i.height != null ? `${i.width}x${i.height}` : 'unknown';
+    return `- #${n + 1} ${i === profile.images.hero ? '(hero)' : '(gallery)'} ${dims} ${orient(i)} subject:${subjectOf(i)} ${rights(i)}`
+      + (i.alt ? ` alt:"${truncate(i.alt, 60)}"` : '');
+  });
+
+  return [
+    `Logo: ${logo ? 'yes' : 'no'}`,
+    `Usable photographs: ${images.length} across ${orientations.size} framing(s) (${[...orientations].sort().join(', ')})`,
+    refOnly > 0 ? `${refOnly} are reference-only (rights unconfirmed) — usable as placeholders, flag for replacement.` : 'Rights: own-source, usable.',
+    'Per image:',
+    ...lines,
+  ].join('\n');
 }
 
 /**
@@ -327,13 +419,11 @@ export function buildDesignBrief(
   // Tagline / headline intent
   section('Tagline', content.tagline || 'none');
 
-  // Imagery available
-  const imageryLines = [
-    `Logo: ${profile.images.logo !== null ? 'yes' : 'no'}`,
-    `Hero image: ${profile.images.hero !== null ? 'yes' : 'no'}`,
-    `Gallery images: ${profile.images.gallery.length}`,
-  ];
-  section('Available imagery', imageryLines.join('\n'));
+  // Image content signals — not just counts. Deterministic, from metadata:
+  // dimensions, orientation, subject tag, and a rights heuristic from the host.
+  // This is what lets the Director reason about experience mode and imagery
+  // strategy rather than guessing from a number.
+  section('Image content signals', describeImageSignals(profile));
 
   // Content structure — section kinds and headings
   const sectionLines = content.sections.map(

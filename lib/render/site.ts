@@ -23,6 +23,7 @@ import { createAssetPlan } from './assets.js';
 import { fontAssets } from './fonts.js';
 import { slug } from './html.js';
 import { resolveOptions } from './types.js';
+import { LANGUAGES, lexiconFor } from '../content/language.js';
 
 import type { Html } from './html.js';
 import type { NavItem } from './document.js';
@@ -111,29 +112,26 @@ function renderOrder(plan: LayoutPlan | null, count: number): readonly number[] 
  * A closed map keyed by kind is the fix: always short, always conventional,
  * never a sentence, and it cannot regress when a writer gets more expressive.
  */
-const NAV_LABELS: Readonly<Record<SectionKind, string>> = {
-  hero: 'Top',
-  // Empty: a statement band is a moment in the page, not a destination in the nav.
-  statement: '',
-  about: 'About',
-  services: 'Services',
-  menu: 'Menu',
-  gallery: 'Gallery',
-  testimonials: 'Reviews',
-  hours: 'Hours',
-  location: 'Visit',
-  contact: 'Contact',
-  cta: 'Start',
-  faq: 'FAQ',
-};
+/*
+ * The map now lives per language, in `lib/content/language.ts`, for the same
+ * reason it is closed at all: a Romanian venue navigated by "About / Gallery /
+ * Services / Hours" is the platform's outline of somebody else's business. The
+ * English row there is byte-identical to the one that used to be here.
+ */
+function navLabels(language: string): Readonly<Record<SectionKind, string>> {
+  const tag = language.slice(0, 2).toLowerCase();
+  return lexiconFor(LANGUAGES.find((candidate) => candidate === tag) ?? 'en').nav;
+}
 
 /** Header navigation, in render order. A section with no heading is skipped. */
 function buildNav(
   sections: readonly WebsiteSection[],
   ids: readonly string[],
   order: readonly number[],
+  language: string,
 ): readonly NavItem[] {
   const items: NavItem[] = [];
+  const labels = navLabels(language);
 
   for (const index of order) {
     const section = sections[index];
@@ -143,7 +141,7 @@ function buildNav(
     // A section with no heading has nothing to jump to that a reader would
     // recognise, so it stays out of the outline even though its label is known.
     if (section.heading.trim() === '' || UNLISTED.has(section.kind)) continue;
-    items.push({ label: NAV_LABELS[section.kind], fragment });
+    items.push({ label: labels[section.kind], fragment });
   }
 
   return items;
@@ -158,7 +156,18 @@ function buildNav(
  * something that is not a `WebsiteContent`.
  */
 export function renderSite(content: WebsiteContent, options: RenderOptions = {}): RenderedSite {
-  const resolved = resolveOptions(options);
+  /*
+   * The content states its own language, and it outranks the render default.
+   *
+   * An explicit `options.lang` still wins — an operator forcing a tag is a
+   * deliberate act — but nothing else should have to be told: the page was
+   * written in the language of the business's evidence, and `<html lang>` has
+   * to agree with it or a screen reader reads Romanian aloud in English.
+   */
+  const resolved = resolveOptions({
+    ...options,
+    lang: options.lang ?? (typeof content.language === 'string' ? content.language : undefined),
+  });
   const warnings: string[] = [];
   const warn = (message: string): void => {
     warnings.push(message);
@@ -212,6 +221,7 @@ export function renderSite(content: WebsiteContent, options: RenderOptions = {})
       headingId: `${ids[index] ?? `section-${index + 1}`}-heading`,
       alternate,
       tagline: position === 0 && section.kind === 'hero' ? content.tagline : null,
+      language: resolved.lang,
       // `?? []` is not defensive noise. Every spec persisted before the trust
       // bar existed is still on disk and still re-renderable, and `--render`
       // validates structurally rather than against the full type — so a field
@@ -225,7 +235,7 @@ export function renderSite(content: WebsiteContent, options: RenderOptions = {})
     });
   });
 
-  const nav = buildNav(content.sections, ids, order);
+  const nav = buildNav(content.sections, ids, order, resolved.lang);
 
   const html = renderDocument({
     content,

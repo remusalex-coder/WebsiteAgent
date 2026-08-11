@@ -57,12 +57,31 @@ never a stage, never a JSON artifact.**
 | `lib/platform/mcp/` | connector contract, manager, transports | the vocabulary |
 | `lib/platform/platform.ts` | assembling all three from config | all of the above |
 | `lib/sources/` | one content source each, behind one contract | `lib/types.ts` and `lib/browser.ts` |
-| `lib/render/` | `WebsiteContent` → HTML, CSS, assets | `lib/types.ts` and nothing else |
+| `lib/design/` | `profile + content` → `WebsiteDesign`, incl. the experience system | `lib/types.ts`, `lib/art/` |
+| `lib/content/` | `profile + content + plan` → the words each beat says | `lib/types.ts`, `lib/design/` (types) |
+| `lib/render/` | `WebsiteContent` → HTML, CSS, assets | `lib/types.ts`, `lib/content/language.ts` |
 | `agents/` | one transform each | `lib/types.ts` and `Platform` |
 | `main.ts` | run lifecycle, stage order, artifacts | everything |
 
 The three subsystems do not import each other. `skills` reaches `ai` for one reason
 only — a skill may need a model — and `mcp` reaches neither.
+
+`lib/design/` is deterministic and model-free: it composes a full `WebsiteDesign`
+from evidence, including the **experience system** (character → experience mode →
+asset choreography → conversion/interaction strategy → narrative order). The AI
+Design Director (`agents/designDirectorAgent.ts`) is an optional improver that may
+override this floor only through validated closed-set decisions. See
+[experience-system.md](experience-system.md) and
+[decisions/0006](decisions/0006-experience-is-character-driven-and-order-is-a-narrative.md).
+
+`lib/content/` is the same shape of thing for *words*: given the narrative plan,
+it decides what each beat of the page says, in the language the business's own
+evidence is written in, and audits the result against what the evidence can
+support. It reads `lib/design/`'s types and is read by `lib/render/` for the
+labels the platform authors (the section eyebrow, the nav, the skip link); it
+never writes design. Also deterministic and model-free. See
+[content-system.md](content-system.md) and
+[decisions/0007](decisions/0007-content-is-directed-by-narrative-role-and-written-in-the-evidence-language.md).
 
 ## Sources
 

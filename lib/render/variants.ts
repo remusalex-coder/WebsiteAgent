@@ -559,6 +559,35 @@ h4 {
   letter-spacing: var(--text-h1-tracking, normal);
 }
 
+/*
+ * The signature beat is set larger than anything but the hero.
+ *
+ * A page with a beginning, a development, a peak and a close only reads that
+ * way if the peak is *visibly* the peak. Before this rule the narrative layer
+ * nominated a signature moment, the layout gave it \`lead\` emphasis — and it
+ * arrived at the same h1 step as the about section three bands above it, while
+ * a contact heading elsewhere in the stylesheet was set half again as large.
+ * The story was in the artifact and not on the page.
+ *
+ * Keyed on \`data-role\`, so it applies to whichever kind of section this
+ * business's evidence made its signature. Capped against the viewport because
+ * the heading is the business's own words and their length is not ours to
+ * choose: a fifty-character line at display scale would otherwise fill a
+ * screen on its own.
+ *
+ * The \`:not(.section--hero)\` is not decoration — it is what gives this rule the
+ * same specificity as the \`data-emphasis="lead"\` rule above, which a signature
+ * beat always also matches. Written without it, the earlier rule won and the
+ * page's peak came out at 67px against its reveal section's 62px: a difference
+ * nobody can see, on the one decision the whole narrative layer exists to make.
+ */
+.section[data-role="signature"]:not(.section--hero) .section__head h2 {
+  font-size: min(var(--text-display-size), 7.5vw);
+  line-height: 1.02;
+  letter-spacing: var(--text-display-tracking, -0.02em);
+  max-width: 18ch;
+}
+
 /* Ground ----------------------------------------------------------- */
 
 /*
@@ -3218,14 +3247,20 @@ a {
 }
 
 /*
- * The scene title steps aside for it.
+ * The scene title steps aside for it — unless the title is worth reading.
  *
- * "Photographs" set as a heading in the middle of an atmospheric sequence is a
- * content-model label wearing a serif. The scene number carries the position and
- * the photographs carry the rest, so the heading stays in the document for the
- * landmark and leaves the composition.
+ * Written when every gallery on every page was headed **"Photographs"**: a
+ * content-model label wearing a serif, which the scene number and the
+ * photographs both said better. That is still true of a supporting gallery, so
+ * the rule stays for one.
+ *
+ * It is no longer true of the *signature* beat. Its heading is now the
+ * business's own words about what the photograph shows — "Sala mare cu
+ * candelabru floral și arcade filigranate" — and hiding it threw away the one
+ * line on the page that only this venue could have written. A later layer must
+ * not erase an earlier one's intelligence; the exception is the fix.
  */
-[data-world="ember"] .section--gallery .section__head h2 {
+[data-world="ember"] .section--gallery:not([data-role="signature"]) .section__head h2 {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -3261,8 +3296,18 @@ a {
   padding-block: clamp(4.5rem, 9vw, 8rem);
 }
 
+/*
+ * Large, but never the largest.
+ *
+ * This was \`display * 1.15\`, which put the word "Contact" at 109px on a page
+ * whose signature beat was set at 67px — a practical, closing label shouting
+ * over the moment the whole narrative builds to. The intent behind the rule was
+ * right (the contact scene had been a grey table nobody could find) and it is
+ * kept: the address below is still set at reading scale. Only the heading is
+ * brought back under the peak, which is what makes the peak one.
+ */
 [data-world="ember"] .section--contact .section__head h2 {
-  font-size: min(calc(var(--text-display-size) * 1.15), 8vw);
+  font-size: min(var(--text-display-size), 6vw);
   line-height: 1;
 }
 
