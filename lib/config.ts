@@ -122,6 +122,23 @@ export interface McpConfig {
   readonly requestTimeoutMs: number;
 }
 
+/**
+ * Where research artifacts live, and who answers a research request.
+ *
+ * `dir` is **tracked by git**, unlike `outputDir`: a research artifact has to
+ * survive the session that produced it, and a session's container does not.
+ *
+ * `serverId` names an entry in `MCP_SERVERS`. When nothing is registered under
+ * it, requests are still filed and the artifact still resumes — only the
+ * same-session answer is unavailable. That is a degraded mode, not a failure.
+ */
+export interface ResearchConfig {
+  /** Absolute path to the research root. Defaults to `./research`. */
+  readonly dir: string;
+  /** MCP server id expected to advertise a `research` capability. */
+  readonly serverId: string;
+}
+
 export interface TelemetryConfig {
   /** When false, calls are still timed but nothing is emitted to a sink. */
   readonly enabled: boolean;
@@ -173,6 +190,7 @@ export interface AppConfig {
   readonly ai: AiConfig;
   readonly skills: SkillsConfig;
   readonly mcp: McpConfig;
+  readonly research: ResearchConfig;
   readonly telemetry: TelemetryConfig;
   readonly features: FeatureFlags;
   /**
@@ -216,6 +234,10 @@ export const DEFAULTS = {
   },
   mcp: {
     requestTimeoutMs: 60_000,
+  },
+  research: {
+    dir: './research',
+    serverId: 'hermes',
   },
   telemetry: {
     enabled: true,
@@ -530,6 +552,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       enabled: list(env, 'MCP_ENABLED'),
       disabled: list(env, 'MCP_DISABLED'),
       requestTimeoutMs: int(env, 'MCP_REQUEST_TIMEOUT_MS', DEFAULTS.mcp.requestTimeoutMs),
+    },
+    research: {
+      dir: path.resolve(str(env, 'RESEARCH_DIR', DEFAULTS.research.dir)),
+      serverId: str(env, 'RESEARCH_MCP_SERVER', DEFAULTS.research.serverId),
     },
     telemetry: {
       enabled: bool(env, 'TELEMETRY_ENABLED', DEFAULTS.telemetry.enabled),

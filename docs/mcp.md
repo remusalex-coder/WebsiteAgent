@@ -132,3 +132,14 @@ ctx.platform.mcp.setEnabled('github', false);
 ```
 
 Overrides configuration for the rest of the run.
+
+## The first real consumer: Hermes
+
+The research handoff uses this layer as its optional fast path. A Hermes endpoint
+is registered like any other server — one `MCP_SERVERS` entry, id `hermes`,
+advertising a `research` tool — and `lib/research/hermes.ts` puts a typed
+boundary in front of it, which is exactly [the intended pattern](#skill-or-mcp-server).
+
+Nothing about the research loop requires it: with no server registered, requests
+are still filed to `research/` and later sessions still resume from the artifact.
+See [research-handoff.md](research-handoff.md).

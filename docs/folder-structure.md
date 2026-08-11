@@ -69,13 +69,27 @@ lib/
     site.ts                      renderSite() — pure, no I/O
     write.ts                     the only file here that touches the filesystem
 
+  research/                      ── RESEARCH HANDOFF (Claude ↔ Hermes) ──
+    index.ts                     public surface; the CLI imports only from here
+    types.ts                     the contract: request, delta, artifact, provenance
+    identity.ts                  content-derived ids — what makes merging idempotent
+    validate.ts                  unknown → typed; refuses unattributed claims
+    merge.ts                     one pass folded in; pure, deterministic
+    brief.ts                     the prompt for Hermes, the brief for Claude
+    projection.ts                artifact → provenance for BusinessProfile
+    hermes.ts                    client + MCP transport; outcomes, never throws
+    store.ts                     the only file here that touches the filesystem
+    session.ts                   openRequest / applyAnswerFile
+
 test/                            node:test suites
   fixtures/content.ts            full / minimal / empty WebsiteContent
   support/snapshot.ts            file-backed snapshot helper
   render/                        html, theme, assets, site, write, snapshot
+  research/                      validation, identity, merge, projection, resume
   __snapshots__/                 committed rendered output
 
 docs/                            this documentation set
+research/                        research artifacts (TRACKED — they outlive a session)
 output/                          per-run artifacts (gitignored)
 ```
 
@@ -86,6 +100,8 @@ output/                          per-run artifacts (gitignored)
 | an AI provider | `lib/ai/providers/<name>.ts` + `AI_PROVIDER_NAMES` + `ADAPTERS` |
 | a skill implementation | the built-in's entry, or a `*.skill.ts` in `SKILLS_DIR` |
 | an MCP server | `MCP_SERVERS` — no code at all |
+| a Hermes endpoint | `MCP_SERVERS` with id `hermes` — no code at all |
+| a research source kind or claim field | nothing: `field` is a free string, `SourceKind` has `other` |
 | a pipeline stage | `agents/`, `lib/types.ts`, `main.ts` |
 | an environment variable | `lib/config.ts` and `.env.example`, nowhere else |
 | a section kind | `lib/types.ts` `SectionKind` + one entry in `BULLET_LAYOUTS` |

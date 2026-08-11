@@ -29,12 +29,25 @@ import { createConsoleSink, createFileSink, createLogger, createMultiSink } from
 import { createBrowserSession } from './lib/browser.js';
 import { createPlatform } from './lib/platform/platform.js';
 import { renderSite, writeRenderedSite } from './lib/render/index.js';
+import {
+  applyAnswerFile,
+  createHermesClient,
+  emptyArtifact,
+  hermesClientFor,
+  listRequests,
+  listSubjects,
+  loadArtifact,
+  openRequest,
+  researchBrief,
+  slugify,
+} from './lib/research/index.js';
 import { AgentError, InvalidInputError } from './lib/errors.js';
 
 import type { AppConfig } from './lib/config.js';
 import type { Logger } from './lib/logger.js';
 import type { BrowserSession } from './lib/browser.js';
 import type { Platform } from './lib/platform/platform.js';
+import type { HermesClient, ResearchSubject } from './lib/research/index.js';
 import type {
   AgentContext,
   DiscoveryInput,
@@ -441,6 +454,14 @@ const USAGE = [
   '  website-agent --render [--out=<dir>] <content.json>',
   '                                               render a saved spec to a site',
   '',
+  'Research handoff (Claude ↔ Hermes):',
+  '  website-agent --research <key>               print the research brief — start here',
+  '  website-agent --research --ask="…" [--fields=a,b] [--notes="…"]',
+  '                [--name="…"] [--locality=…] [--homepage=…] [--maps=…] <key>',
+  '                                               file a request; answer it if Hermes is reachable',
+  '  website-agent --research-apply <delta.json>  merge an answer that arrived out of band',
+  '  website-agent --research-list                subjects on disk and questions still open',
+  '',
   `Stages: ${STAGES.join(', ')}`,
 ].join('\n');
 
@@ -455,12 +476,39 @@ type CliArgs =
   | { readonly mode: 'pipeline'; readonly input: DiscoveryInput }
   | { readonly mode: 'resume'; readonly runId: string; readonly from: StageName }
   | { readonly mode: 'discovery'; readonly input: DiscoveryInput }
-  | { readonly mode: 'render'; readonly contentPath: string; readonly outDir: string | null };
+  | { readonly mode: 'render'; readonly contentPath: string; readonly outDir: string | null }
+  | ResearchAskArgs
+  | { readonly mode: 'research-show'; readonly key: string }
+  | { readonly mode: 'research-apply'; readonly deltaPath: string }
+  | { readonly mode: 'research-list' };
+
+/**
+ * Asking for research.
+ *
+ * `flags` is carried through rather than being unpacked here because the subject
+ * fields are only needed when no artifact exists yet, and that is a question
+ * only the filesystem can answer.
+ */
+interface ResearchAskArgs {
+  readonly mode: 'research-ask';
+  readonly key: string;
+  readonly ask: string;
+  readonly fields: readonly string[];
+  readonly notes: string | null;
+  readonly flags: readonly string[];
+}
 
 /** Reads `--name=value`, trimmed; `undefined` when the flag is absent. */
 function flagValue(flags: readonly string[], name: string): string | undefined {
   const prefix = `--${name}=`;
   return flags.find((flag) => flag.startsWith(prefix))?.slice(prefix.length).trim();
+}
+
+/** Reads `--name=a,b,c` into a trimmed list. Absent or empty gives `[]`. */
+function flagList(flags: readonly string[], name: string): readonly string[] {
+  const raw = flagValue(flags, name);
+  if (raw === undefined || raw === '') return [];
+  return raw.split(',').map((entry) => entry.trim()).filter((entry) => entry !== '');
 }
 
 function parseArgs(argv: readonly string[]): CliArgs {
@@ -472,8 +520,35 @@ function parseArgs(argv: readonly string[]): CliArgs {
   const out = flagValue(flags, 'out');
   const from = flagValue(flags, 'from');
 
+  // The one mode that operates on nothing in particular, so it is settled
+  // before the positional argument is required.
+  if (flags.includes('--research-list')) return { mode: 'research-list' };
+
   if (positional === undefined || positional === '') {
     throw new InvalidInputError(USAGE, SOURCE);
+  }
+
+  if (flags.includes('--research-apply')) {
+    return { mode: 'research-apply', deltaPath: positional };
+  }
+
+  if (flags.includes('--research')) {
+    // The key is a slug, and a caller who typed a business name rather than one
+    // should get the artifact they meant instead of a second identity for the
+    // same business under a key that will never match again.
+    const key = slugify(positional);
+    const ask = flagValue(flags, 'ask');
+
+    if (ask === undefined || ask === '') return { mode: 'research-show', key };
+
+    return {
+      mode: 'research-ask',
+      key,
+      ask,
+      fields: flagList(flags, 'fields'),
+      notes: flagValue(flags, 'notes') ?? null,
+      flags,
+    };
   }
 
   if (from !== undefined) {
@@ -590,9 +665,196 @@ export async function renderStandalone(
   return { targetDir, written, warnings };
 }
 
+/* ------------------------------------------------------------------ */
+/* Research handoff                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Builds the client that may answer a research request inside this session.
+ *
+ * The platform is built **only** when a Hermes server is actually declared in
+ * `MCP_SERVERS`. Booting it to discover that nothing is registered would cost a
+ * skill-discovery pass to learn what configuration already says, and the
+ * transport-less client is not a degraded stand-in — it is the correct answer
+ * when there is nothing to talk to.
+ */
+async function researchClient(
+  config: AppConfig,
+  signal: AbortSignal,
+): Promise<{ client: HermesClient; dispose: () => Promise<void> }> {
+  const declared = config.mcp.servers.some((server) => server.id === config.research.serverId);
+  if (!declared) {
+    return { client: createHermesClient({ transport: null }), dispose: async () => {} };
+  }
+
+  const logger = createLogger({
+    level: config.logLevel,
+    scope: 'research',
+    sink: createConsoleSink(),
+  });
+  const platform = await createPlatform({
+    config,
+    logger,
+    signal,
+    outputDir: config.outputDir,
+  });
+
+  return {
+    client: hermesClientFor(platform.mcp, config.research.serverId),
+    dispose: () => platform.dispose(),
+  };
+}
+
+/**
+ * Resolves the subject a request is about.
+ *
+ * An existing artifact settles it: the subject is part of the record and must
+ * not drift between passes, or two revisions of one business end up under two
+ * identities. A first request has to be told the name, because deriving one from
+ * a slug would guess at a customer's own spelling.
+ */
+async function subjectFor(
+  config: AppConfig,
+  key: string,
+  flags: readonly string[],
+): Promise<ResearchSubject> {
+  const existing = await loadArtifact(config.research.dir, key);
+  if (existing !== null) return existing.subject;
+
+  const name = flagValue(flags, 'name');
+  if (name === undefined || name === '') {
+    throw new InvalidInputError(
+      `No research artifact for "${key}" yet, so this is a first request and needs the ` +
+        'business name: add --name="…" (and optionally --locality, --homepage, --maps).',
+      SOURCE,
+    );
+  }
+
+  return {
+    key,
+    name,
+    locality: flagValue(flags, 'locality') ?? null,
+    homepage: flagValue(flags, 'homepage') ?? null,
+    mapsUrl: flagValue(flags, 'maps') ?? null,
+  };
+}
+
+/**
+ * Files a research request, and reports exactly what happened to it.
+ *
+ * The output distinguishes three outcomes that a single "done" would blur:
+ * answered now, filed and waiting because nothing could answer it, and filed
+ * again because the same question was already open. Only the first means
+ * evidence changed.
+ */
+async function researchAsk(config: AppConfig, args: ResearchAskArgs): Promise<void> {
+  const controller = new AbortController();
+  const { client, dispose } = await researchClient(config, controller.signal);
+
+  try {
+    const result = await openRequest({
+      root: config.research.dir,
+      subject: await subjectFor(config, args.key, args.flags),
+      query: args.ask,
+      fields: args.fields,
+      notes: args.notes,
+      now: new Date().toISOString(),
+      client,
+      signal: controller.signal,
+    });
+
+    const out = process.stdout;
+    out.write(`request ${result.request.requestId}\n`);
+    out.write(`filed    ${result.requestPath}\n`);
+    if (result.alreadyOpen) out.write('note     this question was already open; re-filed, not duplicated\n');
+
+    if (result.answered !== null) {
+      const { delta, answerPath, artifactPath, applied } = result.answered;
+      out.write(`answered ${delta.researchedAt} by ${delta.researcher}\n`);
+      out.write(`receipt  ${answerPath}\n`);
+      out.write(
+        applied
+          ? `artifact ${artifactPath} (revision ${result.artifact.revision})\n`
+          : `artifact unchanged — this pass was already recorded\n`,
+      );
+      out.write(`\n${delta.handoff}\n`);
+      return;
+    }
+
+    if (result.unanswered !== null) {
+      process.stderr.write(`unanswered: ${result.unanswered.message}\n`);
+    }
+
+    // Printed rather than merely stored: this is what a human or an out-of-band
+    // Hermes needs, and making them open a file to find it is friction the
+    // handoff does not need.
+    out.write(`\n${result.prompt}\n`);
+  } finally {
+    await dispose();
+  }
+}
+
+/** Prints what a session opening cold should read before doing anything else. */
+async function researchShow(config: AppConfig, key: string): Promise<void> {
+  const artifact = await loadArtifact(config.research.dir, key);
+  if (artifact === null) {
+    const known = await listSubjects(config.research.dir);
+    throw new InvalidInputError(
+      `No research artifact for "${key}" in ${config.research.dir}. ` +
+        (known.length === 0 ? 'None exist yet.' : `Known subjects: ${known.join(', ')}.`),
+      SOURCE,
+    );
+  }
+  process.stdout.write(`${researchBrief(artifact)}\n`);
+}
+
+/** Subjects on disk and questions still waiting for an answer. */
+async function researchList(config: AppConfig): Promise<void> {
+  const [subjects, requests] = await Promise.all([
+    listSubjects(config.research.dir),
+    listRequests(config.research.dir),
+  ]);
+
+  const out = process.stdout;
+  out.write(`research root: ${config.research.dir}\n\n`);
+
+  out.write(`subjects (${subjects.length})\n`);
+  for (const key of subjects) {
+    const artifact = (await loadArtifact(config.research.dir, key)) ?? emptyArtifact({
+      key, name: key, locality: null, homepage: null, mapsUrl: null,
+    });
+    out.write(
+      `  ${key} — revision ${artifact.revision}, ${artifact.claims.length} claims, ` +
+        `${artifact.conflicts.length} conflicts, ${artifact.gaps.length} gaps\n`,
+    );
+  }
+
+  out.write(`\nopen requests (${requests.length})\n`);
+  for (const request of requests) {
+    out.write(
+      `  ${request.requestId} — ${request.subject.key} — ${request.scope.query}\n`,
+    );
+  }
+}
+
 async function main(): Promise<void> {
   const config = loadConfig();
   const args = parseArgs(process.argv.slice(2));
+
+  if (args.mode === 'research-ask') return researchAsk(config, args);
+  if (args.mode === 'research-show') return researchShow(config, args.key);
+  if (args.mode === 'research-list') return researchList(config);
+
+  if (args.mode === 'research-apply') {
+    const result = await applyAnswerFile({ root: config.research.dir, deltaPath: args.deltaPath });
+    process.stdout.write(
+      result.applied
+        ? `${result.artifactPath} — revision ${result.artifact.revision}, ` +
+          `${result.artifact.claims.length} claims, ${result.artifact.conflicts.length} conflicts\n`
+        : `${result.artifactPath} unchanged — this pass was already recorded\n`,
+    );
+    return;
+  }
 
   if (args.mode === 'render') {
     const { targetDir, warnings } = await renderStandalone(args.contentPath, args.outDir);

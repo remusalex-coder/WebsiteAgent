@@ -29,6 +29,13 @@ line between them is the point of the whole design.
 │   Beside the pipeline, not in it. A pure function: no context,    │
 │   no model, no browser, no I/O. Deployment consumes it unchanged. │
 └──────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────┐
+│ lib/research — ResearchRequest -> ResearchDelta -> Artifact       │
+│   Also beside the pipeline. Evidence in, attributed evidence out. │
+│   Imports no pipeline contract; no agent imports it. Persists to  │
+│   research/, which is tracked by git — see research-handoff.md.   │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ## The one rule
@@ -57,11 +64,20 @@ never a stage, never a JSON artifact.**
 | `lib/platform/mcp/` | connector contract, manager, transports | the vocabulary |
 | `lib/platform/platform.ts` | assembling all three from config | all of the above |
 | `lib/render/` | `WebsiteContent` → HTML, CSS, assets | `lib/types.ts` and nothing else |
+| `lib/research/` | the Claude ↔ Hermes evidence handoff | `lib/errors.ts` and the capability vocabulary |
 | `agents/` | one transform each | `lib/types.ts` and `Platform` |
 | `main.ts` | run lifecycle, stage order, artifacts | everything |
 
 The three subsystems do not import each other. `skills` reaches `ai` for one reason
 only — a skill may need a model — and `mcp` reaches neither.
+
+`lib/research/` sits outside all of it. It imports no pipeline contract and no agent
+imports it, which is what makes the guarantee in
+[the research handoff](research-handoff.md) structural rather than a matter of
+discipline: **a research pass cannot change a profile, a strategy, a design or a
+rendered site.** It can only make attributed evidence available for a decision made
+elsewhere. The research artifact is the source of truth for evidence;
+`BusinessProfile.provenance` is a downstream projection of it.
 
 ## Why capabilities return errors instead of throwing
 
@@ -110,6 +126,8 @@ handled the same way, for the same reason.
 | OpenAI / Gemini / OpenRouter adapters | **never run against a live key** |
 | MCP HTTP connector | **never run against a live server** |
 | Renderer | 110 assertions incl. snapshots; a rendered site opened from disk and read; **never deployed to a host** |
+| Research handoff | 51 assertions; the full ask → answer → merge → resume loop driven through the CLI across separate processes |
+| Hermes MCP transport | **never run against a live Hermes server — none exists.** Response handling is covered against each documented MCP result shape |
 
 The three new provider adapters and the MCP connector follow their published request
 and response shapes and are exercised by the typecheck, but nothing here has made a
@@ -118,6 +136,7 @@ real call. Treat the first live run of each as the test.
 ## Related
 
 - [Folder structure](folder-structure.md)
+- [Research handoff — Claude ↔ Hermes](research-handoff.md)
 - [Renderer](renderer.md)
 - [Provider system](providers.md)
 - [Skill system](skills.md)

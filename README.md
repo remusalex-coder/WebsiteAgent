@@ -77,8 +77,20 @@ lib/
     document.ts      head, header, nav, footer, JSON-LD
     site.ts          renderSite()
     write.ts         the only part that touches the filesystem
+  research/          the Claude <-> Hermes evidence handoff. No pipeline imports
+    index.ts         the public surface
+    types.ts         request, delta, artifact, provenance projection
+    identity.ts      content-derived ids; what makes merging idempotent
+    validate.ts      unknown -> typed; refuses claims with no source
+    merge.ts         one pass folded in. Pure and deterministic
+    brief.ts         the prompt for Hermes, the brief for a resuming session
+    projection.ts    artifact -> provenance for BusinessProfile
+    hermes.ts        client and MCP transport; outcomes, never throws
+    store.ts         the only part that touches the filesystem
+    session.ts       openRequest / applyAnswerFile
 test/                node:test suites, fixtures and snapshots
-docs/                architecture, providers, skills, MCP, renderer, config, dev guide
+docs/                architecture, providers, skills, MCP, renderer, research handoff, config, dev guide
+research/            research artifacts — tracked, because they outlive a session
 output/              per-run artifacts (gitignored)
 ```
 
@@ -327,6 +339,7 @@ credential variable **names** are set, never their values.
 
 Full detail: [docs/](docs/) — [architecture](docs/architecture.md),
 [providers](docs/providers.md), [skills](docs/skills.md), [MCP](docs/mcp.md),
+[research handoff](docs/research-handoff.md),
 [configuration](docs/configuration.md), [developer guide](docs/developer-guide.md).
 
 ## Stage 1: what discovery extracts
@@ -515,6 +528,45 @@ one malformed field would be the wrong trade.
 **Everything from the spec is escaped.** A `javascript:` call to action becomes plain
 text, a palette entry that is really a CSS fragment falls back to a default, and a
 `</script>` inside the JSON-LD cannot close its own element.
+
+## The research handoff — Claude ↔ Hermes
+
+A session runs out of context before the work runs out, and research is the half
+that gets thrown away and redone. So it is done by a second agent and written
+down.
+
+**Claude** is lead architect, design director, UX director, content director,
+implementation owner and visual QA owner. **Hermes** is a research and evidence
+agent: it reads public sources and reports what they say, with attribution. It
+decides nothing about the product, writes no code, and cannot express a design
+opinion — nothing in the contract has a field for one.
+
+```bash
+npx tsx main.ts --research-list                              # subjects, open questions
+npx tsx main.ts --research <key>                             # the brief — resume here
+npx tsx main.ts --research --ask="…" --fields=a,b <key>      # ask for what is missing
+npx tsx main.ts --research-apply <delta.json>                # merge an answer
+```
+
+Artifacts live in `research/` and are **committed**, unlike `output/`. That is the
+whole resume story: a session's container is destroyed when it ends, so anything a
+later session must read has to survive in git. A later session runs `--research
+<key>`, gets what is known, what is contested and what is missing, and carries on.
+
+**A claim with no source is a parse error, not a low-confidence fact.**
+`verified` needs a source that was actually readable, `corroborated` needs two,
+and an `inferred` claim must write down its reasoning so a reader can reject it.
+Blocked sources, gaps and open questions are fields — "we could not find out"
+never renders as "there is nothing there". Conflicts keep both sides, each
+attributed; nothing picks a winner.
+
+The merge is a pure function and ids are content hashes, so re-filing the same
+answer changes nothing, and the next request's "already settled" list is derived
+from the artifact rather than remembered by a session.
+
+€0: filesystem, JSON and SHA-256. Full contract, provenance rules and what happens
+when Hermes is unreachable — which is the current state —
+in [docs/research-handoff.md](docs/research-handoff.md).
 
 ## Implementation order
 

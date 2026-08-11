@@ -75,6 +75,17 @@ most likely to need setting explicitly.
 
 See [mcp.md](mcp.md#configuration) for the declaration shape.
 
+## Research handoff
+
+| Variable | Default | |
+|---|---|---|
+| `RESEARCH_DIR` | `./research` | **tracked by git**, unlike `OUTPUT_DIR` — an artifact has to outlive the session that produced it |
+| `RESEARCH_MCP_SERVER` | `hermes` | id of the `MCP_SERVERS` entry expected to advertise a `research` capability |
+
+Nothing is required. With no server registered under `RESEARCH_MCP_SERVER`,
+requests are still filed and artifacts still resume; only the same-session answer
+is unavailable. See [research-handoff.md](research-handoff.md).
+
 ## Telemetry
 
 | Variable | Default | |

@@ -43,6 +43,29 @@ much. Two of the three directions worth trying invent nothing:
   profile.
 - **PRD-002** — Places API. All five sites show one opening day of seven.
 
+## If you are resuming research
+
+A previous session may have left evidence on disk for you. It is committed, so it
+survived whatever happened to that session:
+
+```bash
+npx tsx main.ts --research-list        # every business researched, every open question
+npx tsx main.ts --research <key>       # the brief: what is known, contested, missing
+```
+
+Then ask for what is still missing, rather than starting over:
+
+```bash
+npx tsx main.ts --research --ask="Find the indoor capacity." --fields=capacity <key>
+```
+
+The request is filed to `research/requests/` whether or not Hermes is reachable.
+When an answer comes back, `--research-apply <file>` merges it. Full contract:
+[docs/research-handoff.md](docs/research-handoff.md).
+
+**Hermes decides nothing about the website.** It supplies attributed evidence;
+every design, UX, content and QA decision stays yours.
+
 ## Repeatable commands
 
 ```bash

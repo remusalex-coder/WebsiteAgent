@@ -31,6 +31,11 @@ Beside it sits the **renderer**: a pure `WebsiteContent → static site` functio
 agent, because it needs nothing an agent gets — no model, no browser, no context. It
 runs after stage 5 and deployment will consume it unchanged.
 
+Beside both sits the **research handoff**: a second agent (Hermes) that finds
+evidence, and a committed artifact that both agents read and only one writes. It
+imports no pipeline contract and no agent imports it, so a research pass can make
+evidence available and can change nothing else.
+
 ```
 main.ts              orchestration, CLI, run lifecycle
 agents/              one file per stage
@@ -38,8 +43,10 @@ lib/                 browser · config · logger · errors · types
   ai/                AIProvider contract, factory, 4 vendor adapters
   platform/          capability vocabulary, telemetry, skills, MCP
   render/            WebsiteContent → index.html + styles.css + assets
+  research/          Claude ↔ Hermes evidence handoff
 test/                node:test suites, fixtures, snapshots
-docs/                architecture · providers · skills · mcp · renderer · config · dev guide
+docs/                architecture · providers · skills · mcp · renderer · research-handoff · config · dev guide
+research/            research artifacts (tracked — they outlive a session)
 output/              artifacts (gitignored)
 ```
 
@@ -120,6 +127,36 @@ worked around and reported in `site.warnings`. See [docs/renderer.md](docs/rende
 
 Run standalone with `npm run render -- output/<runId>/5-content.json`.
 
+**Research handoff (a library and four CLI modes, not a stage)** — the mechanism
+that lets a Claude session ask Hermes for missing evidence, and lets a *later*
+Claude session continue from the answer without repeating the research.
+
+- **Committed artifacts.** `research/<key>.research.json` is the source of truth
+  for research evidence, tracked by git because a session's container is not.
+  `BusinessProfile.provenance` is a downstream projection of it — the projection
+  function exists (`projectProvenance`); wiring it into the profile is a separate,
+  deliberate contract change and has not been made.
+- **Attribution is structural.** A claim with no source is a parse error, not a
+  low-confidence fact. `verified` needs a source that was actually readable;
+  `corroborated` needs two; `inferred` needs written reasoning. Blocked sources,
+  gaps and open questions are fields, so "we could not find out" never renders as
+  "there is nothing there".
+- **Deterministic and idempotent.** The merge is a pure function; ids are content
+  hashes; sorting is by code unit. Re-filing an answer changes nothing.
+- **Incremental.** The next request's "already settled, do not re-confirm" list is
+  derived from the artifact, so it still works after the session that asked ended.
+- **Conflicts are preserved, never resolved.** Both claims stay, each attributed.
+
+```bash
+npx tsx main.ts --research-list                              # subjects and open questions
+npx tsx main.ts --research <key>                             # the brief — resume here
+npx tsx main.ts --research --ask="…" --fields=a,b <key>      # ask
+npx tsx main.ts --research-apply <delta.json>                # merge an answer
+```
+
+€0: filesystem, JSON and SHA-256. No API, no key, no new dependency. See
+[docs/research-handoff.md](docs/research-handoff.md).
+
 ## Pending
 
 **6. Deployment** — a rendered site → a live URL. Consumes `renderSite` output
@@ -149,6 +186,23 @@ Also:
 - **E.164 only when derivable** — explicit `+`, or NANP length on a US/CA address. A UK number without `+` keeps `e164: null`. No country code is ever invented.
 - **Address components are best-effort** on comma-separated forms; `formatted` is always verbatim.
 - **Stage 4's live call has never run** — no API key was available.
+
+**Research handoff limits, all deliberate and all declared:**
+
+- **No Hermes endpoint exists.** The MCP transport is written and its response
+  handling is tested against each documented result shape, but it has never run
+  against a live Hermes server, because there is none — no MCP entry, no
+  connector, no binary. Today every request is answered out of band. **This is
+  the difference between a working handoff and proven parallel cooperation, and
+  only the first is claimed.**
+- **`BusinessProfile` is unchanged.** `projectProvenance` produces the downstream
+  view, but nothing consumes it yet: adding a `provenance` field to the profile is
+  a contract change, and this milestone was not the place to make one.
+- **No agent reads `research/`.** A pipeline run behaves exactly as it did before.
+  Feeding research into the profile is the next milestone, not this one.
+- **Claim values are strings.** Typing them into the pipeline's shapes is the
+  pipeline's job; keeping them untyped here is what stops the research layer from
+  becoming a second, competing schema for a business.
 
 **Platform limits, all deliberate and all declared:**
 
@@ -189,7 +243,7 @@ Also:
 - **No trust signals rendered anywhere (PRD-008).** Every profile carries a Maps star rating; none is shown.
 - **The two stylesheets override each other silently (INF-007).** Twice now.
 - **The capability platform has no tests.** Its boot path, policy, structured errors and telemetry were verified by a runtime smoke run, not by anything committed. The registry, the manager's `blockingReason` ladder, and the schema translation are the pieces most worth covering.
-- **Only the renderer is tested.** `npm test` runs 110 assertions, all in `test/render/`. Nothing else in the repository has a committed test.
+- **Only the renderer and the research handoff are tested.** `npm test` runs 299 assertions across `test/render/`, `test/design/` and `test/research/`. The agents, the platform and the AI layer still have no committed test.
 - **Older suites still live outside the repo** — discovery parsers, normalizer primitives, merge/dedup/validation, analyst schema and analyst brief remain in a scratchpad rather than `test/`.
 - **No accessibility or HTML validation in CI.** The markup is checked by assertions about the string, not by axe or the W3C validator. A real audit would be worth one pass before the first deploy.
 - **No retry/backoff** on transient Maps or site failures beyond Playwright's timeouts. The platform reports `retryable` honestly on every failure, but nothing acts on it yet.

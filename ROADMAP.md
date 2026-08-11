@@ -1,6 +1,37 @@
 # Roadmap
 
-_Last updated: 2026-08-06_
+_Last updated: 2026-08-11_
+
+> **This file is stale below the next section.** Canonical priorities live in
+> BusinessForge HQ (Notion) → P0 Execution Plan. M1–M5 below record the renderer
+> milestone and what was planned around it in early August; the design system,
+> Design Director and research layer that followed are not in it.
+
+## M0 — Research handoff (Claude ↔ Hermes) ✅
+
+Sessions ended before the work did, and the research half was redone every time.
+Now it is done by a second agent and written down.
+
+- ✅ **`lib/research`** — request → delta → merged artifact, committed to
+  `research/` so it outlives the session that produced it.
+- ✅ **Attribution enforced by the parser.** A claim with no source cannot be
+  stored; `verified` needs a readable source, `corroborated` needs two,
+  `inferred` needs written reasoning.
+- ✅ **Deterministic and idempotent** merge; content-derived ids.
+- ✅ **Incremental** — the next request's exclusion list is derived from disk.
+- ✅ **Four CLI modes**, exercised end to end across separate processes.
+- ✅ **51 assertions** in `test/research/`.
+
+_Exit:_ a session asks, a later session resumes from the artifact without
+repeating the research. **Done** — see
+[docs/research-handoff.md](docs/research-handoff.md).
+
+**Not done, and not claimed:** no Hermes endpoint exists, so the same-session
+answer path has never run against a live server. Answers arrive out of band today.
+
+---
+
+_Everything below is from 2026-08-06._
 
 Goal: a Google Maps URL goes in, a deployed website comes out, unattended.
 Stages 1–4 and the renderer are built. The loop does not close until a spec written by
