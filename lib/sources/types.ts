@@ -119,3 +119,65 @@ export const EMPTY_HARVEST: ListingHarvest = {
   reviewCount: null,
   sources: [],
 };
+
+/* ------------------------------------------------------------------ */
+/* Provenance (additive, A1)                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Epistemic strength of a value — *how well we know it*, independent of whether
+ * sources agree. Separated from `ProvenanceStatus` on purpose: a fact can be
+ * `confidence: 'confirmed'` and `status: 'conflicting'` (two authoritative
+ * sources both certain, but they disagree on the value).
+ */
+export type Confidence =
+  | 'confirmed' // verified directly, high trust (official record, stated on site)
+  | 'multi-source' // corroborated by two or more independent sources
+  | 'single-source' // one source only
+  | 'unconfirmed' // reported but not verifiable / weakly sourced
+  | 'inferred'; // derived, not directly stated (flagged, used sparingly)
+
+/**
+ * The state of a value relative to the sources that reported it.
+ *
+ * `conflicting` is a STATUS, not a confidence tier: it means >=2 sources
+ * disagree on the value (e.g. address "Strada Regele Ferdinand 56" vs "87").
+ */
+export type ProvenanceStatus =
+  | 'agreed' // all sources that report this field align
+  | 'conflicting' // two or more sources disagree on the value
+  | 'partial' // some sources state it, some are silent (not a disagreement)
+  | 'absent-checked' // actively looked for, genuinely not present
+  | 'blocked' // a source existed but was inaccessible (bot wall, 403)
+  | 'unchecked'; // never looked for (the default for legacy / null)
+
+/**
+ * Richer provenance for one profile field, supplementary to `Attributed<T>`.
+ *
+ * It annotates the chosen value; it never replaces it. The deterministic harvest
+ * merge (`mergeHarvests`) stays lossy by design, so provenance is assembled from
+ * the pre-merge candidates (see `foldProvenance`) and carried alongside the
+ * merged harvest in `CollectedSources`.
+ */
+export interface ProvenanceNote {
+  readonly confidence: Confidence;
+  readonly status: ProvenanceStatus;
+  /** Every source URL that contributed to this field, not just the winner. */
+  readonly sources: readonly string[];
+  /** Free-text explanation: the old research.json `note` / `conflict` text. */
+  readonly note?: string | undefined;
+  /** When the research that produced this ran (research time, not normalize time). */
+  readonly researchedAt?: string | undefined;
+  /** Who gathered it: 'hermes' | 'claude' | 'maps' | 'places' | 'website' | ... */
+  readonly researcher?: string | undefined;
+}
+
+/** A source that was attempted but could not be read. Preserved for audit/re-run. */
+export interface BlockedSource {
+  /** 'instagram' | 'facebook' | 'ievent' | 'google-maps-limited' | ... */
+  readonly source: string;
+  /** Why it was blocked, e.g. "Signed-out bot wall; WebFetch returned title only." */
+  readonly reason: string;
+  /** ISO timestamp of the attempt, when known. */
+  readonly checkedAt?: string | undefined;
+}

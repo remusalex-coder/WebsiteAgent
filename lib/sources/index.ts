@@ -10,7 +10,26 @@
  */
 
 export { EMPTY_HARVEST } from './types.js';
-export type { ListingHarvest, ListingPhoto, ListingReview } from './types.js';
+export type {
+  ListingHarvest,
+  ListingPhoto,
+  ListingReview,
+  Confidence,
+  ProvenanceStatus,
+  ProvenanceNote,
+  BlockedSource,
+} from './types.js';
+export {
+  FIELD_AUTHORITY,
+  authorityRank,
+  type FieldKind,
+} from './authority.js';
+export {
+  type CollectedSources,
+  type SourceProvenance,
+  foldProvenance,
+  EMPTY_COLLECTED_SOURCES,
+} from './collectedSources.js';
 export { buildCleanPlaceUrl } from './mapsUrl.js';
 export {
   harvestMapsListing,
