@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "experience",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-experience.mjs", "25e648c7"],
+      "port": 4321,
+      "autoPort": true
+    }
+  ]
+}
