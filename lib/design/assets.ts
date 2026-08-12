@@ -41,7 +41,31 @@ import type { ImageAsset } from '../types.js';
 
 export type Orientation = 'portrait' | 'landscape' | 'square';
 export type AssetRights = 'usable' | 'reference-only' | 'unknown';
-export type AssetRole = 'hero' | 'signature' | 'gallery' | 'detail' | 'support' | 'reference-only' | 'unused';
+/**
+ * What an image is *for*, in the page's composition.
+ *
+ * `hero` and `signature` are the two anchor images (at most one each).
+ * `environment`, `people`, `detail` and `process` are the roles a gallery
+ * sequence image earns from what it shows and where it falls in the
+ * sequence — see `roleFor` — and they exist so the renderer can give a
+ * photograph of the workshop a different treatment than a photograph of a
+ * hand at work, instead of pouring every image into one uniform grid cell.
+ * `gallery` is the fallback when nothing more specific applies.
+ */
+export type AssetRole =
+  | 'hero' | 'signature' | 'environment' | 'people' | 'detail' | 'process' | 'gallery'
+  | 'support' | 'reference-only' | 'unused';
+
+/**
+ * The aspect ratio a role composes best at.
+ *
+ * Not a crop choice — `ImageStrategy.galleryCrop` still owns that as a page
+ * default. This is the *deviation* a specific image's role earns from that
+ * default: a hero or an environment shot wants to breathe wide, a hand at
+ * work or a step in a process reads better tall, and a close-up detail wants
+ * to be square. `natural` defers to the page default.
+ */
+export type ImageFraming = 'wide' | 'tall' | 'square' | 'natural';
 
 export interface AssetPlacement {
   readonly localPath: string | null;
@@ -50,6 +74,7 @@ export interface AssetPlacement {
   readonly subject: Subject;
   readonly rights: AssetRights;
   readonly role: AssetRole;
+  readonly framing: ImageFraming;
 }
 
 export interface AssetChoreography {
@@ -94,6 +119,55 @@ function orientationOf(image: ImageAsset): Orientation {
   if (image.width == null || image.height == null || image.height === 0) return 'landscape';
   const r = image.width / image.height;
   return r > 1.15 ? 'landscape' : r < 0.87 ? 'portrait' : 'square';
+}
+
+/**
+ * What one image is for, from its subject and its place in the sequence.
+ *
+ * Deliberately built from evidence already computed elsewhere — `subjectOf`
+ * (from the image's own alt text and path) and the sequence's own contrast
+ * beats — rather than from any name or category the business carries.
+ * `scene` (the subject vocabulary's catch-all) resolves on shape and rhythm:
+ * a portrait crop reads as a close look at one thing (`detail`); a landscape
+ * frame that lands on a contrast beat reads as a change of movement — the
+ * documentary "here is a step" shot (`process`); anything else is the plain
+ * gallery fallback.
+ */
+function roleFor(
+  image: ImageAsset,
+  ctx: { isHero: boolean; isSignature: boolean; orientation: Orientation; position: number; contrastAt: ReadonlySet<number> },
+): AssetRole {
+  if (ctx.isHero) return 'hero';
+  if (ctx.isSignature) return 'signature';
+
+  const subject = subjectOf(image);
+  if (subject === 'people') return 'people';
+  if (subject === 'venue') return 'environment';
+  if (ctx.orientation === 'portrait') return 'detail';
+  if (ctx.position >= 0 && ctx.contrastAt.has(ctx.position)) return 'process';
+  return 'gallery';
+}
+
+/** The aspect a role composes best at. See `ImageFraming`. */
+function framingFor(role: AssetRole, orientation: Orientation): ImageFraming {
+  switch (role) {
+    case 'hero':
+    case 'signature':
+    case 'environment':
+      return 'wide';
+    case 'process':
+      return 'tall';
+    case 'detail':
+      return 'square';
+    case 'people':
+      return orientation === 'landscape' ? 'natural' : 'tall';
+    case 'gallery':
+      return orientation === 'portrait' ? 'tall' : orientation === 'square' ? 'square' : 'natural';
+    case 'support':
+    case 'reference-only':
+    case 'unused':
+      return 'natural';
+  }
 }
 
 function usable(profile: { images: { hero: ImageAsset | null; gallery: readonly ImageAsset[] } }): readonly ImageAsset[] {
@@ -165,14 +239,21 @@ export function choreographAssets(
     notes.push(`${referenceOnly.length} image${referenceOnly.length === 1 ? '' : 's'} are reference-only (rights unconfirmed) — usable as prototype placeholders, flagged for replacement.`);
   }
 
-  const placements: AssetPlacement[] = usedDistinct.map((i) => ({
-    localPath: i.localPath,
-    url: i.url,
-    orientation: orientationOf(i),
-    subject: subjectOf(i),
-    rights: rightsOf(i),
-    role: i === hero ? 'hero' : i === signature ? 'signature' : orientationOf(i) === 'portrait' ? 'detail' : 'gallery',
-  }));
+  const contrastAt = new Set(contrastPoints);
+  const placements: AssetPlacement[] = usedDistinct.map((i) => {
+    const orientation = orientationOf(i);
+    const position = gallerySequence.indexOf(i);
+    const role = roleFor(i, { isHero: i === hero, isSignature: i === signature, orientation, position, contrastAt });
+    return {
+      localPath: i.localPath,
+      url: i.url,
+      orientation,
+      subject: subjectOf(i),
+      rights: rightsOf(i),
+      role,
+      framing: framingFor(role, orientation),
+    };
+  });
 
   const rationale = reduceImagery
     ? `Restraint: a ${character.visualWeight} ${experience.mode} page carries minimal imagery on purpose.`

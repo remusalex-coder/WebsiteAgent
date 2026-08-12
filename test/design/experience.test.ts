@@ -109,10 +109,10 @@ function architectureOf(name: string) {
   return { character, experience };
 }
 
-test('mechanic is a brochure — functional, compact, no signature moment', () => {
+test('mechanic is a brochure — craft register, compact, no signature moment', () => {
   const { character, experience } = architectureOf('mechanic');
   assert.equal(character.visualWeight, 'text-led');
-  assert.equal(character.emotionalRegister, 'functional');
+  assert.equal(character.emotionalRegister, 'craft');
   assert.equal(experience.mode, 'brochure');
   assert.equal(experience.signatureMoment, null);
   assert.equal(experience.galleryLead, false);

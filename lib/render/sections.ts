@@ -29,8 +29,9 @@ import { fold } from '../content/evidence.js';
 import { LANGUAGES, lexiconFor } from '../content/language.js';
 
 import type { Html } from './html.js';
-import type { SectionKind, TrustSignal, WebsiteSection } from '../types.js';
+import type { ImageAsset, SectionKind, TrustSignal, WebsiteSection } from '../types.js';
 import type { AssetPlan, ResolvedImage } from './assets.js';
+import type { AssetRole, ImageFraming } from '../design/assets.js';
 import type {
   HeroVariant,
   SectionDesign,
@@ -160,8 +161,36 @@ function renderImage(image: ResolvedImage, attrs: Record<string, string | number
     height: image.height,
     loading: 'lazy',
     decoding: 'async',
+    // What this photograph is for, and the aspect it composes best at — the
+    // stylesheet reads these to give a hero shot, a detail and a process
+    // beat different treatments instead of pouring every image into one
+    // uniform grid cell. Absent on the pre-design path.
+    ...(image.role === undefined ? {} : { 'data-role': image.role }),
+    ...(image.framing === undefined || image.framing === 'natural' ? {} : { 'data-framing': image.framing }),
     ...attrs,
   });
+}
+
+/** An `ImageAsset`'s identity for matching against `AssetPlacement`. */
+function assetIdentity(localPath: string | null, url: string): string {
+  return localPath ?? url;
+}
+
+/**
+ * Looks up the role and framing the design's asset choreography assigned to
+ * one image.
+ *
+ * Matched by identity rather than by object reference: the choreography ran
+ * over the profile's image pool, `WebsiteSection.images` is the writer's own
+ * (possibly re-ordered, possibly filtered) list, and only the path or URL
+ * survives both. No match — a legacy design, or an image the choreography
+ * held back — leaves the image exactly as it always rendered.
+ */
+function placementOf(image: ImageAsset, design: WebsiteDesign | null): { role: AssetRole; framing: ImageFraming } | null {
+  if (design === null) return null;
+  const key = assetIdentity(image.localPath, image.url);
+  const placement = design.assets.placements.find((p) => assetIdentity(p.localPath, p.url) === key);
+  return placement === undefined ? null : { role: placement.role, framing: placement.framing };
 }
 
 /** Resolves a section's images once; unusable ones are dropped, not faked. */
@@ -171,7 +200,9 @@ function resolveImages(section: WebsiteSection, ctx: SectionContext): readonly R
     // The shell owns these: the logo goes in the header, the favicon in <head>.
     if (image.role === 'logo' || image.role === 'favicon') continue;
     const item = ctx.assets.resolve(image);
-    if (item !== null) resolved.push(item);
+    if (item === null) continue;
+    const placement = placementOf(image, ctx.design);
+    resolved.push(placement === null ? item : { ...item, ...placement });
   }
   return resolved;
 }
@@ -217,7 +248,13 @@ function renderGallery(
 
   // `null` is the pre-design form, emitted byte-for-byte as it always was.
   const items = images.map((image, index) =>
-    element('li', { class: variant === null ? 'gallery__item' : `gallery__item gallery__item--${index % 6}` },
+    element('li', {
+      class: variant === null ? 'gallery__item' : `gallery__item gallery__item--${index % 6}`,
+      // Mirrors the `<img>`'s own `data-role`: the cell needs it too, so a
+      // composition rule can size the *frame* around a signature or process
+      // shot, not just filter the photograph inside it.
+      ...(image.role === undefined ? {} : { 'data-role': image.role }),
+    },
       element('figure', {}, renderImage(image)),
     ),
   );
@@ -1192,6 +1229,11 @@ export function renderSection(section: WebsiteSection, ctx: SectionContext): Htm
     isHero ? `section--hero-${heroVariant}` : `section--${plan.variant}`,
     plan.fullBleed ? 'section--bleed' : null,
     plan.momentTransition ? 'section--moment' : null,
+    // A genuine composition break, not just a bigger heading: the section the
+    // narrative built to gets its own layout rules (see `designRules`), so the
+    // climax reads as a different *kind* of section rather than an ordinary
+    // one turned up loud.
+    !isHero && plan.role === 'signature' ? 'section--signature-composition' : null,
   ].filter((entry): entry is string => entry !== null);
 
   // A bleeding section drops the measured container so its media can reach the

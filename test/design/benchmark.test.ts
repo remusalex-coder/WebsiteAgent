@@ -127,6 +127,24 @@ const BUSINESSES: Record<string, Spec> = {
     images: [],
     sections: ['hero', 'services', 'hours', 'location', 'contact', 'cta'],
   },
+  // Same trade as `mechanic`, materially richer evidence: a real workshop
+  // description in craft vocabulary, a broad service list and a real photo
+  // set. Character, not category, must be what earns this one a signature —
+  // `mechanic` above stays a thin brochure on the same industry.
+  mechanicRich: {
+    category: 'Auto repair',
+    description: 'A family-run workshop offering precision diagnostics and certified repairs: servicing, MOT, brakes and timing belts, carried out by qualified technicians on every car that comes through the garage.',
+    tagline: 'Precision workshop, certified technicians',
+    services: ['Servicing', 'MOT', 'Repairs', 'Diagnostics', 'Brakes', 'Timing belts'], rating: 4.6, phone: true,
+    images: [
+      { w: 1600, h: 1066, host: OWN, alt: 'engine bay' },
+      { w: 1600, h: 1066, host: OWN, alt: 'workshop lift' },
+      { w: 1200, h: 1600, host: OWN, alt: 'technician at work' },
+      { w: 1600, h: 1066, host: OWN, alt: 'tool wall' },
+      { w: 1400, h: 1400, host: OWN, alt: 'brake replacement' },
+    ],
+    sections: ['hero', 'about', 'services', 'gallery', 'hours', 'location', 'contact', 'cta'],
+  },
   // A second hotel with materially thinner, more functional evidence — same
   // industry as `hotel`, different character, so its script must diverge.
   hotelThin: {
@@ -272,6 +290,23 @@ test('G: rights are distinguished — social-sourced assets are reference-only',
   const bakery = designOf('bakery').design;
   assert.ok(venue.assets.referenceOnly.length > 0, 'venue social images should be reference-only');
   assert.equal(bakery.assets.referenceOnly.length, 0, 'own-domain bakery images are not reference-only');
+});
+
+test('I: a craft business with real evidence earns a signature, unlike its thin counterpart', () => {
+  const { design } = designOf('mechanicRich');
+  assert.notEqual(design.experience.mode, 'brochure', `mechanicRich mode is ${design.experience.mode}`);
+  const hasSignature = design.experienceScript.arc.includes('signature')
+    || (design.experience.signatureMoment !== null
+      && design.layout.sections.some((s) => s.kind === design.experience.signatureMoment));
+  assert.ok(hasSignature, 'mechanicRich should reach a real signature moment');
+
+  assert.ok(design.experience.signatureMoment !== null, 'mechanicRich should nominate a signature section');
+  const signatureSection = design.layout.sections.find((s) => s.kind === design.experience.signatureMoment);
+  assert.equal(signatureSection?.emphasis, 'lead', 'the signature section should be given lead emphasis');
+  assert.equal(signatureSection?.fullBleed, true, 'the signature section should be full-bleed');
+
+  // The thin mechanic on the same industry stays an honest brochure.
+  assert.equal(designOf('mechanic').design.experience.mode, 'brochure');
 });
 
 test('H: every business scores, and every design decision is explainable', () => {

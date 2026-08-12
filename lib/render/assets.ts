@@ -12,6 +12,7 @@
 
 import type { ImageAsset } from '../types.js';
 import type { RenderedAsset } from './types.js';
+import type { AssetRole, ImageFraming } from '../design/assets.js';
 
 /** Schemes a link may use. Everything else is refused, including `data:`. */
 const ALLOWED_SCHEMES: ReadonlySet<string> = new Set(['http:', 'https:', 'mailto:', 'tel:']);
@@ -65,6 +66,14 @@ export interface ResolvedImage {
   readonly alt: string;
   readonly width: number | null;
   readonly height: number | null;
+  /**
+   * What this image is for and how it composes best, from the design's asset
+   * choreography (`lib/design/assets.ts`). `undefined` on the pre-design path
+   * and for an image the choreography never placed — the renderer treats an
+   * absent role as it always did, a plain gallery cell.
+   */
+  readonly role?: AssetRole;
+  readonly framing?: ImageFraming;
 }
 
 export interface AssetPlan {

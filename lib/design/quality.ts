@@ -76,8 +76,8 @@ export function scoreExperience(
   const add = (ok: boolean) => { specificMax += 1; if (ok) specific += 1; };
   // image-led businesses must not be brochures
   add(!(character.visualWeight === 'image-led' && design.experience.mode === 'brochure'));
-  // functional businesses should be high-intent, not editorial
-  add(!(character.emotionalRegister === 'functional' && design.conversion.mode === 'editorial'));
+  // functional and craft (trade) businesses should be high-intent, not editorial
+  add(!((character.emotionalRegister === 'functional' || character.emotionalRegister === 'craft') && design.conversion.mode === 'editorial'));
   // a narrative must carry a signature moment
   add(!(design.experience.mode === 'narrative' && design.experience.signatureMoment === null));
   // a text-led business should reduce imagery, not force a gallery lead

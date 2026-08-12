@@ -107,9 +107,22 @@ export function planConversion(
     `phone:${hasPhone}`,
   ];
 
+  /*
+   * A trade business — functional or craft — wants the phone pressed, not a
+   * discovery journey, whatever its evidence earned it visually.
+   *
+   * `craft` and `functional` differ in vocabulary, not in what the visitor
+   * came to do: nobody browses a garage's gallery instead of calling it.
+   * `emotionalRegister` distinguishes the two only for the narrative/visual
+   * system (see `character.ts`); here they are the same conversion posture,
+   * which is also what keeps a thin craft business's ask identical to what it
+   * was before `craft` existed as a register at all.
+   */
+  const isTrade = character.emotionalRegister === 'functional' || character.emotionalRegister === 'craft';
+
   // --- Mode ------------------------------------------------------------
   let mode: ConversionMode =
-    character.emotionalRegister === 'functional' ? 'high-intent'
+    isTrade ? 'high-intent'
       : experience.mode === 'narrative' ? 'editorial'
         : experience.mode === 'showcase' ? 'balanced'
           : 'direct';
@@ -126,7 +139,7 @@ export function planConversion(
   else if (hits(corpus, RESERVE_WORDS)) primaryCta = 'reserve';
   else if (hits(corpus, ORDER_WORDS)) primaryCta = 'order';
   else if (hits(corpus, APPOINTMENT_WORDS)) primaryCta = 'book';
-  else if (character.emotionalRegister === 'functional' && hasPhone) primaryCta = 'call';
+  else if (isTrade && hasPhone) primaryCta = 'call';
   else if (character.emotionalRegister === 'romantic') primaryCta = 'enquire';
   else {
     // Thin evidence: choose an intentional, safe ask rather than invent one.

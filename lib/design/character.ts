@@ -35,8 +35,19 @@ export type VisualWeight = 'text-led' | 'balanced' | 'image-led';
 /** How expressive the business's own material lets the page be. */
 export type Expressiveness = 'restrained' | 'measured' | 'expressive';
 
-/** The emotional register the business's own words and category carry. */
-export type EmotionalRegister = 'functional' | 'warm' | 'romantic';
+/**
+ * The emotional register the business's own words and category carry.
+ *
+ * `craft` sits beside `warm`/`romantic` rather than under `functional`: a
+ * workshop whose evidence talks about precision, diagnostics and repair is not
+ * emotionally neutral about its work, it simply expresses pride in *skill*
+ * rather than in *atmosphere*. Treating that register as indistinguishable
+ * from a business with nothing to say at all is what used to cap every trade
+ * — a mechanic, an electrician, a locksmith — at a brochure regardless of how
+ * much evidence it had, because the word list this file voted on was built
+ * entirely from hospitality and event vocabulary.
+ */
+export type EmotionalRegister = 'functional' | 'warm' | 'romantic' | 'craft';
 
 /** How much the business does — one thing, a focused set, or a broad range. */
 export type OfferingBreadth = 'single' | 'focused' | 'broad';
@@ -97,6 +108,24 @@ const WARM_WORDS: readonly string[] = [
   'restaurant', 'bistro', 'cafe', 'café', 'coffee', 'bakery', 'patisserie',
   'kitchen', 'cuisine', 'dining', 'menu', 'meniu', 'hotel', 'spa', 'wellness',
   'artisan', 'handmade', 'craft', 'family', 'familie', 'cozy', 'hospitality',
+];
+/*
+ * Words that argue for a *craft* register: pride in skilled, hands-on work.
+ *
+ * This is the trade counterpart of `WARM_WORDS` — the vocabulary a workshop,
+ * a garage, an electrician or a joiner actually uses about itself, as opposed
+ * to the hospitality/event vocabulary the other two lists are built from. No
+ * single trade is named here (the design system must not know what a
+ * "mechanic" is); the list is generic skilled-work language that applies
+ * equally to a dozen trades, the same way `WARM_WORDS` applies equally to a
+ * dozen kitchens.
+ */
+const CRAFT_WORDS: readonly string[] = [
+  'workshop', 'garage', 'technician', 'engineer', 'engineering', 'diagnostic',
+  'diagnostics', 'precision', 'skilled', 'craftsmanship', 'certified',
+  'qualified', 'repair', 'repairs', 'restoration', 'restore', 'maintenance',
+  'installation', 'fabrication', 'machinist', 'tradesman', 'apprentice',
+  'atelier', 'reparatii', 'reparații', 'tehnician', 'meserie',
 ];
 
 function countHits(corpus: string, words: readonly string[]): number {
@@ -212,11 +241,13 @@ export function deriveCharacter(
 
   const romantic = countHits(corpus, ROMANTIC_WORDS);
   const warm = countHits(corpus, WARM_WORDS);
+  const craft = countHits(corpus, CRAFT_WORDS);
   const emotionalRegister: EmotionalRegister =
-    romantic >= 2 && romantic >= warm ? 'romantic'
-      : romantic + warm >= 2 ? 'warm'
-        : 'functional';
-  evidence.push(`register(romantic:${romantic},warm:${warm})`);
+    craft >= 2 && craft >= warm && craft >= romantic ? 'craft'
+      : romantic >= 2 && romantic >= warm ? 'romantic'
+        : romantic + warm >= 2 ? 'warm'
+          : 'functional';
+  evidence.push(`register(romantic:${romantic},warm:${warm},craft:${craft})`);
 
   // --- Offering breadth ------------------------------------------------
   const serviceCount = profile.services.length;
