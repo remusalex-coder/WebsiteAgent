@@ -23,12 +23,19 @@ import {
   directDesign,
   SYSTEM_PROMPT,
 } from '../../agents/designDirectorAgent.js';
+import { createRateGovernor } from '../../lib/ai/governor.js';
 import { validateAgainstSchema } from '../../lib/ai/schema.js';
+import { executeCapability } from '../../lib/capability/execute.js';
+import { planCapability } from '../../lib/capability/plan.js';
+import { unmeteredQuotaLedger } from '../../lib/capability/quota.js';
 import { profileFixture, strategyFixture } from '../fixtures/business.js';
 import { fullContent, minimalContent } from '../fixtures/content.js';
 
 import type { AIGenerateRequest, AIGenerateResult, AIProvider } from '../../lib/ai/types.js';
+import type { AIProviderFactory } from '../../lib/ai/factory.js';
 import type { AgentContext } from '../../lib/types.js';
+import type { AppConfig } from '../../lib/config.js';
+import type { CapabilityOrchestrator } from '../../lib/capability/orchestrator.js';
 import type { DesignDirective } from '../../lib/design/directive.js';
 import type { DesignDirectorInput } from '../../agents/designDirectorAgent.js';
 import type { Logger, LogFields } from '../../lib/logger.js';
@@ -105,26 +112,86 @@ function fakeProvider(data: unknown): { provider: AIProvider; requests: AIGenera
     return { provider, requests };
   }
 
+/**
+ * A `CapabilityOrchestrator` whose `plan`/`run` are the real
+ * `planCapability` / `executeCapability` — genuine filtering, ranking,
+ * failover and telemetry — with exactly one credentialled vendor (`openai`,
+ * matching `fakeProvider`'s hardcoded name) reached through a factory that
+ * always hands back the caller's fake `AIProvider` regardless of which
+ * vendor the plan resolved. That factory substitution is the only fake part;
+ * everything above it is the production code path `directDesign` actually
+ * runs. Synchronous (unlike the real `createCapabilityOrchestrator`, which
+ * opens an on-disk quota file) because nothing here needs the disk.
+ *
+ * `allowPaid: true` with a generous budget, because `creative_direction`'s
+ * `openai` binding has no free allowance — the real, zero-budget default
+ * policy would exclude it as `paid-disabled` before the fake provider is ever
+ * reached, and this suite is testing the agent's logic, not cost policy
+ * (which `test/capability/plan.test.ts` already covers on its own).
+ */
+function fakeOrchestrator(logger: Logger): CapabilityOrchestrator {
+  const credentials = new Set(['OPENAI_API_KEY']);
+  const quota = unmeteredQuotaLedger();
+  // No buckets registered — rate governance is deliberately omitted from
+  // `executeCapability` below (it is optional there) rather than faked, since
+  // this suite has nothing to say about pacing.
+  const governor = createRateGovernor();
+  const policy = {
+    allowPaid: true,
+    budgetCentsRemaining: 1_000,
+    allowedJurisdictions: ['local', 'us', 'eu', 'other'] as const,
+    allowedLicences: ['permissive-local', 'copyleft-local', 'commercial-api', 'free-tier-unverified'] as const,
+    autonomous: true,
+    preferFree: true,
+  };
+
+  return {
+    plan: (capability, overrides = {}) =>
+      planCapability({ capability, credentials, quota, policy, ...overrides }),
+    async run(capability, invoke, overrides = {}) {
+      const plan = planCapability({ capability, credentials, quota, policy, ...overrides });
+      return executeCapability({ plan, invoke, logger, quota });
+    },
+    board: () => { throw new Error('fakeOrchestrator.board() is not exercised by this suite'); },
+    spend: () => ({ totalCents: 0, byProvider: {}, byCapability: {}, lines: [] }),
+    remainingCents: () => policy.budgetCentsRemaining,
+    quota,
+    governor,
+    policy,
+  };
+}
+
 /** Builds a minimal `AgentContext` for the Design Director. */
 function fakeContext(
   provider: AIProvider,
   logger: Logger = noopLogger,
 ): AgentContext {
+  const providers = { create: () => provider } as unknown as AIProviderFactory;
+
+  const config = {
+    ai: {
+      provider: 'openai',
+      apiKeys: { openai: 'fake-key', anthropic: '', gemini: '', openrouter: '' },
+    },
+    credentials: {},
+    director: {
+      model: 'fake-model',
+      effort: 'medium',
+      maxOutputTokens: 4_000,
+      maxPageChars: 2_000,
+    },
+  } as unknown as AppConfig;
+
   const platform = {
     ai: () => provider,
     tryAi: () => provider,
+    providers,
+    capabilities: fakeOrchestrator(logger),
   } as unknown as Platform;
 
   return {
     runId: 'test-run',
-    config: {
-      director: {
-        model: 'fake-model',
-        effort: 'medium',
-        maxOutputTokens: 4_000,
-        maxPageChars: 2_000,
-      },
-    } as AgentContext['config'],
+    config: config as AgentContext['config'],
     logger,
     getBrowser: async () => { throw new Error('should not call getBrowser'); },
     platform,

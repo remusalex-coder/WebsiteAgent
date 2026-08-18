@@ -21,6 +21,8 @@
     "build-site": "node --import tsx --env-file=.env main.ts",
     "publish": "node --import tsx scripts/publish-run.ts",
     "visual-qa": "node --import tsx scripts/visual-qa.ts",
+    "capability-board": "node --import tsx --env-file=.env scripts/capability-board.ts",
+    "capability-proof": "node --import tsx --env-file=.env scripts/capability-e2e-proof.ts",
     "preview": "node scripts/preview.mjs",
     "postinstall": "playwright install chromium"
   },

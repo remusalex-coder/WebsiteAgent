@@ -19,9 +19,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { UpstreamError } from '../lib/errors.js';
-import type { AIProvider } from '../lib/ai/types.js';
+import { createModelInvoker } from '../lib/capability/invokers.js';
 import type { AnalystConfig } from '../lib/config.js';
-import type { Logger } from '../lib/logger.js';
 import type {
   Agent,
   AgentContext,
@@ -291,61 +290,74 @@ function assertStrategyShape(value: unknown): asserts value is Omit<BusinessStra
 /* ------------------------------------------------------------------ */
 
 /**
- * Asks the platform's provider for one strategy object.
+ * Asks the capability planner for one strategy object.
  *
- * Everything vendor-shaped has moved below this line. Streaming, beta headers,
- * server-side fallbacks, refusal and truncation handling, SDK error mapping and
- * schema enforcement all live in the provider adapter now — so this agent runs
- * unchanged on Anthropic, OpenAI, Gemini or OpenRouter, and gaining a fifth
- * option costs it nothing.
+ * Everything vendor-shaped has moved below this line, and now so has vendor
+ * *choice*: `ctx.platform.ai()` used to hand this agent a single provider —
+ * whichever `AI_PROVIDER` names — with no recourse if it failed. `reasoning`
+ * routes through every credentialled vendor this deployment has, free-tier
+ * allowance first, so a Gemini outage or an exhausted daily quota now fails
+ * over to OpenAI instead of failing the stage. `ANALYST_MODEL` still pins the
+ * id for whichever vendor `AI_PROVIDER` names — see `modelOverrides` on
+ * `ModelInvocation` — but a vendor reached only by failover uses the
+ * capability catalogue's own default for its class, because no pin was ever
+ * written for it.
  *
  * What stays here is what is genuinely the analyst's: the prompt, the schema,
  * and the check that the object it got back is the one it asked for.
  */
 async function analyse(
   brief: string,
-  provider: AIProvider,
+  ctx: AgentContext,
   config: AnalystConfig,
-  logger: Logger,
-  signal: AbortSignal,
-): Promise<{ strategy: Omit<BusinessStrategy, 'model' | 'generatedAt'>; model: string }> {
-  let result;
-  try {
-    result = await provider.generate({
+): Promise<{ strategy: Omit<BusinessStrategy, 'model' | 'generatedAt'>; model: string; provider: string }> {
+  const invoke = createModelInvoker(
+    {
       system: SYSTEM_PROMPT,
       prompt: `Here is the profile of one business. Produce the website strategy.\n\n${brief}`,
       schema: STRATEGY_SCHEMA,
       schemaName: 'business_strategy',
-      model: config.model,
-      effort: config.effort,
       maxTokens: config.maxOutputTokens,
-      signal,
-    });
-  } catch (error) {
-    // Adapters already raise `ProviderRequestError`, which is an `UpstreamError`
-    // and carries an honest `retryable`. Anything else is re-addressed to this
-    // agent so the source in the log is the stage that failed.
-    if (error instanceof UpstreamError) throw error;
-    throw new UpstreamError(error instanceof Error ? error.message : String(error), {
+      signal: ctx.signal,
+      effort: config.effort,
+      modelOverrides: { [ctx.config.ai.provider]: config.model },
+    },
+    ctx.platform.providers,
+    ctx.logger,
+  );
+
+  const { outcome, record } = await ctx.platform.capabilities.run('reasoning', invoke, {
+    tokens: { inputTokens: brief.length / 4, outputTokens: config.maxOutputTokens },
+  });
+
+  if (!outcome.ok) {
+    // Every attempt the chain made is in `record.attempts`; the outcome's
+    // error is the last one, which is what a caller can actually act on.
+    throw new UpstreamError(outcome.error.message, {
       source: NAME,
-      retryable: false,
-      cause: error,
+      retryable: outcome.error.retryable,
+      cause: outcome.error,
     });
   }
 
-  logger.debug('analysis returned', {
-    provider: provider.name,
+  const result = outcome.data;
+  const servedProvider = record.attempts.find((a) => a.service === record.servedBy)?.provider ?? 'unknown';
+
+  ctx.logger.debug('analysis returned', {
+    provider: servedProvider,
     model: result.model,
     structuredOutput: result.structuredOutput,
     finishReason: result.finishReason,
     inputTokens: result.usage.inputTokens,
     outputTokens: result.usage.outputTokens,
+    attempts: record.attempts.length,
+    degraded: record.degraded,
   });
 
   assertStrategyShape(result.data);
   // `result.model` rather than the configured id: a fallback or a routing
   // decision may have put this on a different model than the one requested.
-  return { strategy: result.data, model: result.model };
+  return { strategy: result.data, model: result.model, provider: servedProvider };
 }
 
 /* ------------------------------------------------------------------ */
@@ -362,23 +374,24 @@ export const businessAnalystAgent: BusinessAnalystAgent = {
     const { logger, config } = ctx;
     const analyst = config.analyst;
 
-    // Throws a configuration error naming the exact variable to set when
-    // `AI_PROVIDER` is unset, unrecognised, or has no credential — before any
-    // network call, and without this agent knowing which vendor that is.
-    const provider = ctx.platform.ai();
-
     const brief = buildBrief(input, analyst.maxPageChars);
+
+    // Which vendor actually serves this is now the capability planner's
+    // decision, not a fixed choice — logged once the call returns rather than
+    // asserted here, because a failover means the answer is not known yet.
+    const plan = ctx.platform.capabilities.plan('reasoning');
     logger.info('analysis started', {
       business: input.name.value,
-      provider: provider.name,
-      model: analyst.model,
+      plannedChain: plan.chain.map((step) => step.binding.id),
+      pinnedModel: analyst.model,
       effort: analyst.effort,
       briefChars: brief.length,
     });
 
-    const { strategy, model } = await logger.time('analyse business', () =>
-      analyse(brief, provider, analyst, logger, ctx.signal),
+    const { strategy, model, provider } = await logger.time('analyse business', () =>
+      analyse(brief, ctx, analyst),
     );
+    logger.info('analysis served', { provider, model });
 
     const result: BusinessStrategy = {
       ...strategy,

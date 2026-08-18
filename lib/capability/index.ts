@@ -112,3 +112,6 @@ export type {
 
 export { createModelInvoker } from './invokers.js';
 export type { ModelInvocation } from './invokers.js';
+
+export { createVisionInvoker } from './visionInvoker.js';
+export type { VisionInvocation, VisionImage, VisionResult } from './visionInvoker.js';

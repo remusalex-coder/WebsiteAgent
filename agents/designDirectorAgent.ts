@@ -33,9 +33,8 @@
  */
 
 import { UpstreamError } from '../lib/errors.js';
-import type { AIProvider } from '../lib/ai/types.js';
+import { createModelInvoker } from '../lib/capability/invokers.js';
 import type { DirectorConfig } from '../lib/config.js';
-import type { Logger } from '../lib/logger.js';
 import type {
   Agent,
   AgentContext,
@@ -267,6 +266,30 @@ export const DIRECTIVE_SCHEMA: JsonSchema = {
       type: 'number',
       description: 'How strongly the available evidence supports these decisions, from 0 to 1. Reflect evidence quality, not decision quality.',
     },
+    creativeThesis: {
+      type: 'string',
+      description: 'The controlling idea — WHAT this website fundamentally is (e.g. "entering the workshop", "a journey from darkness into daylight"). Free text, derived from the business. Not a CSS instruction.',
+    },
+    visualMetaphor: {
+      type: 'string',
+      description: 'The central visual metaphor the experience is built around. Free text.',
+    },
+    emotionalJourney: {
+      type: 'string',
+      description: 'The emotional arc the visitor moves through, beat by beat. Free text.',
+    },
+    spatialStrategy: {
+      type: 'string',
+      description: 'How space is organised and used to express the concept (e.g. "architectural tension rather than card grids"). Free text.',
+    },
+    compositionStrategy: {
+      type: 'string',
+      description: 'The composition logic the concept demands (e.g. "editorial rather than commercial", "asymmetry over centred grids"). Free text.',
+    },
+    whatToAvoid: {
+      type: 'string',
+      description: 'Common patterns and clichés this specific concept must explicitly avoid. Free text.',
+    },
   },
 };
 
@@ -298,7 +321,16 @@ Separately, decide whether this specific business has one section worth building
 
 Decide the experience architecture from the IMAGE CONTENT SIGNALS and the business character, not from the category. Set experienceMode (brochure/showcase/narrative/immersive), a signatureMoment (a section actually present), conversionStrategy (how hard and when to ask for the action), and interactionStrategy (how much the page moves). A business with several varied, atmospheric photographs and an emotional register earns a narrative built to a signature moment; a functional trade with a logo earns a brochure that presses the action early. Never invent photographs or facts to justify a richer mode — if the images are thin, the honest mode is the plainer one, and a strong deterministic floor will still produce an intentional page. These decisions are validated against closed sets and override the deterministic floor only when valid.
 
-The output must be implementable by a deterministic design system. You are choosing from closed sets of options — do not suggest values outside the listed enums. Do not output CSS, pixel values, colour hex codes, spacing values, font sizes, Tailwind classes, or any renderer instruction.`;
+The output must be implementable by a deterministic design system. You are choosing from closed sets of options — do not suggest values outside the listed enums. Do not output CSS, pixel values, colour hex codes, spacing values, font sizes, Tailwind classes, or any renderer instruction.
+
+Beyond the closed-set decisions above, you must also author the OPEN creative concept — this is the most important part of your job. Fill in:
+- creativeThesis: WHAT this website fundamentally is (e.g. "entering the workshop", "a journey from darkness into daylight", "the product progressively revealing itself"). One sentence. Never "a clean modern site for X".
+- visualMetaphor: the central metaphor the experience is built around.
+- emotionalJourney: the emotional arc the visitor moves through, beat by beat.
+- spatialStrategy: how space is organised to express the concept (e.g. "architectural tension rather than card grids").
+- compositionStrategy: the composition logic the concept demands (e.g. "editorial rather than commercial", "asymmetry over centred grids").
+- whatToAvoid: the common patterns and clichés this specific concept must explicitly avoid (e.g. "no generic hero-with-three-cards", "no stock-photo warmth").
+Two businesses in the same industry must be allowed to receive completely different creative concepts. Derive the concept from THIS business's evidence and character. Do not write CSS or tokens for these fields — only intent.`;
 
 /* ------------------------------------------------------------------ */
 /* Brief builder                                                       */
@@ -370,6 +402,7 @@ export function buildDesignBrief(
   strategy: BusinessStrategy,
   content: WebsiteContent,
   maxPageChars: number,
+  feedback?: string,
 ): string {
   const lines: string[] = [];
   const section = (heading: string, body: string): void => {
@@ -457,6 +490,15 @@ export function buildDesignBrief(
   ];
   section('Known gaps / uncertainties', gapLines.join('\n') || 'none');
 
+  // Prior critique feedback (reconcept loop). When present, the director must
+  // respond to it with a genuinely different creative concept, not a retint.
+  if (feedback && feedback.trim().length > 0) {
+    section(
+      'PRIOR CRITIQUE — RECONCEPTUALISE',
+      `${feedback.trim()}\n\nThe previous direction was rejected as too generic. Produce a materially different creative concept: a new creativeThesis, visualMetaphor and compositionStrategy that avoid the clichés listed above. Do NOT merely change colours or fonts.`,
+    );
+  }
+
   return lines.join('\n');
 }
 
@@ -538,42 +580,57 @@ export interface DirectorResult {
 
 async function direct(
   brief: string,
-  provider: AIProvider,
+  ctx: AgentContext,
   config: DirectorConfig,
-  logger: Logger,
-  signal: AbortSignal,
 ): Promise<DirectorResult> {
   const startedAt = new Date();
 
-  let result;
-  try {
-    result = await provider.generate({
+  const invoke = createModelInvoker(
+    {
       system: SYSTEM_PROMPT,
       prompt: `Here is the business brief. Produce a DesignDirective for this website.\n\n${brief}`,
       schema: DIRECTIVE_SCHEMA,
       schemaName: 'design_directive',
-      model: config.model,
-      effort: config.effort,
       maxTokens: config.maxOutputTokens,
-      signal,
-    });
-  } catch (error) {
-    if (error instanceof UpstreamError) throw error;
-    throw new UpstreamError(
-      error instanceof Error ? error.message : String(error),
-      { source: NAME, retryable: false, cause: error },
-    );
-  }
+      signal: ctx.signal,
+      effort: config.effort,
+      modelOverrides: { [ctx.config.ai.provider]: config.model },
+    },
+    ctx.platform.providers,
+    ctx.logger,
+  );
+
+  const { outcome, record } = await ctx.platform.capabilities.run('creative_direction', invoke, {
+    tokens: { inputTokens: brief.length / 4, outputTokens: config.maxOutputTokens },
+  });
 
   const finishedAt = new Date();
 
-  logger.debug('directive returned', {
-    provider: provider.name,
+  if (!outcome.ok) {
+    // No fallback (see this file's header): a failed capability call is a
+    // failed stage. The deterministic terminal `creative_direction` declares
+    // for OTHER callers is deliberately unreachable from here — it never
+    // implements `AIProvider.generate`'s contract, so it always fails too,
+    // and the chain being exhausted is exactly "no model could do this".
+    throw new UpstreamError(outcome.error.message, {
+      source: NAME,
+      retryable: outcome.error.retryable,
+      cause: outcome.error,
+    });
+  }
+
+  const result = outcome.data;
+  const servedProvider = record.attempts.find((a) => a.service === record.servedBy)?.provider ?? 'unknown';
+
+  ctx.logger.debug('directive returned', {
+    provider: servedProvider,
     model: result.model,
     structuredOutput: result.structuredOutput,
     finishReason: result.finishReason,
     inputTokens: result.usage.inputTokens,
     outputTokens: result.usage.outputTokens,
+    attempts: record.attempts.length,
+    degraded: record.degraded,
   });
 
   assertDirectiveShape(result.data);
@@ -581,7 +638,7 @@ async function direct(
   return {
     directive: result.data,
     provenance: {
-      provider: provider.name,
+      provider: servedProvider,
       model: result.model,
       requestedModel: config.model,
       inputTokens: result.usage.inputTokens,
@@ -611,31 +668,33 @@ async function direct(
 export async function directDesign(
   input: DesignDirectorInput,
   ctx: AgentContext,
+  feedback?: string,
 ): Promise<DirectorResult> {
   const { logger, config } = ctx;
   const directorConfig = config.director;
-
-  const provider = ctx.platform.ai();
 
   const brief = buildDesignBrief(
     input.profile,
     input.strategy,
     input.content,
     directorConfig.maxPageChars,
+    feedback,
   );
 
+  // Which vendor serves this is the capability planner's decision now, not a
+  // fixed choice — logged once the call returns, since a failover means the
+  // answer is not known yet.
+  const plan = ctx.platform.capabilities.plan('creative_direction');
   logger.info('design direction started', {
     business: input.profile.name.value,
-    provider: provider.name,
-    model: directorConfig.model,
+    plannedChain: plan.chain.map((step) => step.binding.id),
+    pinnedModel: directorConfig.model,
     effort: directorConfig.effort,
     maxOutputTokens: directorConfig.maxOutputTokens,
     briefChars: brief.length,
   });
 
-  const result = await logger.time('direct design', () =>
-    direct(brief, provider, directorConfig, logger, ctx.signal),
-  );
+  const result = await logger.time('direct design', () => direct(brief, ctx, directorConfig));
 
   const { directive, provenance } = result;
 

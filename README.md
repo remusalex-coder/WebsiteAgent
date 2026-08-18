@@ -352,6 +352,7 @@ credential variable **names** are set, never their values.
 
 Full detail: [docs/](docs/) — [architecture](docs/architecture.md),
 [providers](docs/providers.md), [skills](docs/skills.md), [MCP](docs/mcp.md),
+[capability orchestration](docs/capability-orchestration.md),
 [configuration](docs/configuration.md), [developer guide](docs/developer-guide.md).
 
 ## Stage 1: what discovery extracts

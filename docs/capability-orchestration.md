@@ -1,6 +1,6 @@
 # Capability orchestration
 
-_Added 2026-08-19._
+_Added 2026-08-19. Wired into production 2026-08-19._
 
 `lib/capability/` is the layer Hermes calls to decide **which provider, which
 model, which tool, which skill, which agent, in what order, with what
@@ -22,19 +22,82 @@ prior capability id and its tests are untouched.
 ## The pieces
 
 ```
-types.ts        the vocabulary: CapabilityId, ServiceBinding, ModelRecord
-registry.ts      one row per capability — tier, terminal, F-08 flag, gate
-bindings.ts      what can serve each capability, in declared preference order
-models.ts        the model catalogue: classes resolved to ids, cost estimates
-quota.ts         the daily per-model request ledger (the free tier's real limit)
-plan.ts          capability in, ordered chain out — filter, then rank
-execute.ts       walks a plan: governs, meters, records, fails over
-invokers.ts       the standard model invoker `execute` plugs into
-agents.ts        the seat roster: who consumes what, k, cross-vendor pairs
-experience.ts    the runtime ladder (none→css→js→webgl) and the library register
-orchestrator.ts  the stateful object: credentials, quota, governor, spend
-index.ts         the only import path agents and stages should use
+types.ts          the vocabulary: CapabilityId, ServiceBinding, ModelRecord
+registry.ts       one row per capability — tier, terminal, F-08 flag, gate
+bindings.ts       what can serve each capability, in declared preference order
+models.ts         the model catalogue: classes resolved to ids, cost estimates
+quota.ts          the daily per-model request ledger (the free tier's real limit)
+plan.ts           capability in, ordered chain out — filter, then rank
+execute.ts        walks a plan: governs, meters, records, fails over
+invokers.ts        the standard text-model invoker `execute` plugs into
+visionInvoker.ts   the multimodal invoker — images in, for craft_judging
+agents.ts         the seat roster: who consumes what, k, cross-vendor pairs
+experience.ts     the runtime ladder (none→css→js→webgl) and the library register
+orchestrator.ts   the stateful object: credentials, quota, governor, spend
+index.ts          the only import path agents and stages should use
 ```
+
+## Who actually calls this — the production wiring
+
+Building the layer and wiring it into real execution happened in two
+sessions, and the audit for the second one found the first had produced
+**zero consumers**: `platform.capabilities` existed and worked, but every
+model call in the pipeline still went through `ctx.platform.ai()` — the
+single default provider, no failover, no quota awareness — and the visual
+critic bypassed the provider layer entirely. That is fixed:
+
+| Stage | Capability | Was | Now |
+|---|---|---|---|
+| `agents/businessAnalystAgent.ts` | `reasoning` | `ctx.platform.ai()` | `ctx.platform.capabilities.run('reasoning', …)` |
+| `agents/writerAgent.ts` | `prose_writing` | `ctx.platform.ai()` | `ctx.platform.capabilities.run('prose_writing', …)` |
+| `agents/designDirectorAgent.ts` | `creative_direction` | `ctx.platform.ai()` | `ctx.platform.capabilities.run('creative_direction', …)` |
+| `lib/workflow/runJob.ts` visual critic | `craft_judging` | required a separate `VISION_API_KEY`; absent one, silently returned `uncertain` on every job | routes through `craft_judging` against whichever already-credentialled vendor serves vision, with real failover |
+
+Each of the three text agents keeps its own `ANALYST_MODEL` / `WRITER_MODEL` /
+`DIRECTOR_MODEL` pin — via `ModelInvocation.modelOverrides`, applied only to
+the vendor `AI_PROVIDER` already names — so an operator's existing
+configuration is honoured on the primary vendor and the model catalogue's own
+per-class default is used only on a vendor reached by failover, which was
+never pinned to begin with. None of the three has a fallback when every
+model fails: their contracts (`designDirectorAgent.ts`'s header is explicit
+about this) predate this layer and are preserved — the capability chain's
+deterministic terminal is unreachable from them by construction, because
+their invoker throws on a non-model step, which simply becomes the chain's
+final, expected failure.
+
+`runJob.ts`'s `analyzeCritique` (the original, single-endpoint function) is
+untouched and still used when an operator sets `VISION_*` explicitly — an
+intentional override wins outright. `analyzeCritiqueViaCapability`
+(`lib/qa/visual-critic.ts`) is the new path, used whenever `VISION_*` is
+unset, which is the common case and was previously a permanent no-op.
+
+### `visionInvoker.ts` — why a second invoker exists
+
+`AIProvider.generate()` is text-only — no image field, a deliberate boundary
+predating this layer (see `PROJECT_STATUS.md`'s stated limitations). Rather
+than widen that interface for the one capability that needs images, this
+module builds the multimodal request directly, over the same `postJson` /
+`decodeStructured` transport every adapter already uses. Gemini and
+OpenAI-compatible (which covers OpenRouter) are implemented; Anthropic is
+not — its adapter is the only file permitted to import `@anthropic-ai/sdk`,
+and a parallel raw-HTTP path around that boundary for one capability was
+judged not worth the duplication. A step that resolves to `anthropic` fails
+cleanly and the chain moves on.
+
+### Verifying it end to end
+
+```bash
+npm run capability-board  -- --json   # what this deployment can do, and at what cost — contacts nothing
+npm run capability-proof              # real calls: reasoning + craft_judging against River Park's real evidence
+```
+
+`capability-proof` is not a demo against fixtures — it reuses
+`output/riverpark/3-profile.json` and `output/riverpark/shots/*.png`, real
+evidence from a real prior run, and makes two real Gemini free-tier calls
+(well inside the 20/day allowance): one `reasoning` call producing a real
+strategy, and one `craft_judging` call producing a real verdict. The second
+one is the capability that had never once returned anything but `uncertain`
+in this deployment before this session.
 
 ## Reading a plan
 
@@ -67,9 +130,17 @@ then the repository's declared preference.
 ```ts
 const result = await platform.capabilities.run(
   'prose_writing',
-  createModelInvoker({ system, prompt, schema, maxTokens }, config.ai, logger),
+  createModelInvoker({ system, prompt, schema, maxTokens, effort, modelOverrides }, ctx.platform.providers, logger),
 );
 ```
+
+`createModelInvoker` takes the platform's own `providers: AIProviderFactory`
+— the same cached instances every other caller in the process uses — rather
+than building a second factory from `AiConfig`. `effort` and `modelOverrides`
+are both optional and both exist for the same reason: a stage that already
+had its own configured reasoning depth or a pinned model id for its primary
+vendor must not have that silently discarded by the capability layer's own
+defaults (the enum class's `low`, the catalogue's per-vendor id).
 
 `run` plans, then walks the chain: acquires a rate-governor token, charges the
 quota ledger *before* the call (so a crash mid-call cannot un-spend it), invokes,
@@ -157,5 +228,9 @@ per-class cost and free-allowance data, the daily quota ledger (the constraint
 that actually binds a free-tier deployment, which nothing previously tracked
 across a restart), the planner that ranks across kinds and on cost rather than
 only across providers on latency, the executor that wires governance/quota/
-telemetry/cost around any capability call, the agent seat roster, and the
-creative runtime ladder with its library adopt/reject register.
+telemetry/cost around any capability call, the agent seat roster, the creative
+runtime ladder with its library adopt/reject register, the vision invoker,
+and — as of the second session — the actual wiring into `businessAnalystAgent`,
+`writerAgent`, `designDirectorAgent` and the visual critic, which is what
+turns all of the above from a well-tested, unreachable module into the thing
+that actually governs a generated website.

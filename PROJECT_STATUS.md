@@ -1,6 +1,160 @@
 # Project Status
 
-_Last updated: 2026-08-11_
+_Last updated: 2026-08-19_
+
+## Capability orchestration wired into production (2026-08-19, second pass)
+
+**The audit's finding, stated plainly:** the layer documented below shipped
+with 69 passing tests and zero consumers. Every real model call in the
+pipeline — the business analyst, the writer, the design director — still
+called `ctx.platform.ai()` directly: one default provider, no failover, no
+quota awareness, no cost ledger. Worse, the visual critic — the one
+capability that looks at rendered pixels and judges whether a page reads as
+generic — required a separate `VISION_API_KEY` nobody had configured, so
+`lib/workflow/runJob.ts`'s `analyze` closure was a stub that returned
+`genericVerdict: 'uncertain'` on **every single job**, silently, forever.
+That is the mechanism this deployment has for detecting the exact failure
+mode the product exists to avoid, and it had never once run.
+
+**What changed.** `businessAnalystAgent`, `writerAgent` and
+`designDirectorAgent` now route their one model call through
+`ctx.platform.capabilities.run(capability, invoke)` instead of
+`ctx.platform.ai()` — real cross-vendor failover for the first time (a
+Gemini outage or an exhausted daily quota now falls over to OpenAI instead of
+failing the stage), with each stage's `ANALYST_MODEL` / `WRITER_MODEL` /
+`DIRECTOR_MODEL` pin preserved for its primary vendor via
+`ModelInvocation.modelOverrides`. A new `lib/capability/visionInvoker.ts`
+extends the layer to multimodal calls (Gemini and OpenAI-compatible; the
+provider layer's `AIProvider.generate()` is text-only by design, so this
+builds the request directly over the same transport every adapter uses).
+`runJob.ts`'s visual critic now routes `craft_judging` through it, reachable
+on whichever vision-capable vendor is already credentialled — no second
+credential required — while an explicit `VISION_*` override still wins
+outright when an operator sets one.
+
+**Verified live**, not asserted: `npm run capability-proof` reuses
+`output/riverpark`'s real, already-collected evidence and screenshots and
+makes two real Gemini free-tier calls. The `reasoning` call produced a real
+strategy (`Event & wedding venue`, 3 goals, 5 pages). The `craft_judging`
+call returned `genericVerdict: 'distinct'`, `businessSpecificity: 9/10` —
+the **first real verdict this capability has ever produced in this
+deployment**. The distinctness gate, fed that real verdict, returned a real
+`PASS` at score 93. Total spend: 0 cents. A separate check seeded the quota
+ledger to simulate Gemini's daily allowance exhausted and confirmed
+`prose_writing`'s plan correctly excludes it (`quota-exhausted`) rather than
+merely ranking it behind a paid vendor — the safety property the planner was
+built to guarantee, exercised for real.
+
+**A real bug the audit caught in passing:** the agent seat roster
+(`lib/capability/agents.ts`) had `craft-judge` pointing at `lib/qa/jury.ts` —
+which decides how many judges to spend (k=1 vs k=2), not craft judgement
+itself. Fixed to point at `lib/qa/visual-critic.ts`, the module that actually
+makes the vision call. Recorded because it is exactly the kind of error
+"the tests pass" does not catch, and the task that drove this session
+explicitly warned against trusting the registry on that basis alone.
+
+**998 tests pass** (929 carried over, 69 from the first capability-layer
+session, none from this one — the change was to existing call sites and one
+existing test file's fixture, not new surface). `test/design/
+designDirectorAgent.test.ts`'s fake platform now builds a real
+`planCapability` / `executeCapability` pipeline against a fake provider
+factory, rather than faking `platform.ai()` directly — the unit tests
+exercise the actual routing code now, not a bypass of it.
+
+**What is still not wired:** `lib/forge/` — the separate "Experience
+Signature" pipeline reachable only via `scripts/forge/run.ts` — calls
+`createAIProviderFactory` directly in `research.ts`, `grounding.ts`,
+`signature.ts`, `builder.ts` and `repair.ts`, untouched by either capability
+session. It is not part of the `runJob.ts` production path (nothing in
+`main.ts` or `runJob.ts` imports it), so it was out of this session's scope
+rather than missed. The planned agent seats (`agents.ts`: market researcher,
+Creative Director's three-territory battle, adversarial critic, deployment)
+remain `planned`. Anthropic vision is declared in `craft_judging`'s bindings
+but not implemented in `visionInvoker.ts` — a step that resolves to it fails
+cleanly and the chain moves on, which is honest but means the cross-vendor
+judge pairing this deployment can actually reach today is Gemini↔OpenAI, not
+the three-way pairing the bindings describe.
+
+## Capability orchestration layer (2026-08-19)
+
+**The gap this closes.** Three prior modules each answered "which provider" for
+one slice of the problem — `lib/ai/router.ts` (providers only), `lib/factory/
+capabilities.ts` (five LLM-pool capabilities), the skill layer's eight
+categories (not capabilities at all) — and nothing spanned a model, a skill, an
+MCP server and an in-repo tool at once, or routed on cost rather than only on
+observed latency. `lib/capability/` is that layer. Full reference:
+[docs/capability-orchestration.md](docs/capability-orchestration.md).
+
+```
+Capability (37 declared, one closed vocabulary)
+  → registry.ts   tier, terminal, F-08 flag, policy gate — one row per id
+  → bindings.ts   what can serve it: model class, skill, MCP tool, in-repo tool, floor
+  → plan.ts       filter (hard: F-08, quota, credential, budget) → rank (free, cost, observed) → chain
+  → execute.ts    governs the rate, meters the quota, records telemetry, fails over, costs the ledger
+  → orchestrator.ts   the stateful object platform.capabilities holds: credentials, quota, spend
+```
+
+**Wired into the platform.** `platform.capabilities` is live in
+`lib/platform/platform.ts` alongside `providers`, `skills` and `mcp` — every
+existing call site (`main.ts`, `runJob.ts`, `stage.ts`, `discoveryAgent.ts`,
+both smoke scripts) picks it up with no change, because the new field is
+additive and the constructor option that widens its policy is optional.
+
+**Verified live against this deployment's real `.env`** (Gemini + OpenAI
+credentialled, Anthropic and OpenRouter not): `npm run capability-board` plans
+31 of 37 capabilities at **0 cents estimated for one full pass**. The six
+unavailable are exactly the deliberate refusals — `image_editing`,
+`motion_media` and `hosting` need a human; `audio_speech` and
+`three_d_generation` are rejected by policy; `human_approval` is definitionally
+human. Nothing failed by accident.
+
+**929 pre-existing tests still pass**, plus 69 new ones covering the registry's
+totality, the bindings' terminal-guarantee, F-08 exclusion, quota persistence
+across a restart, budget-shrinks-across-calls, and the agent roster's
+module-exists-on-disk check (which caught a real bug: the adversarial critic's
+declared cross-vendor partner didn't point back, fixed before commit). Also
+fixed in passing: `test/qa/no-agent-spawn.test.ts` was failing on this branch
+before this session — `lib/forge/preview.ts` imported `node:child_process`
+from under `lib/`, which the test exists specifically to catch. Moved to
+`scripts/forge/preview.ts`; the orchestrator now returns a path and the CLI
+script decides whether to open a window.
+
+**What is not yet built:** the planned seats in `agents.ts` (market
+researcher, Creative Director's three-territory battle, adversarial critic,
+deployment) remain `planned`, not `implemented` — the roster says so rather
+than pretending. `market_research`, `evidence_extraction`, `image_generation`,
+`hosting` and a few others plan correctly but have no real skill bound behind
+their non-deterministic bindings yet (all 38 built-in skills are still
+placeholders, unchanged by this session). The daily quota ledger has not been
+exercised against a real 429 from an exhausted allowance — only against a
+faked one in tests.
+
+## BusinessForge 2.0 — Experience Signature Pipeline V1 (2026-08-18)
+
+**Breakout from Brochure Gravity.** The legacy deterministic renderer suffered from fixed schemas and predictable card grids. BusinessForge 2.0 implements the **Autonomous Experience Factory** in `lib/forge/`:
+
+```
+URL (Instagram / Web)
+  → Sourcing & Evidence Harvesting       (lib/forge/research.ts)
+  → Factual Firewall & Grounding         (lib/forge/grounding.ts)   [VERIFIED vs FORBIDDEN]
+  → Creative Territories (x3)            (lib/forge/signature.ts)   [Radical concept divergence]
+  → Experience Signature & Restraint     (lib/forge/signature.ts)   [Artistic opinion & anti-patterns]
+  → Experience Blueprint Compilation     (lib/forge/blueprint.ts)   [Scene architecture]
+  → Two-Pass Frontend Builder            (lib/forge/builder.ts)     [HTML5 + Bespoke CSS3/JS]
+  → Anti-AI-Generic Gate                 (lib/forge/anti-ai-gate.ts)[0% structural slop]
+  → Playwright Headless Settle & Snap    (lib/forge/browser.ts)     [1440x900 & 390x844]
+  → Multi-Modal Vision QA Critic         (lib/forge/critic.ts)      [10 Awwwards axes]
+  → Autonomous Code Repair Loop          (lib/forge/repair.ts)      [In-place polish]
+  → Live Browser Preview Launch          (lib/forge/preview.ts)     [Automatic OS open]
+```
+
+**Verified Benchmarks:**
+- **Go Sweet & More Sibiu** (`https://go-sweet.ro`): L'Alchimie du Sucre (Score: 85/100).
+- **River Park Events Drăgășani** (`https://www.instagram.com/river.park.events/`): The Nocturnal Celestial Ballroom & Cloud Dance (Score: 89/100, Anti-AI Gate: 100/100, Vision Verdict: `INTENTIONALLY_ART_DIRECTED`).
+
+Documentation: [docs/EXPERIENCE_SIGNATURE_PIPELINE.md](docs/EXPERIENCE_SIGNATURE_PIPELINE.md), [lib/forge/README.md](lib/forge/README.md).
+
+---
 
 ## The content system — the page now says business-specific things (2026-08-11)
 

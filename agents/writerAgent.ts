@@ -34,14 +34,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { GALLERY_BUDGET, arrangeSequence, chooseForSection, curateGallery, photoIdentity } from '../lib/art/direction.js';
+import { createModelInvoker } from '../lib/capability/invokers.js';
 import { detectLanguage } from '../lib/content/language.js';
 import { UpstreamError } from '../lib/errors.js';
 import { VENDORED_FACES } from '../lib/render/fontManifest.js';
 import { assignIds } from '../lib/render/site.js';
 
-import type { AIProvider, JsonSchema } from '../lib/ai/types.js';
+import type { JsonSchema } from '../lib/ai/types.js';
 import type { WriterConfig } from '../lib/config.js';
-import type { Logger } from '../lib/logger.js';
 import type {
   Agent,
   AgentContext,
@@ -1319,52 +1319,65 @@ export function groundingWarnings(content: WebsiteContent, profile: BusinessProf
 /* ------------------------------------------------------------------ */
 
 /**
- * Asks the platform's provider for one draft.
+ * Asks the capability planner for one draft.
  *
  * Everything vendor-shaped is below this line, exactly as it is for the
- * analyst: streaming, beta headers, refusal and truncation handling and schema
- * enforcement all live in the adapter, so this agent runs unchanged on any of
- * the four providers.
+ * analyst — and so is vendor *choice*, now: `prose_writing` routes through
+ * every credentialled vendor this deployment has rather than the single one
+ * `AI_PROVIDER` names, free-tier allowance first, so a vendor outage or an
+ * exhausted daily quota fails over instead of failing the stage.
+ * `WRITER_MODEL` still pins the id for whichever vendor `AI_PROVIDER` names
+ * (`modelOverrides`); a vendor reached only by failover was never pinned, so
+ * it uses the capability catalogue's own default for its class.
  */
 async function draft(
   brief: string,
-  provider: AIProvider,
+  ctx: AgentContext,
   config: WriterConfig,
-  logger: Logger,
-  signal: AbortSignal,
-): Promise<{ draft: Draft; model: string }> {
-  let result;
-  try {
-    result = await provider.generate({
+): Promise<{ draft: Draft; model: string; provider: string }> {
+  const invoke = createModelInvoker(
+    {
       system: SYSTEM_PROMPT,
       prompt: `Here is the brief for one business. Write its website.\n\n${brief}`,
       schema: CONTENT_SCHEMA,
       schemaName: 'website_content',
-      model: config.model,
-      effort: config.effort,
       maxTokens: config.maxOutputTokens,
-      signal,
-    });
-  } catch (error) {
-    if (error instanceof UpstreamError) throw error;
-    throw new UpstreamError(error instanceof Error ? error.message : String(error), {
+      signal: ctx.signal,
+      effort: config.effort,
+      modelOverrides: { [ctx.config.ai.provider]: config.model },
+    },
+    ctx.platform.providers,
+    ctx.logger,
+  );
+
+  const { outcome, record } = await ctx.platform.capabilities.run('prose_writing', invoke, {
+    tokens: { inputTokens: brief.length / 4, outputTokens: config.maxOutputTokens },
+  });
+
+  if (!outcome.ok) {
+    throw new UpstreamError(outcome.error.message, {
       source: NAME,
-      retryable: false,
-      cause: error,
+      retryable: outcome.error.retryable,
+      cause: outcome.error,
     });
   }
 
-  logger.debug('draft returned', {
-    provider: provider.name,
+  const result = outcome.data;
+  const servedProvider = record.attempts.find((a) => a.service === record.servedBy)?.provider ?? 'unknown';
+
+  ctx.logger.debug('draft returned', {
+    provider: servedProvider,
     model: result.model,
     structuredOutput: result.structuredOutput,
     finishReason: result.finishReason,
     inputTokens: result.usage.inputTokens,
     outputTokens: result.usage.outputTokens,
+    attempts: record.attempts.length,
+    degraded: record.degraded,
   });
 
   assertDraftShape(result.data);
-  return { draft: result.data, model: result.model };
+  return { draft: result.data, model: result.model, provider: servedProvider };
 }
 
 /* ------------------------------------------------------------------ */
@@ -1389,23 +1402,24 @@ export const writerAgent: WriterAgent = {
     const { profile, strategy } = input;
     const writer = config.writer;
 
-    // Throws a configuration error naming the exact variable to set when
-    // `AI_PROVIDER` is unset, unrecognised, or has no credential — before any
-    // network call, and without this agent knowing which vendor that is.
-    const provider = ctx.platform.ai();
-
     const brief = buildWriterBrief(profile, strategy, writer.maxPageChars);
+
+    // Which vendor serves this is the capability planner's decision now, not
+    // a fixed choice — logged once the call returns, since a failover means
+    // the answer is not known yet.
+    const plan = ctx.platform.capabilities.plan('prose_writing');
     logger.info('writing started', {
       business: profile.name.value,
-      provider: provider.name,
-      model: writer.model,
+      plannedChain: plan.chain.map((step) => step.binding.id),
+      pinnedModel: writer.model,
       effort: writer.effort,
       briefChars: brief.length,
     });
 
-    const { draft: written, model } = await logger.time('write website copy', () =>
-      draft(brief, provider, writer, logger, ctx.signal),
+    const { draft: written, model, provider } = await logger.time('write website copy', () =>
+      draft(brief, ctx, writer),
     );
+    logger.info('writing served', { provider, model });
 
     const warnings: string[] = [];
     const warn = (message: string): void => {

@@ -266,10 +266,17 @@ export const AGENT_SEATS: readonly AgentSeat[] = [
     pool: 'evaluation',
     status: 'implemented',
     capability: 'craft_judging',
-    module: 'lib/qa/jury.ts',
-    k: 2,
+    // Not lib/qa/jury.ts — that module only decides how many judges to spend
+    // (k=1 vs k=2 from the deterministic score spread). The actual vision
+    // call that judges craft is analyzeCritique / analyzeCritiqueViaCapability
+    // in visual-critic.ts; a prior pass at this roster pointed here by
+    // mistake, which is exactly the kind of error auditing the bindings
+    // against the real code — not trusting the registry because its tests
+    // passed — is supposed to catch.
+    module: 'lib/qa/visual-critic.ts',
+    k: 1,
     kRationale:
-      'Gating: position and self-enhancement bias are systematic, so a verdict that blocks delivery is taken from two vendors in both orderings.',
+      'One vendor today. lib/qa/jury.ts (a separate, deterministic module) decides k=2 only when the score spread is narrow — see its own seat rationale for the corroborative case.',
     crossVendorWith: 'distinctness-judge',
     mayNotProduce: 'a pass when it could not see the page — that is `uncertain` (F-07)',
   },
