@@ -2,6 +2,69 @@
 
 _Last updated: 2026-08-19_
 
+## Anti-AI gate false positive fixed; verified on 3 real businesses (2026-08-19, third pass)
+
+**The bug.** `lib/forge/anti-ai-gate.ts`'s structural-similarity check compared
+the current build's `<section id="…">` list against one hardcoded prior run
+(`forge-da56c149`, the Go Sweet bakery) and failed anything over 80% overlap.
+It scored Ridgeway Motors — an auto-repair shop, nothing like a bakery — "100%
+identical" to it. Root cause: `signature.ts` never told the model what a scene
+id was *for*, so it defaulted to `scene-1`, `scene-2`, … on every business.
+Two unrelated builds' *only* shared trait was the naming convention, not the
+content, and the check measured exactly that artifact.
+
+**The fix.** `checkStructuralConvergence` replaces the single-baseline diff:
+scoped to whatever real peer corpus exists under `outputDir` (never a fixed
+file), compared on the signature's own identity-bearing creative fields —
+central mechanism, metaphor, layout-pattern sequence, selected interaction
+patterns, color palette — never a DOM id. Convergence is flagged only when
+several axes agree with the *same* peer at once (four of five), so one
+coincidental shared trait between two legitimately different businesses no
+longer trips it. `slugifySceneIds` fixes the id generation at the source,
+giving every scene a real, business-derived anchor id as a side effect. New
+`lib/forge/verdict.ts` combines the structural gate with the Craft Critic into
+one explainable verdict, reusing `lib/qa/verdict.ts`'s existing lexicographic
+rule (F-06) rather than a second scoring formula.
+
+**A second, related bug found live, not by inspection.** Running the real
+five-business benchmark below, a repair-loop re-critique for Paradise Dental
+Care lost its vision vendor mid-run (Gemini's daily free-tier quota exhausted)
+and `critic.ts`'s honest `uncertainReport` fallback — flat `5/10` on every
+axis, `HYBRID_SOME_GENERIC`, `rawNotes` explaining why — was being read by
+`computeForgeVerdict` as a genuine, if mediocre, critique rather than as
+missing evidence. Fixed: the `genericity` dimension now reads `rawNotes` and
+reports `uncertain` (blocking) rather than a passing score. This is the same
+principle the freeze names elsewhere (F-07: `uncertain` blocks delivery) and a
+concrete instance of Phase 10's requirement that missing vision credentials
+never silently become a pass.
+
+**Verified live, three businesses, real production path** (signature →
+blueprint → builder → browser → critic → gate → verdict, only the business
+evidence differing): Ridgeway Motors (auto repair, UK fixture business),
+Paradise Dental Care (dentist, real US business), River Park Events
+Drăgășani (event venue, real Romanian business). All three scored mutually
+`DISTINCT` with **zero** matched identity axes against each other — different
+central mechanisms (a diagnostic-telemetry system vs. a care-coordination
+system vs. an atmospheric-lighting system), different palettes, different
+interaction grammars, different conversion postures matched to category
+(`call` / `visit` / `reserve`), not merely different colors.
+
+**Not completed this session:** the remaining two of the five target
+businesses (a bakery, a restaurant) hit real `HTTP 429` Gemini quota
+exhaustion after the dentist run — not a code defect. Per this project's zero-
+budget-by-default capability policy, the run correctly refused to fail over to
+the configured-but-paid OpenAI key rather than spend without authorization
+(confirmed: zero paid-provider calls occurred). Five-of-five substantially
+different businesses is still open.
+
+**33 new tests**, all against real captured production artifacts (Ridgeway's
+actual signature, blueprint, critique and generated HTML are committed as
+fixtures — synthetic placeholder business, no real PII) rather than synthetic
+mocks: the exact historical false positive is on record and asserted fixed,
+alongside a synthetic near-duplicate proving the check is not merely
+neutered. Full suite **1033/1033**, typecheck and production build clean.
+Commit `a1b79ce`.
+
 ## Capability orchestration wired into production (2026-08-19, second pass)
 
 **The audit's finding, stated plainly:** the layer documented below shipped
