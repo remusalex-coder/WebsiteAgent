@@ -17,6 +17,7 @@
  */
 
 import { createAIProviderFactory } from '../ai/factory.js';
+import { createCapabilityOrchestrator } from '../capability/orchestrator.js';
 import { normaliseFlagName } from '../config.js';
 import { createHttpConnector } from './mcp/httpConnector.js';
 import { createMCPManager } from './mcp/manager.js';
@@ -32,6 +33,8 @@ import {
 
 import type { AIProvider, AIProviderName } from '../ai/types.js';
 import type { AIProviderFactory } from '../ai/factory.js';
+import type { CapabilityOrchestrator } from '../capability/orchestrator.js';
+import type { CapabilityPolicy } from '../capability/plan.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
 import type { MCPManager } from './mcp/manager.js';
@@ -52,6 +55,12 @@ export interface Platform {
   readonly skills: SkillManager;
   readonly mcp: MCPManager;
   readonly telemetry: Telemetry;
+  /**
+   * The capability orchestrator: plans and runs across providers, skills, MCP
+   * servers and in-repo tools, cost-aware and quota-aware. What Hermes calls
+   * to decide which provider, which model, which tool, in what order.
+   */
+  readonly capabilities: CapabilityOrchestrator;
   /** True when a named feature flag is on. Unknown flags are off. */
   feature(name: string): boolean;
   /** Every capability, with health and observed behaviour. */
@@ -84,6 +93,13 @@ export interface PlatformOptions {
   readonly signal: AbortSignal;
   /** This run's artifact directory; skills write beneath it. */
   readonly outputDir: string;
+  /**
+   * Overrides the capability orchestrator's standing policy. Defaults to
+   * zero-budget and autonomous — the platform's baseline — so widening it (a
+   * paid tier, a human-attended run) is always an explicit act at this call
+   * site, never an implicit one inside a stage.
+   */
+  readonly capabilityPolicy?: Partial<CapabilityPolicy>;
 }
 
 /**
@@ -182,6 +198,18 @@ export async function createPlatform(options: PlatformOptions): Promise<Platform
   }
 
   /* ---------------------------------------------------------------- */
+  /* Capability orchestration                                          */
+  /* ---------------------------------------------------------------- */
+
+  const capabilities = await createCapabilityOrchestrator({
+    config,
+    logger: platformLogger.child('capability'),
+    telemetry,
+    signal,
+    ...(options.capabilityPolicy === undefined ? {} : { policy: options.capabilityPolicy }),
+  });
+
+  /* ---------------------------------------------------------------- */
   /* Platform                                                          */
   /* ---------------------------------------------------------------- */
 
@@ -192,6 +220,7 @@ export async function createPlatform(options: PlatformOptions): Promise<Platform
     skills,
     mcp,
     telemetry,
+    capabilities,
 
     feature(name: string): boolean {
       // Same normalisation the loader applied, so `places-api` and
