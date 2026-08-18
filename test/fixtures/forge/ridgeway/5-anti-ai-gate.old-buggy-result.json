@@ -1,0 +1,16 @@
+{
+  "passed": false,
+  "score": 70,
+  "flags": [
+    {
+      "code": "GENERIC_SIMILARITY_FAIL",
+      "severity": "fail",
+      "message": "Site layout structure is 100% identical to Go Sweet baseline. Must have unique section IDs and structure."
+    }
+  ],
+  "comparisonWithBaseline": {
+    "structureSimilarityScore": 100,
+    "tokenSimilarityScore": 0,
+    "verdict": "TOO_SIMILAR_TO_BASELINE"
+  }
+}

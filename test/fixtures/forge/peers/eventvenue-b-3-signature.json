@@ -1,0 +1,163 @@
+{
+  "selectedTerritoryId": "theatrical-nocturnal-grandeur",
+  "selectionRationale": "River Park Events possesses an unmistakable physical aura: dramatic crystal chandeliers in Sala Grand combined with signature low-lying smoke ('dans pe nori') and cold sparkler fountains. This territory elevates the venue from a physical space to a stage of cinematic grandeur, capturing the emotional dream of a couple's first dance floating above celestial clouds.",
+  "businessTruth": "River Park Events is a premier event estate in Drăgășani featuring two expansive halls (Sala Grand and Sala Gold), an elite on-site culinary kitchen, and an integrated 19-room boutique hotel on Strada Regele Ferdinand 56.",
+  "humanInsight": "Couples and hosts don't just book a hall; they seek a transformative theatrical backdrop where their most significant milestone feels like an unrepeatable cinematic premiere.",
+  "creativeMetaphor": "A nocturnal theater of light and haze, where monumental architecture cradles celestial celebrations.",
+  "centralMechanism": "Atmospheric Lighting & Cloud State Switcher: an interactive curtain trigger that transitions the scene from crisp architectural clarity to low-lying haze illuminated by cold sparklers.",
+  "signatureMoment": "The 'Dans pe Nori' Atmospheric Reveal: users drag an interactive light curtain across Sala Grand, unveiling the dramatic shift from formal banquet setup to a misty cloud-floored ballroom beneath crystal chandeliers.",
+  "interactionGrammar": {
+    "paceAndMotion": "Deliberate, theatrical, cinematic inertia. Transitions flow like stage curtains opening with heavy, luxurious ease.",
+    "openingMoment": "Full-bleed nocturnal reveal of Sala Grand's crystal chandeliers dimming down as volumetric haze creeps across the screen floor.",
+    "scrollChoreography": "Dual-axis curtain reveal: horizontal slide transitions for hall comparison (Sala Grand vs. Sala Gold) and vertical sticky pinning for atmospheric transformation.",
+    "microInteractions": [
+      "Sparkle shimmer on button hover",
+      "Cursor glow reacting to ambient hall light switchers",
+      "Haze density interactive slider control"
+    ],
+    "selectedPatterns": [
+      "Stage-curtain spatial reveals",
+      "Atmospheric fog density control",
+      "Bespoke date and hall concierge switch",
+      "Macro-culinary focus zoom"
+    ],
+    "rejectedPatterns": [
+      "No bouncy or cartoonish micro-animations",
+      "No generic cards with floating drop shadows",
+      "No unmotivated glassmorphism blur cards",
+      "No static stock photography grids",
+      "No generic loading spinners"
+    ]
+  },
+  "visualGrammar": {
+    "moodWords": [
+      "Cinematic",
+      "Nocturnal",
+      "Celestial",
+      "Luminous",
+      "Monumental"
+    ],
+    "colorPalette": {
+      "primary": "#070B12",
+      "secondary": "#141C2B",
+      "background": "#05070C",
+      "surface": "#0F1724",
+      "textPrimary": "#F5F7FA",
+      "textMuted": "#8E99A8",
+      "accent": "#D4AF37"
+    },
+    "typography": {
+      "displayFamily": "Cormorant Garamond, serif",
+      "bodyFamily": "Plus Jakarta Sans, sans-serif",
+      "styleNote": "Regal serif display headings with delicate letter spacing, balanced by razor-sharp geometric sans-serif body copy."
+    },
+    "spatialComposition": "Asymmetric full-bleed layouts with dramatic dark contrast, deep focal depth, and heavy framing around lighting accents."
+  },
+  "restraintContract": {
+    "forbiddenAntiPatterns": [
+      "Do not reference direct physical river access or riverbanks",
+      "Do not claim hotel capacity beyond 19 guest rooms",
+      "Do not use bright white daylight background palettes",
+      "Do not display generic flat cards without lighting context"
+    ],
+    "mandatoryDesignRules": [
+      "All imagery must strictly feature authentic River Park venue assets",
+      "All text in Romanian must express understated luxury and refined hospitality",
+      "Interactive controls must simulate real physical effects (light, smoke, sparklers)",
+      "Always ground physical location accurately at Strada Regele Ferdinand 56, Drăgășani"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "act-1-hero",
+      "actName": "Actul I",
+      "purpose": "Set the nocturnal atmosphere and introduce River Park Events as a stage of grand spectacle.",
+      "title": "Preludiu Nocturn",
+      "subtitle": "Scena Evenimentelor Grandioase din Drăgășani",
+      "bodyText": "Pași scurși în lumină caldă, candelabre de cristal ce veghează din înalt și o atmosferă creată pentru momente memorabile. River Park Events transformă fiecare sărbătoare într-un spectacol cinematografic.",
+      "layoutPattern": "Full-bleed split curtain reveal with centered high-impact typography",
+      "keyInteraction": "Drag vertical curtain to dim the lights and reveal crystal chandeliers",
+      "visualEffect": "Volumetric ambient glow with subtle floating dust particle animation",
+      "assetIds": [
+        "assets/hall-grand-chandelier-wide.jpg",
+        "assets/hall-grand-firstdance-clouds.jpg"
+      ]
+    },
+    {
+      "id": "act-2-halls",
+      "actName": "Actul II",
+      "purpose": "Showcase the dual event spaces: Sala Grand and Sala Gold.",
+      "title": "Două Spații, O Singură Viziune",
+      "subtitle": "Sala Grand & Sala Gold",
+      "bodyText": "Fie că vă doriți măreția neoclasică a Sălii Grand sau rafinamentul cald al Sălii Gold, spațiile noastre se adaptează impecabil dimensiunii și caracterului evenimentului dumneavoastră.",
+      "layoutPattern": "Interactive dual-hall comparative layout slider",
+      "keyInteraction": "Toggle between Sala Grand and Sala Gold layout perspectives",
+      "visualEffect": "Smooth cross-dissolve with golden architectural outline highlights",
+      "assetIds": [
+        "assets/hall-grand-banquet-blue.jpg",
+        "assets/hall-warm-banquet.jpg",
+        "assets/hall-grand-headtable-arches.jpg"
+      ]
+    },
+    {
+      "id": "act-3-first-dance",
+      "actName": "Actul III",
+      "purpose": "Highlight the signature 'Dans pe Nori' smoke and cold firework special effects.",
+      "title": "Dans pe Nori",
+      "subtitle": "Efecte Speciale & Artificii Reci",
+      "bodyText": "Trăiți primul dans învăluiți în fum greu și scântei spectaculoase de artificii reci. O experiență vizuală desăvârșită ce transformă ringul de dans într-o scenă celestă.",
+      "layoutPattern": "Interactive state-toggle before and after cloud transition canvas",
+      "keyInteraction": "Hold cursor or touch to activate low-lying cloud smoke simulation",
+      "visualEffect": "Particle haze simulation layered over high-contrast ballroom lighting",
+      "assetIds": [
+        "assets/hall-grand-firstdance-clouds.jpg",
+        "assets/hall-grand-firstdance-blue.jpg"
+      ]
+    },
+    {
+      "id": "act-4-gastronomy",
+      "actName": "Actul IV",
+      "purpose": "Demonstrate the culinary expertise of the on-site kitchen and custom menus.",
+      "title": "Măiestrie Gastronomică",
+      "subtitle": "Bucătărie Proprie & Meniuri Personalizate",
+      "bodyText": "Preparate create cu pasiune în bucătăria noastră proprie. De la aranjamente spectaculoase la preparate rafinate, fiecare meniu este conceput pentru a încânta cele mai exigente gusturi.",
+      "layoutPattern": "Offset editorial magazine layout with focus callouts",
+      "keyInteraction": "Hover over menu elements to reveal culinary detail shots",
+      "visualEffect": "Subtle depth-of-field lens tilt on image hover",
+      "assetIds": [
+        "assets/gastronomy-centerpiece.jpg",
+        "assets/detail-placesetting-menu.jpg",
+        "assets/detail-tablescape-blush.jpg"
+      ]
+    },
+    {
+      "id": "act-5-hotel",
+      "actName": "Actul V",
+      "purpose": "Introduce the integrated 19-room River Park Hotel for host and guest accommodation.",
+      "title": "Sanctuarul Oaspeților",
+      "subtitle": "Hotel River Park — 19 Camere Elegante",
+      "bodyText": "Prelungiți bucuria evenimentului într-un cadru intim și odihnitor. Cele 19 camere ale Hotelului River Park oferă confortul desăvârșit pentru dumneavoastră și invitații dumneavoastră de seamă.",
+      "layoutPattern": "Balanced horizontal focus showcase with deep obsidian framing",
+      "keyInteraction": "Swipe through room gallery preview cards",
+      "visualEffect": "Soft fade-in gallery transitions with subtle warm light leaks",
+      "assetIds": [
+        "assets/web_img_1.jpg",
+        "assets/web_img_4.jpg"
+      ]
+    },
+    {
+      "id": "act-6-concierge",
+      "actName": "Actul VI",
+      "purpose": "Provide a high-end reservation inquiry interface with physical location verification.",
+      "title": "Rezervă Scena Ta",
+      "subtitle": "Strada Regele Ferdinand 56, Drăgășani",
+      "bodyText": "Echipa noastră vă stă la dispoziție pentru a planifica fiecare detaliu al evenimentului dumneavoastră. Selectați data dorită și începeți călătoria către o celebrare memorabilă.",
+      "layoutPattern": "Centered monumental booking console with interactive date concierge",
+      "keyInteraction": "Select date and hall preference in custom concierge trigger",
+      "visualEffect": "Gold border shimmer animation on active selection state",
+      "assetIds": [
+        "assets/maps-hero-original.jpg"
+      ]
+    }
+  ]
+}

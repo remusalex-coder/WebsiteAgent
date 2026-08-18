@@ -1,0 +1,142 @@
+{
+  "selectedTerritoryId": "surgical-precision",
+  "selectionRationale": "The Diagnostic Laboratory elevates routine vehicle maintenance into an exact, clinical science at 1 Workshop Lane. By combining computerised diagnostics with absolute component transparency, it directly resolves customer anxiety surrounding hidden repair costs and mechanical ambiguity, positioning Ridgeway Motors as the definitive authority in automotive care.",
+  "businessTruth": "Ridgeway Motors provides expert MOTs, computerised diagnostics, servicing, and mechanical repairs with courtesy cars and free parking at 1 Workshop Lane, Berkshire, operating Monday-Friday 08:00–18:00.",
+  "humanInsight": "Car owners experience profound anxiety when dropping off their vehicle at a garage because they feel blind to technical jargon, uncertain about real failure points, and fearful of unfair charges.",
+  "creativeMetaphor": "A calibrated mechanical operating theatre where precision diagnostic telemetry illuminates engine and chassis health with clinical honesty.",
+  "centralMechanism": "Interactive Diagnostic Telemetry Card System: an intuitive telemetry interface where mechanical status, diagnostics, and component wear levels are exposed with clear, human-readable remedy steps.",
+  "signatureMoment": "The Live Telemetry Audit: an interactive diagnostic breakdown connecting OBD computer codes and component wear directly to remedies, courtesy car booking, and transparent fixed estimates.",
+  "interactionGrammar": {
+    "paceAndMotion": "Measured, deliberate, and linear with smooth damped transitions (600ms cubic-bezier(0.16, 1, 0.3, 1)) mimicking precision diagnostic instruments.",
+    "openingMoment": "A stark obsidian canvas activates with a laser-thin amber telemetry scan line sweeping horizontally across high-contrast diagnostic readouts for 1 Workshop Lane.",
+    "scrollChoreography": "Pinned telemetry panels where scrolling sequentially reveals diagnostic telemetry, mechanical component inspection, and service allocation.",
+    "microInteractions": [
+      "Hovering over a component reveals its wear tolerance millimeter readout",
+      "Clicking diagnostic fault codes toggles live breakdown of remedy actions",
+      "Courtesy car selector toggles real-time availability indicator for weekday drop-offs"
+    ],
+    "selectedPatterns": [
+      "Telemetry Scrubbers",
+      "Diagnostic Fault Code Decoders",
+      "Synchronized Courtesy Vehicle Booking Grid"
+    ],
+    "rejectedPatterns": [
+      "Generic parallax scrolling",
+      "Flashing discount banners",
+      "Unmotivated glassmorphism",
+      "Infinite auto-playing carousels",
+      "Generic chat popups"
+    ]
+  },
+  "visualGrammar": {
+    "moodWords": [
+      "Clinical",
+      "Calibrated",
+      "Transparent",
+      "Authoritative",
+      "Exacting"
+    ],
+    "colorPalette": {
+      "primary": "#101214",
+      "secondary": "#0F2B22",
+      "background": "#0A0B0C",
+      "surface": "#16191C",
+      "textPrimary": "#F4F6F8",
+      "textMuted": "#8A94A0",
+      "accent": "#FF5500"
+    },
+    "typography": {
+      "displayFamily": "Space Grotesk, sans-serif",
+      "bodyFamily": "Inter, sans-serif",
+      "styleNote": "Monospaced technical telemetry data labels paired with authoritative, clean headline typography and crisp en-GB body prose."
+    },
+    "spatialComposition": "Grid-bound, high-density lab dashboard layout with stark contrast, zero fluff, and rigid alignment echoing calibrated workshop tooling."
+  },
+  "restraintContract": {
+    "forbiddenAntiPatterns": [
+      "Do not use vague marketing buzzwords without clear diagnostic proof",
+      "Do not show open weekend hours as operations are strictly Mon-Fri 08:00-18:00",
+      "Do not feature heavy commercial vehicles or motorbikes",
+      "Do not display decorative non-functional chart animations"
+    ],
+    "mandatoryDesignRules": [
+      "Always state the exact location at 1 Workshop Lane, Ridgeway, RG12 4AB, Berkshire",
+      "Always display operating hours 08:00 to 18:00 Mon-Fri prominently alongside courtesy car options",
+      "Every visual asset must show true garage telemetry and tools",
+      "All body text must use en-GB spelling conventions"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "scene-1",
+      "actName": "ACT I — THE CLINICAL ENTER",
+      "purpose": "Establish the diagnostic authority and location of Ridgeway Motors immediately upon entry.",
+      "title": "CLINICAL AUTOMOTIVE DIAGNOSTICS AT 1 WORKSHOP LANE",
+      "subtitle": "Berkshire's Precision Workshop for MOTs, Computerised Diagnostics & Servicing",
+      "bodyText": "Eliminate uncertainty from vehicle care. Operating Monday to Friday, 08:00 to 18:00, Ridgeway Motors delivers laboratory-grade diagnostics, brake replacement, and comprehensive mechanical servicing with complimentary courtesy vehicles.",
+      "layoutPattern": "Split-screen telemetry hero with live workshop status, opening diagnostic readout, and static asset display.",
+      "keyInteraction": "Interactive telemetry activation trigger unveiling workshop availability and location details.",
+      "visualEffect": "Laser-thin amber scanline sweep over asset/wheel-alignment.jpg.",
+      "assetIds": [
+        "assets/wheel-alignment.jpg"
+      ]
+    },
+    {
+      "id": "scene-2",
+      "actName": "ACT II — COMPUTERISED DIAGNOSTICS & TELEMETRY",
+      "purpose": "Demonstrate computerised fault finding and timing belt / engine telemetry transparency.",
+      "title": "COMPUTERISED FAULT DECODING & TIMING BELT INTEGRITY",
+      "subtitle": "Translating Complex ECU Telemetry into Clear Actionable Remedies",
+      "bodyText": "Modern vehicles communicate in complex code. Our advanced diagnostic interfaces decode vehicle electronics instantly, identifying exact fault parameters before any component work begins.",
+      "layoutPattern": "Two-column technical panel featuring interactive ECU fault code decoder on the left and high-contrast asset on the right.",
+      "keyInteraction": "Clicking diagnostic fault codes reveals precise remedy steps, estimated workshop time, and component health ratings.",
+      "visualEffect": "High-contrast image contrast shift on asset/technician-at-work.jpg with overlaid amber measurement crosshairs.",
+      "assetIds": [
+        "assets/technician-at-work.jpg"
+      ]
+    },
+    {
+      "id": "scene-3",
+      "actName": "ACT III — CHASSIS & BRAKE REPLACEMENT PRECISION",
+      "purpose": "Highlight mechanical discipline in brake, suspension, and chassis component servicing.",
+      "title": "BRAKE & SUSPENSION REPLACEMENT TOLERANCES",
+      "subtitle": "Exacting Wear Measurement for Total Braking Safety",
+      "bodyText": "Safety relies on millimetres. We measure disc thickness, pad friction material, and brake fluid boiling points against manufacturer specifications to ensure absolute stopping power.",
+      "layoutPattern": "Horizontal split feature with macro asset presentation and calibrated component wear gauge.",
+      "keyInteraction": "Scrubbing the wear slider compares measured brake disc thickness against maximum tolerance limits.",
+      "visualEffect": "Magnified lens zoom effect over asset/brake-replacement.jpg revealing precise wear grid.",
+      "assetIds": [
+        "assets/brake-replacement.jpg"
+      ]
+    },
+    {
+      "id": "scene-4",
+      "actName": "ACT IV — CALIBRATED TOOLING & WORKSHOP STANDARDS",
+      "purpose": "Showcase the physical rigor, organized tooling, and vehicle lift facilities at Ridgeway Motors.",
+      "title": "CALIBRATED EQUIPMENT AT WORKSHOP LANE",
+      "subtitle": "Order, Cleanliness, and Technical Mastery",
+      "bodyText": "A world-class repair begins with meticulously organized tooling and hydraulic lift bays. Every torque wrench, alignment rig, and diagnostic reader is maintained to exacting standards.",
+      "layoutPattern": "Asymmetric dual-panel layout comparing workshop organization with lift bay capabilities.",
+      "keyInteraction": "Hovering over individual tool racks highlights specialized service capabilities from timing belt alignment to brake bleeding.",
+      "visualEffect": "Smooth focus fade between asset/tool-wall.jpg and asset/workshop-lift.jpg.",
+      "assetIds": [
+        "assets/tool-wall.jpg",
+        "assets/workshop-lift.jpg"
+      ]
+    },
+    {
+      "id": "scene-5",
+      "actName": "ACT V — THE FRICTIONLESS COMMUTER AUDIT",
+      "purpose": "Convert visitor interest into an immediate booking with courtesy car reservation and parking assurance.",
+      "title": "RESERVE YOUR SERVICE & COURTESY CAR",
+      "subtitle": "Seamless Mon-Fri Drop-Offs with Free On-Site Parking",
+      "bodyText": "Drop your vehicle at 1 Workshop Lane, Ridgeway (RG12 4AB) between 08:00 and 18:00 Monday to Friday. Reserve a free courtesy vehicle or utilize our private customer parking while our technicians conduct your MOT or service.",
+      "layoutPattern": "Interactive booking terminal with date selector, courtesy vehicle toggle, and clear fixed estimate summary.",
+      "keyInteraction": "Select service type (MOT, Servicing, Brakes, Diagnostics) and toggle courtesy car availability in real time.",
+      "visualEffect": "Amber glowing confirmation ring and instant reservation badge generation.",
+      "assetIds": [
+        "assets/workshop-lift.jpg"
+      ]
+    }
+  ]
+}

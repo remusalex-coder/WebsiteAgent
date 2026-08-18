@@ -1,0 +1,865 @@
+{
+  "version": 1,
+  "personality": {
+    "direction": "modern",
+    "mood": {
+      "temperature": "neutral",
+      "energy": "steady",
+      "formality": "neutral"
+    },
+    "density": "balanced",
+    "contrast": "high",
+    "rationale": "The automotive category's first preference is modern, and nothing in the copy argues for another.",
+    "evidence": [
+      "industry:automotive",
+      "copy:\"family\""
+    ]
+  },
+  "industry": {
+    "id": "automotive",
+    "basis": "listing",
+    "matchedOn": [
+      "category:auto"
+    ],
+    "rationale": "Maps lists the business as \"Auto repair\", which matches \"auto\"."
+  },
+  "patterns": [
+    "hero-typographic",
+    "type-grotesque-authority",
+    "type-display-statement",
+    "editorial-own-words",
+    "editorial-statement-break",
+    "marquee-verified-facts",
+    "marquee-wordmark",
+    "gallery-edited-grid",
+    "break-ground-shift",
+    "break-detail-rule",
+    "closing-invitation",
+    "closing-orphan-guard",
+    "motion-enter-rise",
+    "motion-hover-response"
+  ],
+  "world": "bone",
+  "tokens": {
+    "color": {
+      "ramps": {
+        "primary": {
+          "role": "primary",
+          "seed": "#2386ce",
+          "steps": [
+            "#f9fcfe",
+            "#f2f7fc",
+            "#e6f0f9",
+            "#d8e7f5",
+            "#c5daee",
+            "#b0cbe4",
+            "#94b9db",
+            "#72a4d0",
+            "#0576bd",
+            "#00629e",
+            "#19517b",
+            "#0d263a"
+          ]
+        },
+        "secondary": {
+          "role": "secondary",
+          "seed": "#2386ce",
+          "steps": [
+            "#fbfbfe",
+            "#f6f6fc",
+            "#ededf8",
+            "#e3e3f3",
+            "#d5d5eb",
+            "#c4c4e0",
+            "#b1b0d6",
+            "#9a98c9",
+            "#6d65b3",
+            "#59529a",
+            "#4a4675",
+            "#222137"
+          ]
+        },
+        "accent": {
+          "role": "accent",
+          "seed": "#2386ce",
+          "steps": [
+            "#fefbf9",
+            "#fbf6f1",
+            "#f7ede3",
+            "#f1e2d3",
+            "#e8d3c0",
+            "#ddc2a8",
+            "#d0ad8a",
+            "#c29465",
+            "#a16000",
+            "#854f00",
+            "#6e4105",
+            "#341f07"
+          ]
+        },
+        "neutral": {
+          "role": "neutral",
+          "seed": "#2386ce",
+          "steps": [
+            "#fcfcfc",
+            "#f6f7f7",
+            "#eeeeef",
+            "#e4e4e5",
+            "#d7d7d8",
+            "#c6c7c8",
+            "#b3b4b6",
+            "#9d9fa0",
+            "#6f7275",
+            "#5b5e61",
+            "#4b4d4f",
+            "#232425"
+          ]
+        },
+        "success": {
+          "role": "success",
+          "seed": "#2386ce",
+          "steps": [
+            "#fafdfa",
+            "#f3f8f3",
+            "#e8f2e8",
+            "#dbe9db",
+            "#cadeca",
+            "#b5d0b5",
+            "#9cbf9c",
+            "#7dad7e",
+            "#308639",
+            "#1d7028",
+            "#295a2c",
+            "#132a15"
+          ]
+        },
+        "warning": {
+          "role": "warning",
+          "seed": "#2386ce",
+          "steps": [
+            "#fefbf8",
+            "#fbf6f0",
+            "#f6ede1",
+            "#f0e2d0",
+            "#e7d4bb",
+            "#dcc3a2",
+            "#d0ae81",
+            "#c19657",
+            "#986600",
+            "#7e5400",
+            "#694500",
+            "#331f00"
+          ]
+        },
+        "danger": {
+          "role": "danger",
+          "seed": "#2386ce",
+          "steps": [
+            "#fffbfa",
+            "#fef4f3",
+            "#fceae7",
+            "#f9ddda",
+            "#f3cec9",
+            "#eabab4",
+            "#e1a29a",
+            "#d7857c",
+            "#c13c36",
+            "#a52926",
+            "#7e302a",
+            "#3c1714"
+          ]
+        }
+      },
+      "semantic": {
+        "canvas": "#fcfcfc",
+        "canvasSubtle": "#f6f7f7",
+        "surface": "#eeeeef",
+        "surfaceRaised": "#e4e4e5",
+        "border": "#c6c7c8",
+        "borderStrong": "#b3b4b6",
+        "text": "#232425",
+        "textMuted": "#4b4d4f",
+        "heading": "#232425",
+        "brand": "#0576bd",
+        "brandHover": "#00629e",
+        "onBrand": "#fcfcfc",
+        "brandText": "#0064a2",
+        "accent": "#a16000",
+        "onAccent": "#fcfcfc",
+        "inverted": "#232425",
+        "onInverted": "#fcfcfc",
+        "onInvertedMuted": "#a9abac",
+        "onInvertedAccent": "#45a2ec",
+        "success": "#308639",
+        "warning": "#986600",
+        "danger": "#c13c36"
+      },
+      "scheme": "light",
+      "contrast": {
+        "textOnCanvas": 15.16,
+        "textOnSurface": 13.41,
+        "onBrandOnBrand": 4.72,
+        "mutedOnCanvas": 8.27,
+        "textOnInverted": 15.16,
+        "mutedOnInverted": 6.74,
+        "accentOnInverted": 5.65
+      }
+    },
+    "typography": {
+      "heading": {
+        "family": "Manrope",
+        "stack": "\"Manrope\", Georgia, \"Iowan Old Style\", \"Times New Roman\", Times, serif",
+        "character": "serif",
+        "weights": [
+          400,
+          600,
+          700
+        ]
+      },
+      "body": {
+        "family": "Manrope",
+        "stack": "\"Manrope\", system-ui, -apple-system, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "character": "sans",
+        "weights": [
+          400,
+          500,
+          700
+        ]
+      },
+      "mono": null,
+      "ratio": 1.25,
+      "baseRem": 1,
+      "scale": {
+        "display": {
+          "name": "display",
+          "minRem": 2.055,
+          "maxRem": 3.052,
+          "lineHeight": 1.05,
+          "letterSpacing": -0.03,
+          "weight": 700
+        },
+        "h1": {
+          "name": "h1",
+          "minRem": 1.78,
+          "maxRem": 2.441,
+          "lineHeight": 1.05,
+          "letterSpacing": -0.03,
+          "weight": 700
+        },
+        "h2": {
+          "name": "h2",
+          "minRem": 1.541,
+          "maxRem": 1.953,
+          "lineHeight": 1.15,
+          "letterSpacing": -0.015,
+          "weight": 700
+        },
+        "h3": {
+          "name": "h3",
+          "minRem": 1.334,
+          "maxRem": 1.563,
+          "lineHeight": 1.25,
+          "letterSpacing": -0.015,
+          "weight": 400
+        },
+        "h4": {
+          "name": "h4",
+          "minRem": 1.155,
+          "maxRem": 1.25,
+          "lineHeight": 1.35,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "bodyLarge": {
+          "name": "bodyLarge",
+          "minRem": 1.075,
+          "maxRem": 1.118,
+          "lineHeight": 1.6,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "body": {
+          "name": "body",
+          "minRem": 1,
+          "maxRem": 1,
+          "lineHeight": 1.6,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "small": {
+          "name": "small",
+          "minRem": 0.866,
+          "maxRem": 0.8,
+          "lineHeight": 1.5,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "caption": {
+          "name": "caption",
+          "minRem": 0.806,
+          "maxRem": 0.716,
+          "lineHeight": 1.5,
+          "letterSpacing": 0,
+          "weight": 400
+        },
+        "eyebrow": {
+          "name": "eyebrow",
+          "minRem": 0.806,
+          "maxRem": 0.716,
+          "lineHeight": 1.5,
+          "letterSpacing": 0.12,
+          "weight": 400
+        }
+      },
+      "measureCh": 66,
+      "fluidRange": {
+        "minRem": 20,
+        "maxRem": 90
+      }
+    },
+    "spacing": {
+      "baseRem": 0.8,
+      "ratio": 1.5,
+      "scale": {
+        "3xs": {
+          "name": "3xs",
+          "minRem": 0.237,
+          "maxRem": 0.237
+        },
+        "2xs": {
+          "name": "2xs",
+          "minRem": 0.356,
+          "maxRem": 0.356
+        },
+        "xs": {
+          "name": "xs",
+          "minRem": 0.533,
+          "maxRem": 0.533
+        },
+        "sm": {
+          "name": "sm",
+          "minRem": 0.8,
+          "maxRem": 0.8
+        },
+        "md": {
+          "name": "md",
+          "minRem": 0.744,
+          "maxRem": 1.2
+        },
+        "lg": {
+          "name": "lg",
+          "minRem": 1.116,
+          "maxRem": 1.8
+        },
+        "xl": {
+          "name": "xl",
+          "minRem": 1.674,
+          "maxRem": 2.7
+        },
+        "2xl": {
+          "name": "2xl",
+          "minRem": 2.511,
+          "maxRem": 4.05
+        },
+        "3xl": {
+          "name": "3xl",
+          "minRem": 3.767,
+          "maxRem": 6.075
+        },
+        "4xl": {
+          "name": "4xl",
+          "minRem": 5.65,
+          "maxRem": 9.113
+        }
+      },
+      "sectionMinRem": 2.25,
+      "sectionMaxRem": 4.5
+    },
+    "radius": {
+      "style": "soft",
+      "none": "0",
+      "sm": "0.375rem",
+      "md": "0.625rem",
+      "lg": "1rem",
+      "pill": "999rem"
+    },
+    "elevation": {
+      "style": "lifted",
+      "prefersBorders": false,
+      "levels": {
+        "none": {
+          "name": "none",
+          "shadow": "none"
+        },
+        "sm": {
+          "name": "sm",
+          "shadow": "0 0.1rem 0.2rem rgb(21 22 23 / 0.08)"
+        },
+        "md": {
+          "name": "md",
+          "shadow": "0 0.4rem 1.2rem rgb(21 22 23 / 0.1)"
+        },
+        "lg": {
+          "name": "lg",
+          "shadow": "0 1.2rem 3.2rem rgb(21 22 23 / 0.13)"
+        }
+      }
+    },
+    "motion": {
+      "level": "moderate",
+      "durationFastMs": 140,
+      "durationBaseMs": 260,
+      "durationSlowMs": 420,
+      "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "effects": [
+        "fade",
+        "rise",
+        "stagger"
+      ],
+      "respectReducedMotion": true
+    }
+  },
+  "layout": {
+    "hero": "split",
+    "footer": "corporate",
+    "sections": [
+      {
+        "index": 0,
+        "kind": "hero",
+        "variant": "stack",
+        "emphasis": "lead",
+        "density": "airy",
+        "columns": null,
+        "fullBleed": false,
+        "momentTransition": false,
+        "transition": "none",
+        "role": "arrival",
+        "rationale": "Chose stack for hero: the section has 0 items and 1 image.",
+        "frame": "stacked",
+        "background": "subtle"
+      },
+      {
+        "index": 2,
+        "kind": "gallery",
+        "variant": "masonry",
+        "emphasis": "lead",
+        "density": "airy",
+        "columns": 2,
+        "fullBleed": true,
+        "momentTransition": true,
+        "transition": "wipe",
+        "role": "signature",
+        "rationale": "Chose masonry for gallery: the section has 0 items and 4 images.",
+        "frame": "centered",
+        "background": "canvas"
+      },
+      {
+        "index": 1,
+        "kind": "services",
+        "variant": "cards",
+        "emphasis": "primary",
+        "density": "balanced",
+        "columns": 3,
+        "fullBleed": false,
+        "momentTransition": false,
+        "transition": "none",
+        "role": "breadth",
+        "rationale": "Chose cards for services: it is the automotive convention for a services section.",
+        "frame": "aside",
+        "background": "subtle"
+      },
+      {
+        "index": 4,
+        "kind": "contact",
+        "variant": "list",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "momentTransition": false,
+        "transition": "none",
+        "role": "conversion",
+        "rationale": "Chose list for contact: the section has 3 items and 0 images.",
+        "frame": "offset",
+        "background": "canvas"
+      },
+      {
+        "index": 3,
+        "kind": "hours",
+        "variant": "list",
+        "emphasis": "secondary",
+        "density": "balanced",
+        "columns": null,
+        "fullBleed": false,
+        "momentTransition": false,
+        "transition": "none",
+        "role": "context",
+        "rationale": "Chose list for hours: the section has 1 item and 0 images.",
+        "frame": "statement",
+        "background": "subtle"
+      },
+      {
+        "index": 5,
+        "kind": "cta",
+        "variant": "banner",
+        "emphasis": "quiet",
+        "density": "dense",
+        "columns": null,
+        "fullBleed": false,
+        "momentTransition": false,
+        "transition": "none",
+        "role": "conversion",
+        "rationale": "Chose banner for cta: the section has 0 items and 0 images.",
+        "frame": "centered",
+        "background": "brand"
+      }
+    ],
+    "order": [
+      0,
+      2,
+      1,
+      4,
+      3,
+      5
+    ],
+    "stickyHeader": true,
+    "showNavigation": true,
+    "rationale": "Chose the split hero because the modern direction leads with imagery and the hero has 1 usable image."
+  },
+  "imagery": {
+    "treatment": "natural",
+    "heroCrop": "landscape",
+    "galleryCrop": "landscape",
+    "radius": "md",
+    "overlayOpacity": null,
+    "fallback": "solid"
+  },
+  "icons": {
+    "style": "line",
+    "strokeWidth": 1.75,
+    "sizeRem": 1.5
+  },
+  "responsive": {
+    "containerMaxRem": 72,
+    "containerWideRem": 88,
+    "breakpoints": {
+      "smRem": 30,
+      "mdRem": 48,
+      "lgRem": 64
+    },
+    "mobileColumns": 1,
+    "fluid": true
+  },
+  "accessibility": {
+    "targetLevel": "AA",
+    "minContrastBody": 4.5,
+    "minContrastLarge": 3,
+    "minTapTargetPx": 44,
+    "respectReducedMotion": true,
+    "focusStyle": "outline",
+    "semanticLandmarks": true
+  },
+  "experience": {
+    "mode": "showcase",
+    "signatureMoment": "gallery",
+    "transition": "wipe",
+    "momentTransition": true,
+    "galleryLead": true,
+    "pacing": "measured",
+    "rationale": "Showcase: image-led with 4 visual movements — the photography leads, the gallery becomes the subject.",
+    "evidence": [
+      "visualWeight:balanced",
+      "register:craft",
+      "narrative:latent",
+      "atmosphere:4"
+    ]
+  },
+  "conversion": {
+    "mode": "high-intent",
+    "primaryCta": "call",
+    "secondaryCta": null,
+    "ctaPlacement": "persistent",
+    "contactProminence": "immediate",
+    "informationDensity": "compact",
+    "trustPlacement": "early",
+    "conversionMoment": "cta",
+    "frictionLevel": "low",
+    "basis": "evidence",
+    "rationale": "high-intent conversion: a craft showcase business leads with \"call\", contact immediate, friction low.",
+    "evidence": [
+      "register:craft",
+      "mode:showcase",
+      "phone:true"
+    ]
+  },
+  "interaction": {
+    "level": "guided",
+    "ceiling": "guided",
+    "basis": "evidence",
+    "rationale": "Interaction guided: a showcase page with balanced weight over 6 sections.",
+    "evidence": [
+      "mode:showcase",
+      "visualWeight:balanced",
+      "sections:6",
+      "atmosphere:4"
+    ]
+  },
+  "assets": {
+    "hero": {
+      "url": "https://workshop.example/img0.jpg",
+      "role": "hero",
+      "alt": "engine bay",
+      "width": 1600,
+      "height": 1066,
+      "localPath": "assets/engine-bay.jpg",
+      "bytes": 200000,
+      "sourceUrl": "https://workshop.example/page"
+    },
+    "signature": {
+      "url": "https://workshop.example/img1.jpg",
+      "role": "gallery",
+      "alt": "workshop lift",
+      "width": 1600,
+      "height": 1066,
+      "localPath": "assets/workshop-lift.jpg",
+      "bytes": 200000,
+      "sourceUrl": "https://workshop.example/page"
+    },
+    "gallerySequence": [
+      {
+        "url": "https://workshop.example/img0.jpg",
+        "role": "hero",
+        "alt": "engine bay",
+        "width": 1600,
+        "height": 1066,
+        "localPath": "assets/engine-bay.jpg",
+        "bytes": 200000,
+        "sourceUrl": "https://workshop.example/page"
+      },
+      {
+        "url": "https://workshop.example/img3.jpg",
+        "role": "gallery",
+        "alt": "tool wall",
+        "width": 1600,
+        "height": 1066,
+        "localPath": "assets/tool-wall.jpg",
+        "bytes": 200000,
+        "sourceUrl": "https://workshop.example/page"
+      },
+      {
+        "url": "https://workshop.example/img5.jpg",
+        "role": "gallery",
+        "alt": "wheel alignment rig",
+        "width": 1600,
+        "height": 1066,
+        "localPath": "assets/wheel-alignment.jpg",
+        "bytes": 200000,
+        "sourceUrl": "https://workshop.example/page"
+      },
+      {
+        "url": "https://workshop.example/img4.jpg",
+        "role": "gallery",
+        "alt": "brake replacement",
+        "width": 1400,
+        "height": 1400,
+        "localPath": "assets/brake-replacement.jpg",
+        "bytes": 200000,
+        "sourceUrl": "https://workshop.example/page"
+      },
+      {
+        "url": "https://workshop.example/img2.jpg",
+        "role": "gallery",
+        "alt": "technician at work",
+        "width": 1200,
+        "height": 1600,
+        "localPath": "assets/technician-at-work.jpg",
+        "bytes": 200000,
+        "sourceUrl": "https://workshop.example/page"
+      },
+      {
+        "url": "https://workshop.example/img1.jpg",
+        "role": "gallery",
+        "alt": "workshop lift",
+        "width": 1600,
+        "height": 1066,
+        "localPath": "assets/workshop-lift.jpg",
+        "bytes": 200000,
+        "sourceUrl": "https://workshop.example/page"
+      }
+    ],
+    "contrastPoints": [
+      3,
+      4,
+      5
+    ],
+    "reduceImagery": false,
+    "neverUse": [],
+    "referenceOnly": [],
+    "placements": [
+      {
+        "localPath": "assets/engine-bay.jpg",
+        "url": "https://workshop.example/img0.jpg",
+        "orientation": "landscape",
+        "subject": "scene",
+        "rights": "unknown",
+        "role": "hero",
+        "framing": "wide"
+      },
+      {
+        "localPath": "assets/workshop-lift.jpg",
+        "url": "https://workshop.example/img1.jpg",
+        "orientation": "landscape",
+        "subject": "scene",
+        "rights": "unknown",
+        "role": "signature",
+        "framing": "wide"
+      },
+      {
+        "localPath": "assets/tool-wall.jpg",
+        "url": "https://workshop.example/img3.jpg",
+        "orientation": "landscape",
+        "subject": "scene",
+        "rights": "unknown",
+        "role": "gallery",
+        "framing": "natural"
+      },
+      {
+        "localPath": "assets/wheel-alignment.jpg",
+        "url": "https://workshop.example/img5.jpg",
+        "orientation": "landscape",
+        "subject": "scene",
+        "rights": "unknown",
+        "role": "gallery",
+        "framing": "natural"
+      },
+      {
+        "localPath": "assets/brake-replacement.jpg",
+        "url": "https://workshop.example/img4.jpg",
+        "orientation": "square",
+        "subject": "scene",
+        "rights": "unknown",
+        "role": "process",
+        "framing": "tall"
+      },
+      {
+        "localPath": "assets/technician-at-work.jpg",
+        "url": "https://workshop.example/img2.jpg",
+        "orientation": "portrait",
+        "subject": "scene",
+        "rights": "unknown",
+        "role": "detail",
+        "framing": "square"
+      }
+    ],
+    "rationale": "6-image sequence with 3 contrast beats; hero chosen, signature chosen, 0 reference-only.",
+    "evidence": [
+      "in:6",
+      "mode:showcase",
+      "weight:balanced"
+    ],
+    "notes": []
+  },
+  "experienceScript": {
+    "mode": "showcase",
+    "beats": [
+      {
+        "index": 0,
+        "kind": "hero",
+        "role": "arrival",
+        "emphasis": "lead",
+        "background": "subtle",
+        "pacing": "measured",
+        "visualIntensity": "loud",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "hero plays \"arrival\" at lead emphasis on subtle."
+      },
+      {
+        "index": 2,
+        "kind": "gallery",
+        "role": "signature",
+        "emphasis": "lead",
+        "background": "canvas",
+        "pacing": "measured",
+        "visualIntensity": "loud",
+        "isTransition": true,
+        "isSignature": true,
+        "rationale": "gallery plays \"signature\" — the signature moment at lead emphasis on canvas."
+      },
+      {
+        "index": 1,
+        "kind": "services",
+        "role": "breadth",
+        "emphasis": "primary",
+        "background": "subtle",
+        "pacing": "measured",
+        "visualIntensity": "measured",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "services plays \"breadth\" at primary emphasis on subtle."
+      },
+      {
+        "index": 4,
+        "kind": "contact",
+        "role": "conversion",
+        "emphasis": "quiet",
+        "background": "canvas",
+        "pacing": "measured",
+        "visualIntensity": "quiet",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "contact plays \"conversion\" at quiet emphasis on canvas."
+      },
+      {
+        "index": 3,
+        "kind": "hours",
+        "role": "context",
+        "emphasis": "secondary",
+        "background": "subtle",
+        "pacing": "measured",
+        "visualIntensity": "measured",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "hours plays \"context\" at secondary emphasis on subtle."
+      },
+      {
+        "index": 5,
+        "kind": "cta",
+        "role": "conversion",
+        "emphasis": "quiet",
+        "background": "brand",
+        "pacing": "measured",
+        "visualIntensity": "quiet",
+        "isTransition": false,
+        "isSignature": false,
+        "rationale": "cta plays \"conversion\" at quiet emphasis on brand."
+      }
+    ],
+    "opening": "arrival",
+    "signature": "gallery",
+    "conversionAt": 3,
+    "arc": [
+      "arrival",
+      "signature",
+      "breadth",
+      "conversion",
+      "context",
+      "conversion"
+    ],
+    "basis": "evidence",
+    "rationale": "showcase arc of 6 beats: arrival → signature → breadth → conversion → context → conversion."
+  },
+  "notes": [
+    "No brand colour was found in the profile; using the industry default hue (246°).",
+    "Visual world: Bone — light throughout, ordered, one face, space instead of drama.",
+    "Business character: balanced, craft register, broad offering; 6 usable images across 3 framings give latent narrative potential around the gallery section.",
+    "Experience architecture: Showcase: image-led with 4 visual movements — the photography leads, the gallery becomes the subject.",
+    "Conversion: high-intent conversion: a craft showcase business leads with \"call\", contact immediate, friction low.",
+    "Interaction: Interaction guided: a showcase page with balanced weight over 6 sections.",
+    "Assets: 6-image sequence with 3 contrast beats; hero chosen, signature chosen, 0 reference-only.",
+    "Section 2 (gallery) is the nominated moment: emphasis raised to \"secondary\".",
+    "Section 2 (gallery) leads the page: emphasis set to \"lead\" (showcase/narrative).",
+    "Sections were ordered by narrative role (experience script); content itself is unchanged.",
+    "Experience script: showcase arc of 6 beats: arrival → signature → breadth → conversion → context → conversion."
+  ]
+}

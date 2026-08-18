@@ -1,0 +1,167 @@
+{
+  "selectedTerritoryId": "theatrical-cloudscape",
+  "selectionRationale": "The 'first dance on clouds' with cold sparkler fountains in Sala Grand is the undisputed peak emotional memory for couples at River Park Events. While architectural symmetry and gastronomy are vital pillars, the celestial stage theme creates an unmatched cinematic aura that elevates Drăgășani into a premier luxury spectacle destination.",
+  "businessTruth": "River Park Events in Drăgășani features two monumental banquet halls (Sala Grand and Sala Gold) equipped with stage-grade cold pyrotechnics and low-fog generators, supported by an in-house kitchen and 19 boutique hotel rooms on-site at Str. Regele Ferdinand 56.",
+  "humanInsight": "Couples don't just want a wedding venue; they long for a stage where their first dance feels like an unrepeatable cinematic climax that mesmerizes their family and friends forever.",
+  "creativeMetaphor": "A haute-couture theater under the open stars—where fog, chandeliers, and golden spark fountains transform a grand ballroom into a celestial stage.",
+  "centralMechanism": "Atmospheric Lighting & Fog Dissolve: As the user scrolls, lighting transitions from warm ambient dinner tone to dramatic spotlight stage fog, unlocking spatial details and culinary experiences in real time.",
+  "signatureMoment": "The Interactive First Dance Cloud Simulator: A real-time visual canvas where guests can toggle low-lying fog density, cold-spark fountain height, and ambient LED halo colors across Sala Grand.",
+  "interactionGrammar": {
+    "paceAndMotion": "Stately and theatrical. Heavy-mass transitions with slow inertia, mimicking grand stage curtains opening onto illuminated ballrooms.",
+    "openingMoment": "A void of obsidian black gradually illuminated by a sweeping halo chandelier light overlay, revealing the high-contrast architecture of Sala Grand.",
+    "scrollChoreography": "Curtain Wipes & Volumetric Depth Pinning: Sections lock briefly as cold spark particle layers and fog density dissolve into place.",
+    "microInteractions": [
+      "Atmosphere preview hover",
+      "Illuminated venue switch between Sala Grand and Sala Gold",
+      "Tactile menu card reveal",
+      "Boutique suite spatial view"
+    ],
+    "selectedPatterns": [
+      "Monumental editorial typography reveal",
+      "Interactive atmospheric dance cloud customizer",
+      "Dual-hall spatial toggle",
+      "Bespoke event date concierge"
+    ],
+    "rejectedPatterns": [
+      "Generic card carousels",
+      "Floating bubble badges",
+      "Unmotivated glassmorphism overlay",
+      "Standard template grids",
+      "Casual playful animations"
+    ]
+  },
+  "visualGrammar": {
+    "moodWords": [
+      "Cinematic",
+      "Theatrical",
+      "Celestial",
+      "Opulent",
+      "Sovereign"
+    ],
+    "colorPalette": {
+      "primary": "#0A0F0D",
+      "secondary": "#141C18",
+      "background": "#070A09",
+      "surface": "#111714",
+      "textPrimary": "#F4EFEB",
+      "textMuted": "#A39E93",
+      "accent": "#D4AF37"
+    },
+    "typography": {
+      "displayFamily": "Cormorant Garamond, serif",
+      "bodyFamily": "Plus Jakarta Sans, sans-serif",
+      "styleNote": "Dramatic high-contrast serif headlines in all-caps or majestic italics paired with clean, generous letter-spaced modern sans-serif body text."
+    },
+    "spatialComposition": "Full-bleed widescreen frames, extreme dark mode contrast, asymmetric typography overlays with heavy cinematic negative space."
+  },
+  "restraintContract": {
+    "forbiddenAntiPatterns": [
+      "No generic bright white template backgrounds",
+      "No cheap floating social icons or chatbots blocking full-bleed visuals",
+      "No multi-colored badge pills",
+      "No unmotivated glassmorphism cards",
+      "No fast bouncy micro-animations"
+    ],
+    "mandatoryDesignRules": [
+      "All lighting visuals must reflect real venue cold-spark and fog capabilities",
+      "Romanian language typography must use correct diacritics and noble tone",
+      "Every interactive element must reinforce spatial grandiosity or ambiance",
+      "Image ratios must remain cinematic widescreen"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "act-1-entrance",
+      "actName": "ACT I",
+      "purpose": "Hero opening establishing the celestial stage metaphor and monumental architecture.",
+      "title": "Scena Marilor Emoții",
+      "subtitle": "River Park Events Drăgășani",
+      "bodyText": "O destinație unde eleganța arhitecturală întâlnește magia teatrală. Sala Grand și Sala Gold redifinesc spectacolul nunților din Oltenia.",
+      "layoutPattern": "Full-bleed hero frame with centered editorial title over dark volumetric ballroom image",
+      "keyInteraction": "Vertical scroll triggers ambient chandelier glow and golden light sweep",
+      "visualEffect": "Volumetric light beam fade and slow background zoom",
+      "assetIds": [
+        "assets/hall-grand-chandelier-wide.jpg",
+        "assets/web_img_1.jpg"
+      ]
+    },
+    {
+      "id": "act-2-firstdance",
+      "actName": "ACT II",
+      "purpose": "Highlight the signature dance on clouds special effect and pyrotechnics.",
+      "title": "Dansul pe Nori",
+      "subtitle": "Efecte Pirotehnice Reci & Fum Copleșitor",
+      "bodyText": "Trăiește primul tău dans învăluit într-o atmosferă de poveste. Fumul greu de joasă înălțime și fântânile de scântei reci creează un cadru memorabil în Sala Grand.",
+      "layoutPattern": "Interactive atmosphere slider overlaid on cinematic dance photo",
+      "keyInteraction": "Interactive toggle allowing user to preview fog density and sparkler flare intensity",
+      "visualEffect": "Dynamic particle fog dissipation and golden sparkle bloom",
+      "assetIds": [
+        "assets/hall-grand-firstdance-clouds.jpg",
+        "assets/hall-grand-firstdance-blue.jpg"
+      ]
+    },
+    {
+      "id": "act-3-halls",
+      "actName": "ACT III",
+      "purpose": "Showcase dual-hall versatility (Sala Grand & Sala Gold) with setup variations.",
+      "title": "Două Săli Monumentale",
+      "subtitle": "Sala Grand & Sala Gold",
+      "bodyText": "Fie că planifici un banchet maiestuos sau o recepție rafinată, spațiile noastre se adaptează viziunii tale cu decoruri florale spectaculoase și arhitectură distinsă.",
+      "layoutPattern": "Side-by-side split spatial comparison with interactive hall switcher",
+      "keyInteraction": "Hall toggle switching layout between Sala Grand and Sala Gold features",
+      "visualEffect": "Smooth dual-axis opacity crossfade",
+      "assetIds": [
+        "assets/hall-grand-banquet-blue.jpg",
+        "assets/hall-warm-banquet.jpg",
+        "assets/hall-grand-headtable-arches.jpg"
+      ]
+    },
+    {
+      "id": "act-4-gastronomy",
+      "actName": "ACT IV",
+      "purpose": "Feature the in-house kitchen, menu tastings, and tablescape decor detail.",
+      "title": "Artă Culinară & Decor Bănchetar",
+      "subtitle": "Bucătărie Proprie și Degustare Inclusă",
+      "bodyText": "Meniuri bespoke create de bucătarii noștri, îmbinând tradiția românească cu gastronomia internațională. Fiecare farfurie este o operă de artă, completată de aranjamente florale de excepție.",
+      "layoutPattern": "Offset editorial magazine layout with high-detail macro cards",
+      "keyInteraction": "Hover to reveal dish ingredients and floral centerpiece textures",
+      "visualEffect": "Depth-of-field blur shift on hover",
+      "assetIds": [
+        "assets/gastronomy-centerpiece.jpg",
+        "assets/detail-placesetting-menu.jpg",
+        "assets/detail-tablescape-blush.jpg"
+      ]
+    },
+    {
+      "id": "act-5-hotel-retreat",
+      "actName": "ACT V",
+      "purpose": "Highlight the on-site 19 boutique hotel rooms and host convenience.",
+      "title": "Sanctuar de Cazare Boutique",
+      "subtitle": "19 Camere Moderne la Str. Regele Ferdinand 56",
+      "bodyText": "Ofertă completă de ospitalitate: invitații tăi speciali și mirii se pot bucura de confortul celor 19 camere moderne situate direct în cadrul complexului River Park.",
+      "layoutPattern": "Horizontal scroll filmstrip showcasing hotel suite details and ambient lighting",
+      "keyInteraction": "Drag or scroll through hotel room suite gallery",
+      "visualEffect": "Parallax slide movement with soft darkness vignetting",
+      "assetIds": [
+        "assets/hall-warm-headtable-detail.jpg",
+        "assets/web_img_5.jpg",
+        "assets/web_img_9.jpg"
+      ]
+    },
+    {
+      "id": "act-6-concierge",
+      "actName": "ACT VI",
+      "purpose": "Event inquiry and reservation call to action.",
+      "title": "Rezervă Scena Evenimentului Tău",
+      "subtitle": "Programări & Consultanță Dedicată",
+      "bodyText": "Transformă-ți nunta sau evenimentul privat într-o amintire de neuitat. Echipa noastră este pregătită să îți ghideze fiecare pas în Drăgășani.",
+      "layoutPattern": "Minimalist dark luxury form with prominent gold CTA button and direct contact details",
+      "keyInteraction": "Interactive date selector and hall preference prompt",
+      "visualEffect": "Golden subtle glow halo surrounding interactive input fields",
+      "assetIds": [
+        "assets/web_img_10.jpg",
+        "assets/maps-hero-original.jpg"
+      ]
+    }
+  ]
+}

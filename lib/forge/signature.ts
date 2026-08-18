@@ -174,6 +174,42 @@ const SIGNATURE_SCHEMA = {
   },
 } as const;
 
+/**
+ * Replaces the model's scene ids with content-derived slugs.
+ *
+ * Nothing in `SIGNATURE_SCHEMA` tells the model what a scene id is *for*,
+ * so it defaults to the boilerplate every model reaches for when a field
+ * asks for "an id" with no other guidance: `scene-1`, `scene-2`, … This is
+ * cosmetically harmless on its own, but it was also the reason
+ * `anti-ai-gate.ts`'s old baseline check scored an auto-repair shop "100%
+ * identical" to a bakery built weeks earlier — the two builds' *only*
+ * genuinely shared trait was that both used the same sequential-id
+ * convention every business gets. Deriving the id from the scene's own
+ * `actName`/`title` instead — the fields the model actually authors with
+ * business-specific content — removes that false signal at the source and
+ * gives the rendered page real, distinct anchor ids as a side effect.
+ */
+export function slugifySceneIds(signature: ExperienceSignature): ExperienceSignature {
+  const seen = new Map<string, number>();
+  const scenes = signature.scenes.map((scene) => {
+    const base = slugify(scene.actName || scene.title || scene.purpose) || 'scene';
+    const count = seen.get(base) ?? 0;
+    seen.set(base, count + 1);
+    const id = count === 0 ? base : `${base}-${count + 1}`;
+    return { ...scene, id };
+  });
+  return { ...signature, scenes };
+}
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/^act\s+[ivx]+\s*[—\-:]*\s*/i, '') // strip an "ACT I — " / "ACT II: " prefix
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
+
 export async function formulateExperienceSignature(
   dossier: FactualDossier,
   config: AppConfig,
@@ -298,7 +334,7 @@ Return strictly valid JSON conforming to the ExperienceSignature schema.`;
     );
   }
 
-  const signature = signatureOutcome.outcome.data.data as unknown as ExperienceSignature;
+  const signature = slugifySceneIds(signatureOutcome.outcome.data.data as unknown as ExperienceSignature);
 
   logger.info('Experience Signature established', {
     selectedTerritory: signature.selectedTerritoryId,

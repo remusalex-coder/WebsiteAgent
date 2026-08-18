@@ -1,0 +1,35 @@
+{
+  "score": 54,
+  "verdict": "POLISH_NEEDED",
+  "feelsArtDirectedVsAi": "HYBRID_SOME_GENERIC",
+  "criteriaScores": {
+    "conceptualCoherence": 5,
+    "businessSpecificity": 6,
+    "humanArtDirection": 5,
+    "visualHierarchy": 6,
+    "composition": 4,
+    "interactionRestraint": 6,
+    "memorability": 5,
+    "distinctiveness": 6,
+    "factualFidelity": 6,
+    "mobileExperience": 5
+  },
+  "positiveHighlights": [
+    "Dark technical aesthetic aligns well with the diagnostic telemetry positioning.",
+    "Strong typography and visual hierarchy in the hero section."
+  ],
+  "issues": [
+    {
+      "area": "Media",
+      "severity": "critical",
+      "description": "Broken image tag visible with unrendered alt text overlay in telemetry card.",
+      "fixInstruction": "Provide valid image URL and ensure fallback media containers render properly."
+    },
+    {
+      "area": "Layout",
+      "severity": "enhancement",
+      "description": "Excessive vertical black grid gap between hero and footer sections.",
+      "fixInstruction": "Reduce section padding and add middle diagnostic telemetry content blocks."
+    }
+  ]
+}

@@ -3,6 +3,7 @@
  */
 
 import type { BusinessProfile } from '../types.js';
+import type { CombinedVerdict } from '../qa/verdict.js';
 
 export interface ProvenanceFact {
   readonly id: string;
@@ -221,11 +222,19 @@ export interface AntiAIGateResult {
     readonly message: string;
     readonly evidence?: string;
   }[];
-  readonly comparisonWithBaseline?: {
-    readonly structureSimilarityScore: number;
-    readonly tokenSimilarityScore: number;
-    readonly verdict: 'DISTINCT' | 'TOO_SIMILAR_TO_BASELINE';
-  };
+  /**
+   * Structural template-convergence check against the real peer corpus of
+   * prior Forge runs (never a single hardcoded baseline — see
+   * `anti-ai-gate.ts`'s `checkStructuralConvergence`). `null` when fewer
+   * than one real peer exists to compare against, which is a fact about the
+   * corpus, not a pass.
+   */
+  readonly structuralConvergence: {
+    readonly peersCompared: number;
+    readonly closestPeer: string | null;
+    readonly matchedAxes: readonly string[];
+    readonly verdict: 'DISTINCT' | 'NO_PEERS' | 'TEMPLATE_CONVERGENCE';
+  } | null;
 }
 
 export interface VisionIssue {
@@ -278,6 +287,13 @@ export interface ForgeResult {
   readonly antiAiGate: AntiAIGateResult;
   readonly iterations: number;
   readonly finalCritique: VisionCritiqueReport;
+  /**
+   * The one explainable PASS/FAIL decision for this run, combining the
+   * pre-vision structural/factual gate with the post-vision critic verdict
+   * via `lib/qa/verdict.ts`'s lexicographic rule (F-06) — reused, not
+   * re-derived. See `orchestrator.ts` step 9.
+   */
+  readonly finalVerdict: CombinedVerdict;
   readonly screenshots: {
     readonly desktop: string;
     readonly mobile: string;

@@ -19,6 +19,7 @@ import { formulateExperienceSignature } from './signature.js';
 import { compileBlueprint } from './blueprint.js';
 import { buildFrontend } from './builder.js';
 import { auditAntiAIGeneric } from './anti-ai-gate.js';
+import { computeForgeVerdict } from './verdict.js';
 import { captureSite } from './browser.js';
 import { evaluateVision } from './critic.js';
 import { repairCode } from './repair.js';
@@ -165,6 +166,7 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
     code,
     blueprint,
     outputDir: config.outputDir,
+    runId,
     logger: logger.child('anti-ai-gate'),
   });
   await fs.writeFile(path.join(forgeDir, '5-anti-ai-gate.json'), JSON.stringify(antiAiResult, null, 2), 'utf8');
@@ -239,6 +241,17 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
 
   const indexPath = path.join(siteDir, 'index.html');
 
+  // Step 10: Final combined verdict (structural gate + craft critic, F-06)
+  logger.info('STEP 10: Combining structural and craft verdicts into one explainable decision...');
+  const finalVerdict = computeForgeVerdict(antiAiResult, critique);
+  await fs.writeFile(path.join(forgeDir, '7-final-verdict.json'), JSON.stringify(finalVerdict, null, 2), 'utf8');
+  logger.info('Final verdict', {
+    verdict: finalVerdict.verdict,
+    blockingFailure: finalVerdict.blockingFailure,
+    uncertain: finalVerdict.uncertain,
+    quality: finalVerdict.quality,
+  });
+
   const result: ForgeResult = {
     runId,
     siteDir,
@@ -250,6 +263,7 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
     antiAiGate: antiAiResult,
     iterations: currentIteration,
     finalCritique: critique,
+    finalVerdict,
     screenshots: {
       desktop: capture.desktop,
       mobile: capture.mobile,
