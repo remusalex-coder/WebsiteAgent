@@ -466,6 +466,21 @@ async function executePipeline(
     // cheap and deterministic, so it re-runs whenever it is not being skipped.
     if (STAGES.indexOf('render') >= firstIndex) {
       await renderStage(run, content, design);
+      if (config.experienceEngine === 'signature') {
+        try {
+          const { runExperienceForge } = await import('./lib/forge/orchestrator.js');
+          await runExperienceForge({
+            runId: run.runId,
+            outputDir: config.outputDir,
+            profile,
+            autoOpen: false,
+          });
+        } catch (err: unknown) {
+          run.logger.warn('Experience Signature generation warning (fallback to template build)', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
     }
 
     /*

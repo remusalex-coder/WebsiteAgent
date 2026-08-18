@@ -156,6 +156,23 @@ export interface WriterConfig {
 }
 
 /**
+ * The visual critic's vision model — stage `visual-critic`.
+ *
+ * A stage config beside analyst/writer/director (P3-1 / F-14): the critic is
+ * a model call like any other, so its endpoint and model belong in config,
+ * not in a `VISION_*` read at the point of use. `apiKey` empty means vision is
+ * disabled and the critic returns its deterministic no-vision critique.
+ */
+export interface VisionConfig {
+  /** `VISION_API_KEY`. Empty disables the visual critic. */
+  readonly apiKey: string;
+  /** `VISION_BASE_URL`, when the endpoint is not a provider default. */
+  readonly baseUrl: string | null;
+  /** `VISION_MODEL`, else the selected provider's default. */
+  readonly model: string;
+}
+
+/**
  * The AI Design Director — stage 5a, the only model call in the design path.
  *
  * `enabled` defaults to false, so a pipeline that has never heard of the
@@ -243,11 +260,14 @@ export interface AppConfig {
   readonly analyst: AnalystConfig;
   readonly writer: WriterConfig;
   readonly director: DirectorConfig;
+  readonly vision: VisionConfig;
   readonly lovable: LovableConfig;
+  readonly experienceEngine: 'signature' | 'template';
 }
 
 /** Applied wherever the environment leaves a value unset. */
 export const DEFAULTS = {
+  experienceEngine: 'signature' as const,
   logLevel: 'info',
   outputDir: './output',
   browser: {
@@ -306,6 +326,11 @@ export const DEFAULTS = {
     // left to answer with. See `DirectorConfig.maxOutputTokens`.
     maxOutputTokens: 12_000,
     maxPageChars: 2_000,
+  },
+  vision: {
+    apiKey: '',
+    baseUrl: null,
+    model: '',
   },
   lovable: {
     baseUrl: 'https://api.lovable.dev',
@@ -634,11 +659,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       maxOutputTokens: int(env, 'DIRECTOR_MAX_OUTPUT_TOKENS', DEFAULTS.director.maxOutputTokens),
       maxPageChars: int(env, 'DIRECTOR_MAX_PAGE_CHARS', DEFAULTS.director.maxPageChars),
     },
+    vision: {
+      apiKey: str(env, 'VISION_API_KEY', ''),
+      baseUrl: optional(env, 'VISION_BASE_URL'),
+      model: str(env, 'VISION_MODEL', defaultModelFor(providerName)),
+    },
     lovable: {
       apiKey: str(env, 'LOVABLE_API_KEY', ''),
       baseUrl: str(env, 'LOVABLE_BASE_URL', DEFAULTS.lovable.baseUrl),
       projectId: optional(env, 'LOVABLE_PROJECT_ID'),
       deployTimeoutMs: int(env, 'LOVABLE_DEPLOY_TIMEOUT_MS', DEFAULTS.lovable.deployTimeoutMs),
     },
+    experienceEngine: str(env, 'EXPERIENCE_ENGINE', DEFAULTS.experienceEngine) === 'template' ? 'template' : 'signature',
   };
 }

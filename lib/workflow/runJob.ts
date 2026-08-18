@@ -424,6 +424,21 @@ export async function runJob(opts: RunJobOptions): Promise<JobState> {
 
   const build = opts.hooks?.build ?? (async (runId, cfg): Promise<void> => {
     await composeStandalone(runId, cfg);
+    if (cfg.experienceEngine === 'signature') {
+      try {
+        const { runExperienceForge } = await import('../forge/orchestrator.js');
+        await runExperienceForge({
+          runId,
+          outputDir: cfg.outputDir,
+          autoOpen: false,
+          maxIterations: 1,
+        });
+      } catch (err: unknown) {
+        logger.warn('Experience Signature generation warning (fallback to template build)', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
   });
   const capture = opts.hooks?.capture ?? captureScreenshots;
   const reconcept = opts.hooks?.reconcept ?? reconceptBuild;
