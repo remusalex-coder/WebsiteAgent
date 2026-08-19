@@ -2,6 +2,80 @@
 
 _Last updated: 2026-08-19_
 
+## The entire Forge pipeline is now capability-routed (2026-08-19, fourth pass)
+
+**The gap this closes.** The five-business benchmark two passes ago
+stalled after one business on a real Gemini daily-quota exhaustion. The
+reason it *stalled* rather than *failed over*: only `signature.ts` and
+`critic.ts` routed through the capability layer. `research.ts`,
+`grounding.ts`, `builder.ts` and `repair.ts` each called
+`createAIProvider(config.ai, logger)` directly — one vendor, no failover,
+invisible to the planner's quota and budget accounting. Gemini was a
+single point of failure for four of Forge's six model-backed stages.
+
+**The fix.** All four now build a request with `createModelInvoker` and
+call `platform.capabilities.run(capabilityId, invoke)`, exactly like
+`signature.ts` already did — reusing the existing `reasoning` capability
+(research's synthesis call, grounding's factual audit) and
+`structured_generation` (the builder's two passes, repair's fix pass).
+No new capability ids, no second routing system, no hardcoded vendor.
+`ANALYST_MODEL`/`WRITER_MODEL` pins are preserved via `modelOverrides`,
+applied only to the vendor they name — a pin for Gemini has no effect once
+the chain fails over to OpenAI, same as `signature.ts`'s existing pattern.
+
+**Two provider-specific incompatibilities, fixed at the adapter boundary,
+not as stage-level hacks.** Both were found live, trying to push the
+stalled benchmark through on OpenAI, before this session's wiring existed:
+
+1. OpenAI's `strict: true` structured-output mode rejects any schema
+   missing `additionalProperties: false`, and separately requires every
+   `properties` key to also appear in `required` — neither of which Gemini
+   or Anthropic need, so no schema in the repository declared them.
+   `toStrictSchema()` (`lib/ai/providers/openai.ts`) normalizes the schema
+   on the way out, only for OpenAI; the original schema still governs
+   response validation.
+2. OpenAI's reasoning models share one `max_completion_tokens` pool
+   between internal reasoning and visible output; Gemini keeps
+   `maxOutputTokens` and `thinkingConfig.thinkingBudget` independent. A
+   16,000-token grounding request was truncated to zero output before this
+   fix. `toOpenAIReasoningReserve()` (`lib/ai/protocol.ts`) pads the
+   ceiling with headroom on the same ladder as `toGeminiThinkingBudget`.
+
+**Zero-cost safety, verified against the real planner/executor with a fake
+provider factory (not a second fake routing layer):** an exhausted daily
+quota excludes a vendor when paid execution isn't allowed (the default);
+the *same* exhausted vendor is still tried, correctly, as a paid option
+once a policy explicitly allows it (an exhausted free tier means "now
+costs money," not "gone" — `lib/capability/plan.ts`'s own rule); the
+default zero-budget policy never reaches a paid vendor at all, with zero
+calls recorded. No live API calls were made building or verifying this —
+every new test is local, against fakes.
+
+**A third bug found live on the same benchmark run, fixed in the same
+session as the gate fix (see below):** a repair-loop re-critique that lost
+its vision vendor mid-run returned `critic.ts`'s honest degraded fallback
+(flat `5/10`, `HYBRID_SOME_GENERIC`, a `rawNotes` explaining why), and
+`computeForgeVerdict` was reading it as a genuine mediocre pass rather than
+blocking-uncertain. Fixed: the `genericity` dimension now reads
+`rawNotes` and reports `uncertain`.
+
+**37 new tests**, all local: each of the six model-backed stages proven to
+route through capabilities (`test/forge/capability-routing.test.ts`), real
+cross-vendor failover and budget enforcement against the real planner
+(`test/forge/capability-failover.test.ts`), the two OpenAI fixes
+(`test/ai/openai-strict-schema.test.ts`, `test/ai/openai-reasoning-
+tokens.test.ts`), and a static invariant
+(`test/forge/no-direct-provider.test.ts`) that fails the suite if any file
+under `lib/forge/` imports `createAIProvider` again. Full suite
+**1058/1058**, typecheck and build clean. Commit `6ece4e0`.
+
+**Not done, and deliberately deferred:** the five-business benchmark was
+not re-run (2 of 5 businesses — bakery, lawyer — remain unattempted; the
+directive for this session explicitly said not to spend on it yet). Creative
+Director Battle, Higgsfield integration and further design effects are
+still out of scope until the factory is genuinely provider-agnostic and
+proven so — this session is that proof, not the next feature.
+
 ## Anti-AI gate false positive fixed; verified on 3 real businesses (2026-08-19, third pass)
 
 **The bug.** `lib/forge/anti-ai-gate.ts`'s structural-similarity check compared
