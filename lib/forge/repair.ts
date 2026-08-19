@@ -3,14 +3,19 @@
  *
  * Ingests the Vision Critic and Anti-AI Gate reports to refine the HTML, CSS, and JS code
  * in-place to fix detected visual, typographic, or restraint defects while preserving the Experience Signature.
+ *
+ * Routes through `structured_generation` rather than constructing a
+ * provider directly, for the same reason `builder.ts` does — this is the
+ * same "closed schema, arbitrary code" shape, just repairing rather than
+ * authoring from scratch.
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { GeneratedCode, VisionCritiqueReport, ExperienceBlueprint } from './types.js';
+import { createModelInvoker } from '../capability/invokers.js';
+import type { GeneratedCode, VisionCritiqueReport, ExperienceBlueprint, ForgeRouting } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
-import { createAIProvider } from '../ai/factory.js';
 
 export interface RepairOptions {
   readonly siteDir: string;
@@ -18,11 +23,12 @@ export interface RepairOptions {
   readonly critique: VisionCritiqueReport;
   readonly iteration: number;
   readonly config: AppConfig;
+  readonly routing: ForgeRouting;
   readonly logger: Logger;
 }
 
 export async function repairCode(options: RepairOptions): Promise<GeneratedCode> {
-  const { siteDir, blueprint, critique, iteration, config, logger } = options;
+  const { siteDir, blueprint, critique, iteration, config, routing, logger } = options;
 
   const htmlPath = path.join(siteDir, 'index.html');
   const cssPath = path.join(siteDir, 'styles.css');
@@ -45,8 +51,6 @@ export async function repairCode(options: RepairOptions): Promise<GeneratedCode>
     issuesCount: critique.issues.length,
     issues: critique.issues.map((i) => i.description),
   });
-
-  const ai = createAIProvider(config.ai, logger);
 
   const prompt = `You are a Principal Frontend Technologist and UI Polish Specialist.
 Refine the provided HTML, CSS, and JS code to fix the issues identified by the Vision Critic while strictly preserving the Experience Signature and Restraint Contract.
@@ -82,25 +86,38 @@ INSTRUCTIONS:
 3. Return JSON containing the updated "html", "css", and "js" strings.`;
 
   try {
-    const response = await ai.generate({
-      model: config.writer.model || config.analyst.model || ai.defaultModel,
-      prompt,
-      system:
-        'You are an expert frontend engineer repairing and polishing code to achieve 100/100 visual and technical perfection.',
-      effort: 'medium',
-      maxTokens: 16000,
-      schema: {
-        type: 'object',
-        required: ['html', 'css', 'js'],
-        properties: {
-          html: { type: 'string' },
-          css: { type: 'string' },
-          js: { type: 'string' },
+    const invoke = createModelInvoker(
+      {
+        system:
+          'You are an expert frontend engineer repairing and polishing code to achieve 100/100 visual and technical perfection.',
+        prompt,
+        schemaName: 'code_repair',
+        effort: 'medium',
+        maxTokens: 16000,
+        modelOverrides: { [config.ai.provider]: config.writer.model || config.analyst.model },
+        schema: {
+          type: 'object',
+          required: ['html', 'css', 'js'],
+          properties: {
+            html: { type: 'string' },
+            css: { type: 'string' },
+            js: { type: 'string' },
+          },
         },
       },
+      routing.providers,
+      logger,
+    );
+
+    const outcome = await routing.capabilities.run('structured_generation', invoke, {
+      tokens: { inputTokens: prompt.length / 4, outputTokens: 6_000 },
     });
 
-    const repaired = response.data as unknown as GeneratedCode;
+    if (!outcome.outcome.ok) {
+      throw new Error(`no vendor could repair the code: ${outcome.outcome.error.message}`);
+    }
+
+    const repaired = outcome.outcome.data.data as unknown as GeneratedCode;
 
     await fs.writeFile(htmlPath, repaired.html, 'utf8');
     await fs.writeFile(cssPath, repaired.css, 'utf8');

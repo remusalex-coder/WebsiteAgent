@@ -3,19 +3,26 @@
  *
  * Pass 1: Generates bespoke HTML5 document containing all scenes, Schema.org, and interactive containers.
  * Pass 2: Generates matching modern CSS3 and vanilla JavaScript targeting the exact DOM structure from Pass 1.
+ *
+ * Both passes route through the `structured_generation` capability — "return
+ * an object that validates against a closed schema", which is exactly what
+ * each pass does — rather than constructing a provider directly, giving the
+ * builder the same cross-vendor failover `signature.ts` and `critic.ts`
+ * already have instead of depending on a single vendor's daily quota.
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { ExperienceBlueprint, GeneratedCode } from './types.js';
+import { createModelInvoker } from '../capability/invokers.js';
+import type { ExperienceBlueprint, ForgeRouting, GeneratedCode } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
-import { createAIProvider } from '../ai/factory.js';
 
 export async function buildFrontend(
   blueprint: ExperienceBlueprint,
   runDir: string,
   config: AppConfig,
+  routing: ForgeRouting,
   logger: Logger,
 ): Promise<GeneratedCode> {
   const siteDir = path.join(runDir, 'site');
@@ -39,7 +46,6 @@ export async function buildFrontend(
     scenesCount: blueprint.signature.scenes.length,
   });
 
-  const ai = createAIProvider(config.ai, logger);
   const { factualDossier, signature, conversionStrategy } = blueprint;
 
   // =========================================================================
@@ -87,22 +93,34 @@ CRITICAL HTML5 MANDATES:
 
 Return JSON with a single key "html".`;
 
-  const htmlResponse = await ai.generate({
-    model: config.writer.model || config.analyst.model || ai.defaultModel,
-    prompt: htmlPrompt,
-    system: 'You generate pristine, semantic, accessible HTML5 for award-winning digital experiences. Never include inline style tags.',
-    effort: 'low',
-    maxTokens: 32000,
-    schema: {
-      type: 'object',
-      required: ['html'],
-      properties: {
-        html: { type: 'string', description: 'Complete index.html content' },
+  const htmlInvoke = createModelInvoker(
+    {
+      system: 'You generate pristine, semantic, accessible HTML5 for award-winning digital experiences. Never include inline style tags.',
+      prompt: htmlPrompt,
+      schemaName: 'frontend_html',
+      effort: 'low',
+      maxTokens: 32000,
+      modelOverrides: { [config.ai.provider]: config.writer.model || config.analyst.model },
+      schema: {
+        type: 'object',
+        required: ['html'],
+        properties: {
+          html: { type: 'string', description: 'Complete index.html content' },
+        },
       },
     },
-  });
+    routing.providers,
+    logger,
+  );
 
-  let generatedHtml = (htmlResponse.data as any).html as string;
+  const htmlOutcome = await routing.capabilities.run('structured_generation', htmlInvoke, {
+    tokens: { inputTokens: htmlPrompt.length / 4, outputTokens: 8_000 },
+  });
+  if (!htmlOutcome.outcome.ok) {
+    throw new Error(`[forge.builder] no vendor could generate the HTML pass: ${htmlOutcome.outcome.error.message}`);
+  }
+
+  let generatedHtml = (htmlOutcome.outcome.data.data as any).html as string;
 
   // Sanity check: Ensure HTML is not truncated and has no inline style bloat
   if (!generatedHtml.includes('</html>') || !generatedHtml.includes('</body>')) {
@@ -155,25 +173,37 @@ JAVASCRIPT MANDATES (experience.js):
 
 Return JSON with "css" and "js" strings.`;
 
-  const cssJsResponse = await ai.generate({
-    model: config.writer.model || config.analyst.model || ai.defaultModel,
-    prompt: cssJsPrompt,
-    system:
-      'You write bespoke, performant CSS3 and vanilla JavaScript strictly matching the provided HTML structure and visual grammar.',
-    effort: 'low',
-    maxTokens: 32000,
-    schema: {
-      type: 'object',
-      required: ['css', 'js'],
-      properties: {
-        css: { type: 'string', description: 'Complete styles.css content' },
-        js: { type: 'string', description: 'Complete experience.js content' },
+  const cssJsInvoke = createModelInvoker(
+    {
+      system:
+        'You write bespoke, performant CSS3 and vanilla JavaScript strictly matching the provided HTML structure and visual grammar.',
+      prompt: cssJsPrompt,
+      schemaName: 'frontend_css_js',
+      effort: 'low',
+      maxTokens: 32000,
+      modelOverrides: { [config.ai.provider]: config.writer.model || config.analyst.model },
+      schema: {
+        type: 'object',
+        required: ['css', 'js'],
+        properties: {
+          css: { type: 'string', description: 'Complete styles.css content' },
+          js: { type: 'string', description: 'Complete experience.js content' },
+        },
       },
     },
-  });
+    routing.providers,
+    logger,
+  );
 
-  const generatedCss = (cssJsResponse.data as any).css as string;
-  const generatedJs = (cssJsResponse.data as any).js as string;
+  const cssJsOutcome = await routing.capabilities.run('structured_generation', cssJsInvoke, {
+    tokens: { inputTokens: cssJsPrompt.length / 4, outputTokens: 8_000 },
+  });
+  if (!cssJsOutcome.outcome.ok) {
+    throw new Error(`[forge.builder] no vendor could generate the CSS/JS pass: ${cssJsOutcome.outcome.error.message}`);
+  }
+
+  const generatedCss = (cssJsOutcome.outcome.data.data as any).css as string;
+  const generatedJs = (cssJsOutcome.outcome.data.data as any).js as string;
 
   const code: GeneratedCode = {
     html: generatedHtml,

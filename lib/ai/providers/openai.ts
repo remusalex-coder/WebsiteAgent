@@ -7,6 +7,32 @@
  *
  * Schema enforcement is native: `strict: true` makes OpenAI reject its own
  * output rather than return something off-shape.
+ *
+ * ## `strict: true` has two structural requirements no other vendor imposes
+ *
+ * Found live (2026-08-19, `lib/forge`'s benchmark run): OpenAI's strict
+ * structured-output mode rejects any schema that doesn't declare
+ * `additionalProperties: false` on every object node, and separately
+ * requires every key in `properties` to also appear in `required` (Gemini
+ * and Anthropic impose neither constraint, so every schema in this
+ * repository was written without them). Rather than editing every call
+ * site's schema literal — grounding, the two-pass builder, repair, and
+ * whatever is added later — `toStrictSchema` normalizes the schema at this
+ * one boundary, on the way out, only for OpenAI. Nothing else changes: the
+ * original schema (with its real optional fields) still governs
+ * `decodeStructured`'s validation of the response, and every other
+ * provider still receives the schema exactly as its call site wrote it.
+ *
+ * ## `max_completion_tokens` is one shared pool for reasoning and output
+ *
+ * Also found live: a reasoning-effort request sized for Gemini's
+ * `maxTokens` alone can be entirely consumed by internal reasoning tokens
+ * before any visible output is written, truncating with zero result.
+ * `toOpenAIReasoningReserve` adds headroom on top of the caller's requested
+ * output size — see its own docstring for why Gemini never has this
+ * problem. The caller's `maxTokens` still means "visible output tokens
+ * needed"; this adapter is the one place that knows OpenAI needs more than
+ * that number in the ceiling it sends.
  */
 
 import { ProviderRequestError } from '../../errors.js';
@@ -17,6 +43,7 @@ import {
   postJson,
   systemWithSchema,
   toOpenAIEffort,
+  toOpenAIReasoningReserve,
 } from '../protocol.js';
 
 import type { HealthReport } from '../../platform/types.js';
@@ -61,6 +88,44 @@ function numberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+/** The `max_completion_tokens` ceiling to send: the caller's requested output, plus reasoning headroom. */
+export function maxCompletionTokensFor(request: Pick<AIGenerateRequest, 'maxTokens' | 'effort'>): number {
+  return request.maxTokens + toOpenAIReasoningReserve(request.effort);
+}
+
+/**
+ * Normalizes a JSON Schema for OpenAI's `strict: true` mode: every object
+ * node gets `additionalProperties: false`, and every key in `properties`
+ * is added to `required` (OpenAI's strict mode has no notion of an
+ * optional property — a field that should be skippable has to be typed to
+ * accept it, not omitted from `required`; this normalizer does not attempt
+ * that rewrite, so a genuinely-optional field becomes an always-present one
+ * the model may answer with an empty value, which is what every schema in
+ * this repository already tolerates).
+ *
+ * Recurses into `properties`, array `items`, and the schema-combinators
+ * (`anyOf`/`oneOf`/`allOf`) so a nested object anywhere in the tree is
+ * covered, not just the top level.
+ */
+export function toStrictSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(toStrictSchema);
+  if (schema === null || typeof schema !== 'object') return schema;
+
+  const input = schema as Record<string, unknown>;
+  const output: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    output[key] = toStrictSchema(value);
+  }
+
+  const properties = output['properties'];
+  if (properties !== null && typeof properties === 'object' && !Array.isArray(properties)) {
+    output['additionalProperties'] = false;
+    output['required'] = Object.keys(properties as Record<string, unknown>);
+  }
+
+  return output;
+}
+
 /* ------------------------------------------------------------------ */
 /* Provider                                                            */
 /* ------------------------------------------------------------------ */
@@ -83,14 +148,14 @@ function createOpenAIProvider(options: ProviderOptions): AIProvider {
         signal: request.signal,
         body: {
           model: request.model,
-          max_completion_tokens: request.maxTokens,
+          max_completion_tokens: maxCompletionTokensFor(request),
           reasoning_effort: toOpenAIEffort(request.effort),
           response_format: {
             type: 'json_schema',
             json_schema: {
               name: request.schemaName ?? 'result',
               strict: true,
-              schema: request.schema,
+              schema: toStrictSchema(request.schema),
             },
           },
           messages: [
@@ -119,7 +184,7 @@ function createOpenAIProvider(options: ProviderOptions): AIProvider {
       }
 
       const finishReason = typeof choice.finish_reason === 'string' ? choice.finish_reason : null;
-      assertComplete(NAME, SOURCE, finishReason, TRUNCATED, request.maxTokens);
+      assertComplete(NAME, SOURCE, finishReason, TRUNCATED, maxCompletionTokensFor(request));
 
       const content = choice.message?.content;
       if (typeof content !== 'string') {

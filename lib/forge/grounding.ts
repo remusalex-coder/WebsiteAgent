@@ -7,14 +7,20 @@
  * - Flags source conflicts rather than choosing arbitrarily.
  * - Generates FORBIDDEN_ASSUMPTIONS to prevent name-based hallucinations (e.g. "River" -> "on riverbank").
  * - Binds real photographs to verified physical spaces and features.
+ *
+ * Routes through the `reasoning` capability rather than constructing a
+ * provider directly — the same reasoning `research.ts` documents: this is
+ * "reason over messy evidence and cite it", which is that capability's own
+ * description, and gives this stage real cross-vendor failover instead of
+ * depending on a single vendor's daily quota.
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { FactualDossier, ProvenanceFact, SourcedAsset } from './types.js';
+import { createModelInvoker } from '../capability/invokers.js';
+import type { FactualDossier, ForgeRouting, ProvenanceFact, SourcedAsset } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
-import { createAIProvider } from '../ai/factory.js';
 
 export interface GroundingOptions {
   readonly url: string;
@@ -23,15 +29,14 @@ export interface GroundingOptions {
   readonly downloadedAssets: readonly SourcedAsset[];
   readonly runDir: string;
   readonly config: AppConfig;
+  readonly routing: ForgeRouting;
   readonly logger: Logger;
 }
 
 export async function buildFactualDossier(options: GroundingOptions): Promise<FactualDossier> {
-  const { url, order, rawPages, downloadedAssets, config, logger } = options;
+  const { url, order, rawPages, downloadedAssets, config, routing, logger } = options;
 
   logger.info('Executing Factual Firewall & Grounding analysis', { url, rawPagesCount: rawPages.length });
-
-  const ai = createAIProvider(config.ai, logger);
 
   const prompt = `You are the Principal Chief Factual Verification Auditor for an enterprise website intelligence agency.
 Analyze the raw scraped evidence for "${url}".
@@ -60,14 +65,16 @@ CRITICAL FACTUAL GROUNDING RULES:
 
 Return strictly valid JSON conforming to the schema.`;
 
-  const response = await ai.generate({
-    model: config.analyst.model || ai.defaultModel,
-    prompt,
-    system:
-      'You are a rigorous factual auditor. Never invent facts. Separate verified truths from inferences and forbid unproven name-based assumptions.',
-    effort: 'high',
-    maxTokens: 16000,
-    schema: {
+  const invoke = createModelInvoker(
+    {
+      system:
+        'You are a rigorous factual auditor. Never invent facts. Separate verified truths from inferences and forbid unproven name-based assumptions.',
+      prompt,
+      schemaName: 'factual_dossier',
+      effort: 'high',
+      maxTokens: 16000,
+      modelOverrides: { [config.ai.provider]: config.analyst.model },
+      schema: {
       type: 'object',
       required: [
         'businessName',
@@ -195,10 +202,21 @@ Return strictly valid JSON conforming to the schema.`;
         },
         primaryLanguage: { type: 'string' },
       },
+      },
     },
+    routing.providers,
+    logger,
+  );
+
+  const outcome = await routing.capabilities.run('reasoning', invoke, {
+    tokens: { inputTokens: prompt.length / 4, outputTokens: 6_000 },
   });
 
-  const parsed = response.data as Record<string, unknown>;
+  if (!outcome.outcome.ok) {
+    throw new Error(`[forge.grounding] no vendor could compile the factual dossier: ${outcome.outcome.error.message}`);
+  }
+
+  const parsed = outcome.outcome.data.data as Record<string, unknown>;
 
   const dossier: FactualDossier = {
     businessName: (parsed.businessName as string) || 'River Park Events Drăgășani',

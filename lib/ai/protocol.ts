@@ -231,3 +231,32 @@ export function toGeminiThinkingBudget(effort: Effort): number {
     default: return 4_096;
   }
 }
+
+/**
+ * Reasoning-token headroom to add on top of a caller's requested visible
+ * output tokens, for OpenAI's `reasoning_effort` models.
+ *
+ * Gemini keeps `maxOutputTokens` and `thinkingConfig.thinkingBudget` as two
+ * independent pools — reasoning never taxes the visible-output budget.
+ * OpenAI's Chat Completions API does not: for a reasoning model,
+ * `max_completion_tokens` is one shared ceiling covering both the model's
+ * internal reasoning tokens and its visible output. A request sized for
+ * Gemini's `maxTokens` alone can therefore be cut off entirely by reasoning
+ * before any visible JSON is written (found live running `lib/forge`'s
+ * grounding stage against OpenAI, 2026-08-19: truncated at 16,000 tokens,
+ * `finish_reason: "length"`, zero output). The ladder mirrors
+ * `toGeminiThinkingBudget`'s so the two vendors are given comparable
+ * reasoning headroom for the same `Effort`, rather than one being reasoned
+ * on a shoestring, and `max` is a large finite reserve rather than Gemini's
+ * `-1` — OpenAI's ceiling must be a concrete number.
+ */
+export function toOpenAIReasoningReserve(effort: Effort): number {
+  switch (effort) {
+    case 'low': return 1_024;
+    case 'medium': return 4_096;
+    case 'high': return 12_288;
+    case 'xhigh': return 24_576;
+    case 'max': return 32_768;
+    default: return 4_096;
+  }
+}

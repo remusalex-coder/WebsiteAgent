@@ -4,6 +4,22 @@
 
 import type { BusinessProfile } from '../types.js';
 import type { CombinedVerdict } from '../qa/verdict.js';
+import type { AIProviderFactory } from '../ai/factory.js';
+import type { CapabilityOrchestrator } from '../capability/orchestrator.js';
+
+/**
+ * What every Forge stage that makes a text/structured model call needs to
+ * route through the capability layer instead of constructing a provider
+ * itself: the orchestrator that plans/executes/meters the call, and the
+ * provider factory `createModelInvoker` turns a resolved plan step into a
+ * real `AIProvider.generate()` call with. One shared shape rather than five
+ * near-identical ad hoc interfaces (research, grounding, signature, builder,
+ * repair all need exactly this and nothing more).
+ */
+export interface ForgeRouting {
+  readonly capabilities: CapabilityOrchestrator;
+  readonly providers: AIProviderFactory;
+}
 
 export interface ProvenanceFact {
   readonly id: string;

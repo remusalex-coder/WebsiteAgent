@@ -11,7 +11,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import type { ForgeOptions, ForgeResult, FactualDossier } from './types.js';
+import type { ForgeOptions, ForgeResult, FactualDossier, ForgeRouting } from './types.js';
 import type { BusinessProfile } from '../types.js';
 import { harvestResearch } from './research.js';
 import { buildFactualDossier } from './grounding.js';
@@ -46,15 +46,18 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
   });
 
   /*
-   * The Experience Signature pipeline's two model-backed stages — the
-   * creative territories/signature call in signature.ts and the vision
-   * critique in critic.ts — route through the same capability planner and
-   * executor every other stage in this repository uses, rather than each
-   * constructing its own single-vendor provider. One orchestrator for the
-   * whole run: cost and quota accumulate across both stages, not per call.
+   * Every model-backed stage in this pipeline — research, grounding,
+   * signature, builder, critic, repair — routes through the same capability
+   * planner and executor every other stage in this repository uses, rather
+   * than each constructing its own single-vendor provider. One orchestrator
+   * for the whole run: cost and quota accumulate across every stage, not
+   * per call, and a Gemini daily-quota exhaustion partway through a run
+   * fails that stage over to the next-ranked vendor instead of stopping the
+   * pipeline outright.
    */
   const providers = createAIProviderFactory({ config: config.ai, logger: logger.child('ai') });
   const capabilities = await createCapabilityOrchestrator({ config, logger: logger.child('capability') });
+  const routing: ForgeRouting = { capabilities, providers };
 
   logger.info('========================================================================');
   logger.info('BUSINESSFORGE 2.0 — EXPERIENCE SIGNATURE AUTONOMOUS FACTORY');
@@ -104,6 +107,7 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
       })),
       runDir,
       config,
+      routing,
       logger: logger.child('grounding'),
     });
   } else {
@@ -115,6 +119,7 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
       order: options.order,
       runDir,
       config,
+      routing,
       logger: logger.child('research'),
     });
     await fs.writeFile(path.join(forgeDir, '0-research-raw.json'), JSON.stringify(research, null, 2), 'utf8');
@@ -134,6 +139,7 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
       downloadedAssets: research.assets as any,
       runDir,
       config,
+      routing,
       logger: logger.child('grounding'),
     });
   }
@@ -158,7 +164,7 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
 
   // Step 5: Autonomous Frontend Code Generation
   logger.info('STEP 5: Coding Bespoke Frontend (HTML, CSS, JS)...');
-  let code = await buildFrontend(blueprint, runDir, config, logger.child('builder'));
+  let code = await buildFrontend(blueprint, runDir, config, routing, logger.child('builder'));
 
   // Step 6: Anti-AI-Generic Gate Audit
   logger.info('STEP 6: Anti-AI-Generic Gate & Structural Audit...');
@@ -209,6 +215,7 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
       critique,
       iteration: currentIteration,
       config,
+      routing,
       logger: logger.child('repair'),
     });
 

@@ -18,11 +18,9 @@
 
 import { createModelInvoker } from '../capability/invokers.js';
 
-import type { CreativeTerritory, ExperienceSignature, FactualDossier } from './types.js';
+import type { CreativeTerritory, ExperienceSignature, FactualDossier, ForgeRouting } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
-import type { AIProviderFactory } from '../ai/factory.js';
-import type { CapabilityOrchestrator } from '../capability/orchestrator.js';
 
 export interface SignatureResult {
   readonly territories: readonly CreativeTerritory[];
@@ -30,10 +28,7 @@ export interface SignatureResult {
 }
 
 /** What `formulateExperienceSignature` needs beyond the dossier itself. */
-export interface SignatureRouting {
-  readonly capabilities: CapabilityOrchestrator;
-  readonly providers: AIProviderFactory;
-}
+export type SignatureRouting = ForgeRouting;
 
 const TERRITORY_SCHEMA = {
   type: 'object',

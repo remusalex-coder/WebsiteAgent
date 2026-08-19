@@ -4,26 +4,35 @@
  * Crawls the target business website, Instagram profile, or Google Maps listing,
  * downloads and links real high-res media assets, and uses LLM to synthesize a rich,
  * authentic business dossier (services, spaces, story, verified facts, sensory details).
+ *
+ * The crawl itself is Playwright, never a model (`evidence_collection`'s own
+ * rule: a model that "collects" evidence invents it). Only the synthesis
+ * step — turning raw scraped text into a structured dossier — calls a
+ * model, and it now routes through the `reasoning` capability rather than
+ * constructing a provider directly, for the same reason `signature.ts` and
+ * `critic.ts` already do: real cross-vendor failover instead of a single
+ * point of failure on whichever vendor `AI_PROVIDER` names.
  */
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import type { BusinessResearch, SourcedAsset } from './types.js';
+import { createModelInvoker } from '../capability/invokers.js';
+import type { BusinessResearch, ForgeRouting, SourcedAsset } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
-import { createAIProvider } from '../ai/factory.js';
 
 export interface ResearchOptions {
   readonly url: string;
   readonly order?: string | undefined;
   readonly runDir: string;
   readonly config: AppConfig;
+  readonly routing: ForgeRouting;
   readonly logger: Logger;
 }
 
 export async function harvestResearch(options: ResearchOptions): Promise<BusinessResearch> {
-  const { url, order, runDir, config, logger } = options;
+  const { url, order, runDir, config, routing, logger } = options;
   const assetsDir = path.join(runDir, 'assets');
   await fs.mkdir(assetsDir, { recursive: true });
 
@@ -180,8 +189,6 @@ export async function harvestResearch(options: ResearchOptions): Promise<Busines
   }
 
   // Synthesize research using LLM
-  const ai = createAIProvider(config.ai, logger);
-
   const prompt = `You are the Lead Business Intelligence Researcher for an elite digital design agency.
 Synthesize the gathered raw web/social/location evidence for "${url}" into a rich, structured dossier.
 
@@ -196,96 +203,109 @@ Requirements:
 - If primary language is Romanian (e.g. for a venue in Drăgășani, Romania), write evocative Romanian copy for descriptions/story/services, while keeping the structure valid.
 - Output MUST be valid JSON conforming to the schema.`;
 
-  const response = await ai.generate({
-    model: config.analyst.model || ai.defaultModel,
-    prompt,
-    system: 'You extract factual, evocative, high-fidelity business intelligence into structured JSON. Never return generic placeholders.',
-    effort: 'high',
-    maxTokens: 16000,
-    schema: {
-      type: 'object',
-      required: [
-        'name',
-        'taglines',
-        'category',
-        'description',
-        'storyAndPhilosophy',
-        'productsOrServices',
-        'differentiators',
-        'location',
-        'contact',
-        'hours',
-        'reviews',
-        'primaryLanguage',
-      ],
-      properties: {
-        name: { type: 'string' },
-        taglines: { type: 'array', items: { type: 'string' } },
-        category: { type: 'string' },
-        description: { type: 'string' },
-        storyAndPhilosophy: { type: 'string' },
-        productsOrServices: {
-          type: 'array',
-          items: {
-            type: 'object',
-            required: ['name', 'description'],
-            properties: {
-              name: { type: 'string' },
-              category: { type: 'string' },
-              description: { type: 'string' },
-              highlight: { type: 'string' },
-              price: { type: 'string' },
+  const invoke = createModelInvoker(
+    {
+      system: 'You extract factual, evocative, high-fidelity business intelligence into structured JSON. Never return generic placeholders.',
+      prompt,
+      schemaName: 'business_research',
+      effort: 'high',
+      maxTokens: 16000,
+      modelOverrides: { [config.ai.provider]: config.analyst.model },
+      schema: {
+        type: 'object',
+        required: [
+          'name',
+          'taglines',
+          'category',
+          'description',
+          'storyAndPhilosophy',
+          'productsOrServices',
+          'differentiators',
+          'location',
+          'contact',
+          'hours',
+          'reviews',
+          'primaryLanguage',
+        ],
+        properties: {
+          name: { type: 'string' },
+          taglines: { type: 'array', items: { type: 'string' } },
+          category: { type: 'string' },
+          description: { type: 'string' },
+          storyAndPhilosophy: { type: 'string' },
+          productsOrServices: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['name', 'description'],
+              properties: {
+                name: { type: 'string' },
+                category: { type: 'string' },
+                description: { type: 'string' },
+                highlight: { type: 'string' },
+                price: { type: 'string' },
+              },
             },
           },
-        },
-        differentiators: { type: 'array', items: { type: 'string' } },
-        location: {
-          type: 'object',
-          required: ['address', 'city'],
-          properties: {
-            address: { type: 'string' },
-            city: { type: 'string' },
-          },
-        },
-        contact: {
-          type: 'object',
-          properties: {
-            phone: { type: 'string' },
-            email: { type: 'string' },
-            website: { type: 'string' },
-            instagram: { type: 'string' },
-            facebook: { type: 'string' },
-          },
-        },
-        hours: {
-          type: 'array',
-          items: {
+          differentiators: { type: 'array', items: { type: 'string' } },
+          location: {
             type: 'object',
-            required: ['day', 'range'],
+            required: ['address', 'city'],
             properties: {
-              day: { type: 'string' },
-              range: { type: 'string' },
+              address: { type: 'string' },
+              city: { type: 'string' },
             },
           },
-        },
-        reviews: {
-          type: 'array',
-          items: {
+          contact: {
             type: 'object',
-            required: ['author', 'text', 'rating'],
             properties: {
-              author: { type: 'string' },
-              text: { type: 'string' },
-              rating: { type: 'number' },
+              phone: { type: 'string' },
+              email: { type: 'string' },
+              website: { type: 'string' },
+              instagram: { type: 'string' },
+              facebook: { type: 'string' },
             },
           },
+          hours: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['day', 'range'],
+              properties: {
+                day: { type: 'string' },
+                range: { type: 'string' },
+              },
+            },
+          },
+          reviews: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['author', 'text', 'rating'],
+              properties: {
+                author: { type: 'string' },
+                text: { type: 'string' },
+                rating: { type: 'number' },
+              },
+            },
+          },
+          primaryLanguage: { type: 'string' },
         },
-        primaryLanguage: { type: 'string' },
       },
     },
+    routing.providers,
+    logger,
+  );
+
+  const outcome = await routing.capabilities.run('reasoning', invoke, {
+    tokens: { inputTokens: prompt.length / 4, outputTokens: 6_000 },
   });
 
-  const parsed = response.data as Record<string, unknown>;
+  if (!outcome.outcome.ok) {
+    throw new Error(`[forge.research] no vendor could synthesize research: ${outcome.outcome.error.message}`);
+  }
+
+  const parsed = outcome.outcome.data.data as Record<string, unknown>;
 
   const result: BusinessResearch = {
     name: (parsed.name as string) || (isRiverPark ? 'River Park Events Drăgășani' : 'River Park Events'),
