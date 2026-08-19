@@ -2,6 +2,100 @@
 
 _Last updated: 2026-08-19_
 
+## Experience Arsenal V2 — the research corpus is now executable (2026-08-19, fifth pass)
+
+**What this closes.** `docs/knowledge/` (13 files, 6,463 lines, dated
+2026-08-17) was a deliberately inert research artifact — every file marked
+"Do NOT implement" and `KNOWLEDGE_INDEX.md` §5 stating plainly "value is
+zero until at least one worker queries it." This pass is that querying,
+scoped to what the existing architecture could genuinely absorb by
+extension rather than by building a second system: `signature.ts`,
+`anti-ai-gate.ts`, the capability layer, and `lib/qa/verdict.ts` all
+already existed and are reused throughout, not duplicated.
+
+**New, small modules, each transcribing one piece of the research into
+code a prompt or a gate can actually act on:**
+
+- `lib/forge/motion.ts` — `MOTION_LIBRARY.md`'s duration/easing/stagger
+  numbers, closed into four intensity presets
+  (none/subtle/expressive/immersive). Not a suggestion: a new
+  `checkMotionCoherence` anti-ai-gate check flags CSS durations exceeding
+  what the signature's own declared intensity permits, so "motion is a
+  system, not per-component invention" is enforced, not just asked for.
+- `ExperienceSignature.experienceStrategy` — 15 closed-set fields (motion
+  intensity, navigation/loading/typography/cursor/scroll/layout/media
+  strategy, `requires3D`/`requiresVideo` with mandatory rationale,
+  `functionalModules`, mobile/accessibility/performance-tier/reduced-motion
+  strategy), validated by `normalizeExperienceStrategy` with the same
+  discipline ADR 0004 established for the classic pipeline: the model
+  proposes from a closed vocabulary, validated code disposes, invalid
+  input degrades to a named default rather than reaching the builder raw.
+- `lib/forge/functionalModules.ts` — real, evidence-triggered functional
+  modules (`enquiry-form`, `booking-request`, `service-selector`, etc.)
+  transcribed from `WEBSITE_CAPABILITY_KNOWLEDGE.md`'s CAP-07/09/11/12,
+  with concrete fields, real states (no fake progress), and a real
+  submission mechanism: a `mailto:` handoff, because this pipeline renders
+  static sites with no backend and a form that silently does nothing would
+  be worse than no form (the doctrine of absence, same document).
+- `lib/forge/anti-ai-gate.ts` extended with S-STATIC signals from
+  `ANTI_AI_SLOP.md` (A-02 gradients, A-06 badges, A-07 fake statistics —
+  blocking, A-08 generic copy, A-09 rounded corners, A-11 repeated CTAs,
+  A-13 meaningless animation, A-16 premium language, A-19 unnecessary 3D
+  cross-checked against the new `requires3D` field). **A-07's own test run
+  found a live false positive** against the real, committed Ridgeway
+  fixture — "32% Remaining Integrity" on a diagnostic health-bar gauge is
+  a legitimate interactive-tool reading, not a marketing trust-stat — and
+  the check was narrowed to require proximity to an actual trust/scale
+  claim word before it fires, with that exact case now a permanent
+  regression test.
+- `lib/forge/battle.ts` — Design Battle's real mechanism. N independently
+  formulated signatures, each routed through the real capability layer;
+  divergence is measured by writing each candidate into its own
+  subdirectory so the *existing*, unmodified `checkStructuralConvergence`
+  peer scan sees siblings as real peers; the winner is chosen by the
+  *existing*, unmodified `lib/qa/verdict.ts` lexicographic comparator.
+  `candidateCount` defaults to 2, not 3, because a default that silently
+  triples spend would itself be a zero-cost-safety defect.
+- `lib/capability/registry.ts` — Higgsfield, ElevenLabs and Meshy recorded
+  as *researched candidate providers* on the existing `motion_media`,
+  `image_editing`, `audio_speech` and `three_d_generation` rows.
+  `audio_speech` and `three_d_generation` remain **REJECTED**: Freeze F-18
+  is a frozen policy decision, and a provider existing is not, by itself,
+  a reason to reopen one without an evidence-backed change request — the
+  same discipline the freeze document asks of every implementer.
+
+**A live run found and fixed a real bug.** Running the extended pipeline
+against a real business (`mechanic`, the Ridgeway Motors fixture),
+`formulateExperienceSignature`'s enlarged schema was rejected by Gemini
+with an HTTP 400 on `experienceStrategy`'s `performanceTier` field: Gemini's
+`responseSchema` dialect documents `enum` as valid only on `type: STRING`,
+and the field was declared `type: 'number'`. Fixed: `performanceTier` now
+travels on the wire as a string digit (`"0".."5"`), parsed back to a
+number in `normalizeExperienceStrategy` (which still accepts a raw number
+too, for any caller that constructs one directly). **Full end-to-end
+re-verification after the fix was blocked** by the same Gemini
+daily-quota exhaustion this session's earlier work already documented —
+the first live attempt got through grounding and real territory
+formulation before hitting the schema bug; the retry, after the fix,
+was blocked by 429 before reaching the signature call at all. Reported
+honestly rather than assumed fixed: the fix is well-reasoned and matches
+Gemini's documented constraint precisely, but is not yet live-proven.
+
+**45 new tests**, all local — no live calls were needed to build or verify
+any of this except the one attempted (and quota-blocked) live run above.
+Full suite **1115/1115**, typecheck and build clean. Commit `af792ed`.
+
+**Not done, and explicitly out of scope for this pass:** GSAP/Lenis/View
+Transitions API are not integrated as npm dependencies — no business
+evidence observed by this factory has yet justified crossing that
+dependency boundary, and the motion system's token contract does not
+require a specific animation library to express (the builder's vanilla-JS
++ CSS custom-properties approach already carries it). S-LAYOUT anti-pattern
+signals (identical section rhythms, predictable spacing) need rendered
+geometry from a live page, which would mean moving part of the gate to run
+post-capture — a real architectural change, not a same-shape extension,
+and correctly deferred rather than rushed into this pass.
+
 ## The entire Forge pipeline is now capability-routed (2026-08-19, fourth pass)
 
 **The gap this closes.** The five-business benchmark two passes ago
