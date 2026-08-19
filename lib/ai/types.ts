@@ -17,7 +17,7 @@ import type { HealthReport } from '../platform/types.js';
 /** A JSON Schema document. Kept loose — each provider narrows it to its own dialect. */
 export type JsonSchema = Record<string, unknown>;
 
-export const AI_PROVIDER_NAMES = ['anthropic', 'openai', 'gemini', 'openrouter'] as const;
+export const AI_PROVIDER_NAMES = ['anthropic', 'openai', 'gemini', 'openrouter', 'xai'] as const;
 
 export type AIProviderName = (typeof AI_PROVIDER_NAMES)[number];
 

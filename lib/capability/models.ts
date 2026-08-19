@@ -225,7 +225,22 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     jurisdiction: 'other',
   },
   {
-    id: 'deepseek/deepseek-chat:free',
+    // Verified live, 2026-08-19: `deepseek/deepseek-chat:free` 404s with
+    // "unavailable for free" regardless of account privacy settings — that
+    // specific endpoint requires "publish prompts" consent, which this
+    // deployment deliberately leaves off. `google/gemma-4-26b-a4b-it:free`
+    // requires only "train on request data" (already enabled) and was
+    // confirmed reachable twice via a real call.
+    //
+    // Per Registry v1 red-team finding M3: OpenRouter's free-tier roster is
+    // a pool, not a stable provider — model ids are added and retired on a
+    // promotional cadence, and each one carries its own upstream data-policy
+    // requirement independent of the others. This id *will* go stale again;
+    // `BF_MODEL_OPENROUTER_ENUM` overrides it without a code change when it
+    // does, and `npx tsx --env-file=.env scripts/probe-providers.ts
+    // --only=openrouter` is the fast way to find which current free id
+    // matches this account's privacy settings.
+    id: 'google/gemma-4-26b-a4b-it:free',
     provider: 'openrouter',
     modelClass: 'enum',
     modalities: TEXT,
@@ -233,12 +248,33 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     contextTokens: 128_000,
     centsPerMillionInput: 0,
     centsPerMillionOutput: 0,
-    // The published free-model allowance: 50 requests a day, raised to 1,000
-    // after a one-time top-up. The lower figure is carried because it is the
-    // one that holds without spending anything.
-    freeAllowance: { requestsPerDay: 50, requestsPerMinute: 20 },
+    // OpenRouter does not publish a per-model free-tier request cap the way
+    // Gemini does; 20/day mirrors this repository's other free allowances
+    // as a conservative default until this one is observed empirically.
+    freeAllowance: { requestsPerDay: 20, requestsPerMinute: 20 },
     licence: 'free-tier-unverified',
     jurisdiction: 'other',
+  },
+
+  /* --------------------------- xAI (Grok) --------------------------- */
+  // Pricing from bf_research/05_provider_matrix.md (OBSERVED, 2026-08-19):
+  // grok-4.6 $2/$6 per million tokens in/out; no free tier of any kind.
+  // text-only here (TEXT, not TEXT_VISION) — the adapter's vision path is
+  // explicitly unimplemented (lib/capability/visionInvoker.ts) rather than
+  // guessed at, so this catalog does not advertise a capability the
+  // deployment cannot actually serve.
+  {
+    id: 'grok-4.6',
+    provider: 'xai',
+    modelClass: 'workhorse',
+    modalities: TEXT,
+    structuredOutput: 'native',
+    contextTokens: 256_000,
+    centsPerMillionInput: 200,
+    centsPerMillionOutput: 600,
+    freeAllowance: null,
+    licence: 'commercial-api',
+    jurisdiction: 'us',
   },
 ];
 

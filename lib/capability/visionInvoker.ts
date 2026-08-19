@@ -218,6 +218,12 @@ export function createVisionInvoker(
             'permitted to import the Anthropic SDK, and this module deliberately does not ' +
             'build a parallel raw-HTTP path around that boundary',
         );
+      case 'xai':
+        throw new Error(
+          `[${SOURCE}] xai vision is not implemented — the adapter (lib/ai/providers/xai.ts) ` +
+            'is text-only so far; no vision request shape has been verified against a live ' +
+            'call, and this module does not guess at one',
+        );
     }
   };
 }

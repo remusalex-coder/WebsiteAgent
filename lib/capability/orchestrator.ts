@@ -319,6 +319,7 @@ function credentialSet(config: AppConfig, env: NodeJS.ProcessEnv): ReadonlySet<s
     openai: 'OPENAI_API_KEY',
     gemini: 'GEMINI_API_KEY',
     openrouter: 'OPENROUTER_API_KEY',
+    xai: 'XAI_API_KEY',
   };
   for (const provider of CATALOGUED_PROVIDERS) {
     if (config.ai.apiKeys[provider] !== '') present.add(providerKeys[provider]);

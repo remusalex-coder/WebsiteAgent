@@ -355,6 +355,10 @@ export const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   // honest default for a project whose cost target is zero.
   gemini: 'gemini-3.6-flash',
   openrouter: 'openai/gpt-5',
+  // No free tier (bf_research/xai_models.html, 2026-08-19); grok-4.6 is the
+  // non-dated, broadly-available chat model. Never selected under the
+  // zero-budget-by-default capability policy without an explicit override.
+  xai: 'grok-4.6',
 };
 
 /**
@@ -604,12 +608,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         openai: str(env, 'OPENAI_API_KEY', ''),
         gemini: str(env, 'GEMINI_API_KEY', ''),
         openrouter: str(env, 'OPENROUTER_API_KEY', ''),
+        xai: str(env, 'XAI_API_KEY', ''),
       },
       baseUrls: {
         anthropic: optional(env, 'ANTHROPIC_BASE_URL'),
         openai: optional(env, 'OPENAI_BASE_URL'),
         gemini: optional(env, 'GEMINI_BASE_URL'),
         openrouter: optional(env, 'OPENROUTER_BASE_URL'),
+        xai: optional(env, 'XAI_BASE_URL'),
       },
       requestTimeoutMs: int(env, 'AI_REQUEST_TIMEOUT_MS', DEFAULTS.ai.requestTimeoutMs),
       maxRetries: int(env, 'AI_MAX_RETRIES', DEFAULTS.ai.maxRetries, 0),
