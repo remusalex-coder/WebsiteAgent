@@ -227,6 +227,26 @@
         "All body text must use en-GB spelling conventions"
       ]
     },
+    "experienceStrategy": {
+      "motionIntensity": "subtle",
+      "navigationModel": "inline",
+      "loadingModel": "none",
+      "typographyBehavior": "static",
+      "cursorBehavior": "default",
+      "scrollBehavior": "smooth-native",
+      "layoutGrammar": "grid-regular",
+      "mediaStrategy": "photography-only",
+      "requires3D": false,
+      "requires3DRationale": "",
+      "requiresVideo": false,
+      "requiresVideoRationale": "",
+      "functionalModules": ["booking-request"],
+      "mobileBehavior": "mirrors-desktop",
+      "accessibilityStrategy": "wcag-aa-floor",
+      "performanceTier": 1,
+      "reducedMotionStrategy": "instant-state-only",
+      "rationale": "Backfilled for this fixture (predates the experienceStrategy field, added 2026-08-19): a diagnostic garage is retrieval-dominant and time-slotted courtesy-car booking is verified, which justifies booking-request without earning motion beyond subtle telemetry-style transitions."
+    },
     "scenes": [
       {
         "id": "scene-1",

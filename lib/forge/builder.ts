@@ -14,9 +14,31 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createModelInvoker } from '../capability/invokers.js';
+import { motionContractFor, motionContractPrompt } from './motion.js';
+import { functionalModulePrompt } from './functionalModules.js';
 import type { ExperienceBlueprint, ForgeRouting, GeneratedCode } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
+
+/**
+ * The experience-strategy directives every prompt below must obey —
+ * decisions the signature already made explicitly
+ * (`ExperienceSignature.experienceStrategy`), rendered as instructions
+ * rather than left for the builder to reinvent per business.
+ */
+function experienceStrategyPrompt(blueprint: ExperienceBlueprint): string {
+  const s = blueprint.signature.experienceStrategy;
+  return `EXPERIENCE STRATEGY DIRECTIVES (decided by the signature — do not override):
+- Navigation model: ${s.navigationModel}
+- Loading model: ${s.loadingModel}${s.loadingModel !== 'none' ? ' — tie any preloader/skeleton to real asset load events, never a fake timed animation' : ' — no preloader or skeleton; content is present on load'}
+- Typography behavior: ${s.typographyBehavior}
+- Cursor behavior: ${s.cursorBehavior}
+- Scroll behavior: ${s.scrollBehavior}
+- Layout grammar: ${s.layoutGrammar}
+- Mobile behavior: ${s.mobileBehavior}
+- Accessibility strategy: ${s.accessibilityStrategy}${s.accessibilityStrategy === 'wcag-aa-enhanced' ? ' — exceed the AA floor where it costs nothing structurally' : ' — meet the WCAG AA floor'}
+- Media strategy: ${s.mediaStrategy}${!s.requires3D ? ' — no 3D asset or WebGL context; a real photograph or CSS/SVG conveys this' : ` — 3D justified: ${s.requires3DRationale}`}${!s.requiresVideo ? '' : ` — video justified: ${s.requiresVideoRationale}`}`;
+}
 
 export async function buildFrontend(
   blueprint: ExperienceBlueprint,
@@ -81,15 +103,20 @@ ${JSON.stringify(signature.scenes, null, 2)}
 RESTRAINT CONTRACT & ANTI-PATTERNS:
 ${signature.restraintContract.forbiddenAntiPatterns.map((p) => `- DO NOT USE: ${p}`).join('\n')}
 
+${experienceStrategyPrompt(blueprint)}
+
+${functionalModulePrompt(signature.experienceStrategy.functionalModules, factualDossier)}
+
 CRITICAL HTML5 MANDATES:
 1. Output valid HTML5 from <!DOCTYPE html> to </html>.
 2. Include <head> with meta tags, title, <link rel="stylesheet" href="styles.css">, Google Fonts preconnect, and Schema.org JSON-LD tailored to the business category.
 3. ABSOLUTE PROHIBITION: DO NOT write any <style> tags or CSS inside index.html! All styling belongs exclusively in styles.css in Pass 2. Keep the <head> minimal.
-4. Clean, purposeful header (<header class="site-header">) reflecting the visual grammar and navigation behavior.
+4. Clean, purposeful header (<header class="site-header">) reflecting the visual grammar and navigation behavior (navigationModel above).
 5. Render ALL scenes in signature.scenes with rich semantic markup (<section id="..." class="scene ...">), monumental headings, sensory kicker tags, and interactive containers.
 6. Implement the key interaction and central mechanism (${signature.centralMechanism}) with appropriate controls.
 7. Include <dialog id="detail-modal" class="detail-modal"> for popups if relevant.
-8. Include <script src="experience.js"></script> at the bottom before </body>.
+8. Implement every functional module specified above with its real fields, states and mailto: mechanism — inside the HTML structure, not deferred.
+9. Include <script src="experience.js"></script> at the bottom before </body>.
 
 Return JSON with a single key "html".`;
 
@@ -159,16 +186,20 @@ GENERATED HTML STRUCTURE (Match all selectors directly):
 ${generatedHtml}
 \`\`\`
 
+${motionContractPrompt(motionContractFor(signature.experienceStrategy.motionIntensity))}
+
+${experienceStrategyPrompt(blueprint)}
+
 CSS3 MANDATES (styles.css):
 1. Google Fonts imports matching the visual grammar typography.
 2. Styling matching the exact color palette tokens, generous whitespace, fluid typography clamp(2.4rem, 5vw, 4.8rem), and fluid container padding.
 3. Responsive down to 360px mobile viewports (stacking cards, touch targets >= 48px, high contrast).
-4. Refined subtle animations and hover effects serving the concept.
+4. Animations and hover effects strictly within the motion system contract above — no invented durations or easings.
 
 JAVASCRIPT MANDATES (experience.js):
 1. Defensive DOMContentLoaded listener. Verify all query selectors exist before adding listeners.
-2. IntersectionObserver scroll reveals for scene elements.
-3. Interactive behavior for the signature mechanisms (e.g. tabs, real-time search/filters, sliders, checklists, modal dialogs).
+2. IntersectionObserver scroll reveals for scene elements, respecting the motion system contract's simultaneity and stagger limits above.
+3. Interactive behavior for the signature mechanisms (e.g. tabs, real-time search/filters, sliders, checklists, modal dialogs) and for every functional module specified in Pass 1 (real validation, real states, mailto: submission where specified — never a fetch/POST call, this site has no backend).
 4. Smooth navigation and accessibility controls (e.g. contrast or font-size toggles if present).
 
 Return JSON with "css" and "js" strings.`;

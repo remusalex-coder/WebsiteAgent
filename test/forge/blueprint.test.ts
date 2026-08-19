@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 
 import { compileBlueprint } from '../../lib/forge/blueprint.js';
 import { createLogger, createConsoleSink } from '../../lib/logger.js';
+import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
 
 import type { ExperienceSignature, FactualDossier } from '../../lib/forge/types.js';
 
@@ -50,6 +51,7 @@ function signature(overrides: Partial<ExperienceSignature> = {}): ExperienceSign
     interactionGrammar: { paceAndMotion: '', openingMoment: '', scrollChoreography: '', microInteractions: [], selectedPatterns: [], rejectedPatterns: [] },
     visualGrammar: { moodWords: [], colorPalette: { primary: '#000', secondary: '#111', background: '#fff', surface: '#eee', textPrimary: '#000', textMuted: '#555', accent: '#f00' }, typography: { displayFamily: 'Serif', bodyFamily: 'Sans', styleNote: '' }, spatialComposition: '' },
     restraintContract: { forbiddenAntiPatterns: [], mandatoryDesignRules: [] },
+    experienceStrategy: DEFAULT_EXPERIENCE_STRATEGY,
     scenes: [],
     ...overrides,
   };

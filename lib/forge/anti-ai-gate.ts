@@ -44,6 +44,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { checkAntiPatternSignals, checkMotionCoherence } from './antiPatternSignals.js';
 import type { AntiAIGateResult, ExperienceBlueprint, ExperienceSignature, GeneratedCode } from './types.js';
 import type { Logger } from '../logger.js';
 
@@ -202,7 +203,12 @@ export async function auditAntiAIGeneric(options: AntiAIGateOptions): Promise<An
     });
   }
 
-  // 4. Structural template convergence against the real peer corpus
+  // 4. Anti-pattern signals from the ANTI_AI_SLOP.md research corpus, plus
+  // motion coherence against the signature's own declared intensity.
+  flags.push(...checkAntiPatternSignals(code, blueprint));
+  flags.push(...checkMotionCoherence(code, blueprint.signature.experienceStrategy));
+
+  // 5. Structural template convergence against the real peer corpus
   const structuralConvergence = await checkStructuralConvergence(blueprint.signature, outputDir, runId);
   if (structuralConvergence.verdict === 'TEMPLATE_CONVERGENCE') {
     flags.push({

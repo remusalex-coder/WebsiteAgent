@@ -1,0 +1,125 @@
+/**
+ * The Motion System — numbers transcribed from `docs/knowledge/MOTION_LIBRARY.md`,
+ * and the four-intensity contract that closes them into an enforceable system.
+ */
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  DURATION_BANDS_MS,
+  EASING_CATALOG,
+  FORBIDDEN_TECHNIQUES,
+  MOTION_CONTRACTS,
+  MOTION_INTENSITIES,
+  motionContractFor,
+  motionContractPrompt,
+  staggerMsFor,
+  staggerSequenceMs,
+  STAGGER_BUDGET_MS,
+} from '../../lib/forge/motion.js';
+
+test('duration bands are transcribed verbatim from the research corpus', () => {
+  assert.deepEqual(DURATION_BANDS_MS.microFeedback, [80, 120]);
+  assert.deepEqual(DURATION_BANDS_MS.hover, [100, 200]);
+  assert.deepEqual(DURATION_BANDS_MS.stateChange, [150, 250]);
+  assert.deepEqual(DURATION_BANDS_MS.elementReveal, [200, 400]);
+  assert.deepEqual(DURATION_BANDS_MS.sectionTransition, [300, 500]);
+  assert.deepEqual(DURATION_BANDS_MS.pageRouteTransition, [300, 600]);
+});
+
+test('every duration band stays within the 400ms element-reveal ceiling except the two that are allowed past it', () => {
+  for (const [band, [, max]] of Object.entries(DURATION_BANDS_MS)) {
+    if (band === 'sectionTransition' || band === 'pageRouteTransition') continue;
+    assert.ok(max <= 400, `${band} max ${max}ms exceeds the single-element reveal ceiling`);
+  }
+});
+
+test('arrivals decelerate, exits accelerate — never the reverse', () => {
+  assert.equal(EASING_CATALOG.decelerate.avoidFor.includes('exit'), true);
+  assert.equal(EASING_CATALOG.accelerate.avoidFor, 'entrances');
+});
+
+test('spring has no CSS cubic-bezier — it is JS-runtime only and must say so', () => {
+  assert.equal(EASING_CATALOG.spring.cubicBezier, null);
+});
+
+test('overshoot is never for error/data/loading/validation moments', () => {
+  assert.match(EASING_CATALOG.overshoot.avoidFor, /error|data|loading|validation/i);
+});
+
+test('stagger-per-item shrinks as the list grows, per the research table', () => {
+  assert.equal(staggerMsFor(4), 90);
+  assert.equal(staggerMsFor(8), 60);
+  assert.equal(staggerMsFor(15), 35);
+  assert.equal(staggerMsFor(30), 0); // 21+: prefer no stagger
+});
+
+test('a 5-item list at the documented duration fits the list budget (540-900ms band, budget 600ms at the low end)', () => {
+  // The research table's own worked example: 3-5 items at 80-100ms/item, 300ms item duration.
+  const total = staggerSequenceMs(5, 300);
+  assert.ok(total <= 900, `expected <=900ms, got ${total}ms`);
+});
+
+test('over-budget staggers reduce toward zero rather than silently exceeding the budget', () => {
+  // 25 items would blow any list budget with a nonzero per-item stagger;
+  // the table's reduction order ends in "drop stagger entirely".
+  assert.equal(staggerMsFor(25), 0);
+  const total = staggerSequenceMs(25, 300);
+  assert.equal(total, 300); // all at once, not 25 * some nonzero stagger
+});
+
+test('MOTION_INTENSITIES lists exactly the four closed values', () => {
+  assert.deepEqual([...MOTION_INTENSITIES].sort(), ['expressive', 'immersive', 'none', 'subtle']);
+});
+
+test('"none" still forbids the anti-motion list — restraint is not an exemption from it', () => {
+  const contract = motionContractFor('none');
+  assert.deepEqual(contract.forbiddenTechniques, FORBIDDEN_TECHNIQUES);
+  assert.equal(contract.permitsPageTransitions, false);
+  assert.equal(contract.permitsPinnedStorytelling, false);
+});
+
+test('intensity widens monotonically: each level permits everything the one below it does, plus more', () => {
+  const none = motionContractFor('none');
+  const subtle = motionContractFor('subtle');
+  const expressive = motionContractFor('expressive');
+  const immersive = motionContractFor('immersive');
+
+  assert.ok(subtle.allowedDurationBands.length >= none.allowedDurationBands.length);
+  assert.ok(expressive.allowedDurationBands.length >= subtle.allowedDurationBands.length);
+  assert.ok(immersive.allowedDurationBands.length >= expressive.allowedDurationBands.length);
+
+  // page transitions and pinned storytelling are immersive-only
+  assert.equal(none.permitsPageTransitions, false);
+  assert.equal(subtle.permitsPageTransitions, false);
+  assert.equal(expressive.permitsPageTransitions, false);
+  assert.equal(immersive.permitsPageTransitions, true);
+});
+
+test('every contract, at every intensity, carries the full unconditional forbidden-techniques list', () => {
+  for (const intensity of MOTION_INTENSITIES) {
+    const contract = motionContractFor(intensity);
+    assert.deepEqual(contract.forbiddenTechniques, FORBIDDEN_TECHNIQUES, `${intensity} must forbid the same techniques as every other intensity`);
+  }
+});
+
+test('spring easing is only ever allowed at immersive — it requires a JS runtime the other intensities do not assume', () => {
+  assert.equal(motionContractFor('none').allowedEasings.includes('spring'), false);
+  assert.equal(motionContractFor('subtle').allowedEasings.includes('spring'), false);
+  assert.equal(motionContractFor('expressive').allowedEasings.includes('spring'), false);
+  assert.equal(motionContractFor('immersive').allowedEasings.includes('spring'), true);
+});
+
+test('the prompt fragment names every allowed duration and easing, and the unconditional forbidden list', () => {
+  const prompt = motionContractPrompt(motionContractFor('expressive'));
+  assert.match(prompt, /200-400ms/); // elementReveal
+  assert.match(prompt, /emphasizedDecelerate/);
+  assert.match(prompt, /scroll-hijacking/);
+  assert.match(prompt, /prefers-reduced-motion: reduce/);
+});
+
+test('the "none" prompt fragment is explicit that no animated transition is available, not merely quiet', () => {
+  const prompt = motionContractPrompt(motionContractFor('none'));
+  assert.match(prompt, /no animated transitions beyond instant state changes/);
+});

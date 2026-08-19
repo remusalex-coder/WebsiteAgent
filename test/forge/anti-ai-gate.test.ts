@@ -25,6 +25,7 @@ import path from 'node:path';
 
 import { auditAntiAIGeneric, checkStructuralConvergence } from '../../lib/forge/anti-ai-gate.js';
 import { createLogger, createConsoleSink } from '../../lib/logger.js';
+import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
 
 import type { ExperienceBlueprint, ExperienceSignature, GeneratedCode } from '../../lib/forge/types.js';
 
@@ -58,6 +59,7 @@ function signature(overrides: Partial<ExperienceSignature> = {}): ExperienceSign
       spatialComposition: '',
     },
     restraintContract: { forbiddenAntiPatterns: [], mandatoryDesignRules: [] },
+    experienceStrategy: DEFAULT_EXPERIENCE_STRATEGY,
     scenes: [
       { id: 'clinical-enter', actName: 'ACT I', purpose: 'p', title: 't', bodyText: 'b', layoutPattern: 'split-screen', keyInteraction: 'none', assetIds: [] },
       { id: 'diagnostics', actName: 'ACT II', purpose: 'p', title: 't', bodyText: 'b', layoutPattern: 'two-column', keyInteraction: 'none', assetIds: [] },

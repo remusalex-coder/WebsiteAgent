@@ -225,7 +225,9 @@ export const CAPABILITY_REGISTRY: Readonly<Record<CapabilityId, CapabilityDescri
     modelMayWriteOutput: true,
     gate: 'human',
     rationale:
-      'Freeze O-6: the right to redistribute a business’s own social photographs is unresolved, and editing one compounds the question. Human-gated until it is settled.',
+      'Freeze O-6: the right to redistribute a business’s own social photographs is unresolved, and editing one compounds the question. Human-gated until it is settled. ' +
+      'Researched candidate provider (2026-08-19, BusinessForge Experience Arsenal V2 research pass): Higgsfield — not bound, not credentialed, not live-tested; ' +
+      'binding it is still blocked on the same O-6 rights question this row already names, not on provider availability.',
   },
 
   vector_generation: {
@@ -242,12 +244,17 @@ export const CAPABILITY_REGISTRY: Readonly<Record<CapabilityId, CapabilityDescri
   motion_media: {
     id: 'motion_media',
     tier: 'specialist',
-    summary: 'Generate an ambient video loop.',
+    summary: 'Generate an ambient video loop or transform a still into motion (image-to-video).',
     terminal: 'a static photograph',
     modelMayWriteOutput: true,
     gate: 'human',
     rationale:
-      'Expensive, slow, and rarely better than a still. Declared so the answer to "can we?" is "yes, with a person approving it", not silence.',
+      'Expensive, slow, and rarely better than a still. Declared so the answer to "can we?" is "yes, with a person approving it", not silence. ' +
+      'Researched candidate provider (2026-08-19, BusinessForge Experience Arsenal V2 research pass): Higgsfield, for both ambient-loop generation and image-to-video. ' +
+      'Not bound, not credentialed, no live call made — this row activating requires, in order: a business whose evidence actually justifies motion media ' +
+      '(ExperienceSignature.experienceStrategy.requiresVideo with a real rationale, not a default), commercial/licensing terms verified for the specific output use, ' +
+      'and the human gate above. None of the three has happened yet, so this remains declared infrastructure, not a working path — the same distinction ' +
+      'the freeze draws everywhere else in this table.',
   },
 
   audio_speech: {
@@ -258,7 +265,10 @@ export const CAPABILITY_REGISTRY: Readonly<Record<CapabilityId, CapabilityDescri
     modelMayWriteOutput: false,
     gate: 'never',
     rationale:
-      'Freeze F-18. No stage of the website pipeline consumes audio; declaring it keeps the answer recorded instead of rediscovered.',
+      'Freeze F-18. No stage of the website pipeline consumes audio; declaring it keeps the answer recorded instead of rediscovered. ' +
+      'Researched candidate provider (2026-08-19): ElevenLabs, for a future voice/narration capability. Not activated: F-18 is a frozen decision, not an ' +
+      'availability gap, and no business evidence observed by this factory has ever justified voice — reopening this row is a change request against the ' +
+      'freeze, not a provider-binding exercise. Recorded here so the next session that considers it starts from "already researched, still rejected on purpose".',
   },
 
   three_d_generation: {
@@ -269,7 +279,10 @@ export const CAPABILITY_REGISTRY: Readonly<Record<CapabilityId, CapabilityDescri
     modelMayWriteOutput: false,
     gate: 'never',
     rationale:
-      'Freeze F-18 and the registry review. Generated meshes are heavy, generic and unverifiable; procedural shader work under runtime_tier delivers the same intent at a fraction of the weight.',
+      'Freeze F-18 and the registry review. Generated meshes are heavy, generic and unverifiable; procedural shader work under runtime_tier delivers the same intent at a fraction of the weight. ' +
+      'Researched candidate providers (2026-08-19): Meshy, Tripo. Not activated, same reasoning as audio_speech above — this is a frozen policy decision to leave ' +
+      'unreopened without an evidence-backed change request, not a missing integration. `ExperienceSignature.experienceStrategy.requires3D` exists precisely so a ' +
+      'future change request has a concrete trigger to point at, rather than reopening this row speculatively.',
   },
 
   /* ---------------- Semantic ---------------- */

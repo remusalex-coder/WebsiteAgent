@@ -13,6 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { slugifySceneIds } from '../../lib/forge/signature.js';
+import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
 
 import type { ExperienceSignature } from '../../lib/forge/types.js';
 
@@ -53,6 +54,7 @@ function signatureWith(scenes: ExperienceSignature['scenes']): ExperienceSignatu
       spatialComposition: '',
     },
     restraintContract: { forbiddenAntiPatterns: [], mandatoryDesignRules: [] },
+    experienceStrategy: DEFAULT_EXPERIENCE_STRATEGY,
     scenes,
   };
 }

@@ -159,6 +159,69 @@ export interface CreativeTerritory {
   readonly reasonsNotToChoose: string;
 }
 
+/**
+ * The Experience Strategy — closed-set decisions the signature is required
+ * to make explicitly, rather than leaving them implicit in free-text prose
+ * fields the deterministic layers downstream cannot act on.
+ *
+ * Each field is a closed enum (never a free string the model could invent),
+ * matching the discipline `docs/decisions/0004-the-directors-influence-is-one-enum.md`
+ * already established for the classic pipeline: the model picks from a
+ * vocabulary, deterministic code executes it. `normalizeExperienceStrategy`
+ * in `signature.ts` validates every field against its closed set and
+ * degrades to a safe default on anything invalid — the model proposes,
+ * validated code disposes.
+ *
+ * Sourced from `docs/knowledge/EXPERIENCE_SIGNATURE_SYSTEM.md`'s
+ * propagation contract (§6, 11 disciplines a valid signature must answer)
+ * and `MOTION_LIBRARY.md`/`ANTI_AI_SLOP.md`/`WEBSITE_CAPABILITY_KNOWLEDGE.md`
+ * for the specific vocabularies (motion intensity, functional modules).
+ */
+export interface ExperienceStrategy {
+  readonly motionIntensity: 'none' | 'subtle' | 'expressive' | 'immersive';
+  readonly navigationModel: 'inline' | 'sticky-minimal' | 'full-screen-menu' | 'morphing';
+  readonly loadingModel: 'none' | 'skeleton' | 'progressive-reveal' | 'asset-aware-preloader';
+  readonly typographyBehavior: 'static' | 'kinetic-headlines' | 'split-text-reveals' | 'typography-led-navigation';
+  readonly cursorBehavior: 'default' | 'minimal-custom' | 'magnetic' | 'contextual';
+  readonly scrollBehavior: 'native' | 'smooth-native' | 'pinned-storytelling' | 'horizontal-section';
+  readonly layoutGrammar: 'grid-regular' | 'asymmetric-editorial' | 'overlapping-layers' | 'horizontal-narrative';
+  readonly mediaStrategy: 'photography-only' | 'photography-plus-texture' | 'ai-generated-imagery' | 'video-background' | 'cinematic-hero-media';
+  readonly requires3D: boolean;
+  readonly requires3DRationale: string;
+  readonly requiresVideo: boolean;
+  readonly requiresVideoRationale: string;
+  readonly functionalModules: readonly FunctionalModuleId[];
+  readonly mobileBehavior: 'mirrors-desktop' | 'simplified' | 'reordered-priority';
+  readonly accessibilityStrategy: 'wcag-aa-floor' | 'wcag-aa-enhanced';
+  /** 0 (semantic/static) through 5 (AI-generated heavy media) — see `lib/forge/performance.ts`. */
+  readonly performanceTier: 0 | 1 | 2 | 3 | 4 | 5;
+  readonly reducedMotionStrategy: 'instant-state-only' | 'preserve-essential-feedback';
+  /** Why these choices, tied to evidence — the discipline `EXPERIENCE_SIGNATURE_SYSTEM.md` §11 calls RESTS ON. */
+  readonly rationale: string;
+}
+
+/**
+ * Closed vocabulary of functional modules, derived from
+ * `WEBSITE_CAPABILITY_KNOWLEDGE.md`'s CAP-07 (booking), CAP-11 (search),
+ * CAP-12 (filters), and CAP-09 (enquiry/mailto). `product-configurator` and
+ * `calculator` are this repository's own fill for a gap the source document
+ * names explicitly (no CAP-nn entry for either), modelled on CAP-12's
+ * evidence-trigger shape per that document's own recommendation.
+ *
+ * `'none'` must remain selectable and is the correct default — the doctrine
+ * of absence (`WEBSITE_CAPABILITY_KNOWLEDGE.md` §5): a capability is opt-in
+ * on evidence, never opt-out on caution.
+ */
+export type FunctionalModuleId =
+  | 'none'
+  | 'enquiry-form'
+  | 'booking-request'
+  | 'service-selector'
+  | 'product-configurator'
+  | 'search-filter'
+  | 'comparison-tool'
+  | 'calculator';
+
 export interface ExperienceSignature {
   readonly selectedTerritoryId: string;
   readonly selectionRationale: string;
@@ -197,6 +260,7 @@ export interface ExperienceSignature {
     readonly forbiddenAntiPatterns: readonly string[];
     readonly mandatoryDesignRules: readonly string[];
   };
+  readonly experienceStrategy: ExperienceStrategy;
   readonly scenes: readonly {
     readonly id: string;
     readonly actName: string;

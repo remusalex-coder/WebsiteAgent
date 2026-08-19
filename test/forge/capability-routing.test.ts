@@ -32,6 +32,7 @@ import path from 'node:path';
 
 import { fakeCapabilityOrchestrator, fakeProviderFactory, noopLogger } from './fixtures/routing.js';
 import { ok } from '../../lib/platform/types.js';
+import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
 
 import { harvestResearch } from '../../lib/forge/research.js';
 import { buildFactualDossier } from '../../lib/forge/grounding.js';
@@ -69,6 +70,7 @@ function signature(): ExperienceSignature {
     interactionGrammar: { paceAndMotion: '', openingMoment: '', scrollChoreography: '', microInteractions: [], selectedPatterns: [], rejectedPatterns: [] },
     visualGrammar: { moodWords: [], colorPalette: { primary: '#000', secondary: '#111', background: '#fff', surface: '#eee', textPrimary: '#000', textMuted: '#555', accent: '#f00' }, typography: { displayFamily: 'Serif', bodyFamily: 'Sans', styleNote: '' }, spatialComposition: '' },
     restraintContract: { forbiddenAntiPatterns: [], mandatoryDesignRules: [] },
+    experienceStrategy: DEFAULT_EXPERIENCE_STRATEGY,
     scenes: [{ id: 's1', actName: 'ACT I', purpose: 'p', title: 't', bodyText: 'b', layoutPattern: 'split', keyInteraction: 'none', assetIds: [] }],
   };
 }

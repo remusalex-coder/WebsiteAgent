@@ -17,6 +17,7 @@
  */
 
 import { createModelInvoker } from '../capability/invokers.js';
+import { EXPERIENCE_STRATEGY_PROMPT, EXPERIENCE_STRATEGY_SCHEMA, normalizeExperienceStrategy } from './experienceStrategy.js';
 
 import type { CreativeTerritory, ExperienceSignature, FactualDossier, ForgeRouting } from './types.js';
 import type { AppConfig } from '../config.js';
@@ -80,6 +81,7 @@ const SIGNATURE_SCHEMA = {
     'interactionGrammar',
     'visualGrammar',
     'restraintContract',
+    'experienceStrategy',
     'scenes',
   ],
   properties: {
@@ -147,6 +149,7 @@ const SIGNATURE_SCHEMA = {
         mandatoryDesignRules: { type: 'array', items: { type: 'string' } },
       },
     },
+    experienceStrategy: EXPERIENCE_STRATEGY_SCHEMA,
     scenes: {
       type: 'array',
       items: {
@@ -301,6 +304,7 @@ MANDATES FOR EXPERIENCE SIGNATURE:
    - Typography: a display family and a body family that reinforce the creative metaphor.
 5. SCENES SPECIFICATION:
    - 5 to 6 distinct acts, with layoutPattern, headline, subtitle, bodyText (in ${dossier.primaryLanguage}), keyInteraction, visualEffect, and assetIds bound directly to real photos.
+6. ${EXPERIENCE_STRATEGY_PROMPT}
 
 Return strictly valid JSON conforming to the ExperienceSignature schema.`;
 
@@ -329,13 +333,22 @@ Return strictly valid JSON conforming to the ExperienceSignature schema.`;
     );
   }
 
-  const signature = slugifySceneIds(signatureOutcome.outcome.data.data as unknown as ExperienceSignature);
+  const rawSignature = signatureOutcome.outcome.data.data as unknown as ExperienceSignature;
+  const signature = slugifySceneIds({
+    ...rawSignature,
+    experienceStrategy: normalizeExperienceStrategy(
+      (rawSignature as unknown as Record<string, unknown>)['experienceStrategy'],
+      dossier,
+      logger,
+    ),
+  });
 
   logger.info('Experience Signature established', {
     selectedTerritory: signature.selectedTerritoryId,
     metaphor: signature.creativeMetaphor,
     centralMechanism: signature.centralMechanism,
     rejectedPatternsCount: signature.interactionGrammar.rejectedPatterns.length,
+    experienceStrategy: signature.experienceStrategy,
     servedBy: signatureOutcome.record.servedBy,
   });
 

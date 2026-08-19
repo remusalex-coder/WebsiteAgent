@@ -39,10 +39,12 @@ import { combineVerdicts } from '../qa/verdict.js';
 import type { CombinedVerdict, DimensionVerdict, VerdictableCandidate } from '../qa/verdict.js';
 import type { AntiAIGateResult, VisionCritiqueReport } from './types.js';
 
-export function computeForgeVerdict(
-  antiAiGate: AntiAIGateResult,
-  critique: VisionCritiqueReport,
-): CombinedVerdict {
+/**
+ * The five dimensions, built once and reused by both the single-build
+ * verdict below and `battle.ts`'s multi-candidate comparison — one
+ * dimension list, not a second one for the battle path.
+ */
+export function forgeDimensions(antiAiGate: AntiAIGateResult, critique: VisionCritiqueReport): DimensionVerdict[] {
   const structuralFails = antiAiGate.flags.filter((f) => f.severity === 'fail');
 
   const structuralReason = structuralFails.map((f) => f.message).join('; ');
@@ -91,12 +93,27 @@ export function computeForgeVerdict(
     },
   ];
 
-  const candidate: VerdictableCandidate = {
-    id: 'forge-build',
-    index: 0,
-    dimensions,
+  return dimensions;
+}
+
+/** One candidate's dimensions plus the id/index/distinctness `lib/qa/verdict.ts`'s comparator needs — the shared shape for both a single build and `battle.ts`'s multi-candidate ranking. */
+export function forgeVerdictableCandidate(
+  id: string,
+  index: number,
+  antiAiGate: AntiAIGateResult,
+  critique: VisionCritiqueReport,
+): VerdictableCandidate {
+  return {
+    id,
+    index,
+    dimensions: forgeDimensions(antiAiGate, critique),
     distinctness: critique.criteriaScores.distinctiveness * 10,
   };
+}
 
-  return combineVerdicts(candidate);
+export function computeForgeVerdict(
+  antiAiGate: AntiAIGateResult,
+  critique: VisionCritiqueReport,
+): CombinedVerdict {
+  return combineVerdicts(forgeVerdictableCandidate('forge-build', 0, antiAiGate, critique));
 }
