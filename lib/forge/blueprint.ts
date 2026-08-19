@@ -17,6 +17,7 @@
  * the artifact's honesty regardless, and `builder.ts` now actually reads it.
  */
 
+import { planAssetStrategy } from './assetStrategy.js';
 import type { ExperienceBlueprint, ExperienceSignature, FactualDossier } from './types.js';
 import type { Logger } from '../logger.js';
 
@@ -110,6 +111,13 @@ export function compileBlueprint(
     reassurancePointCount: reassurancePoints.length,
   });
 
+  const assetStrategy = planAssetStrategy(dossier, signature);
+  logger.info('Asset strategy planned', {
+    realAssetsUsed: assetStrategy.realAssetsUsed,
+    nonDepictiveSubstitutes: assetStrategy.nonDepictiveSubstitutes,
+    humanGatedCandidates: assetStrategy.humanGatedCandidates,
+  });
+
   const blueprint: ExperienceBlueprint = {
     brandName: dossier.businessName,
     factualDossier: dossier,
@@ -120,6 +128,7 @@ export function compileBlueprint(
       secondaryActionLabel: ro ? SECONDARY[actionType].ro : SECONDARY[actionType].en,
       reassurancePoints,
     },
+    assetStrategy,
   };
 
   return blueprint;

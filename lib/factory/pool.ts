@@ -52,6 +52,8 @@ const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   anthropic: 'claude-sonnet-5',
   openrouter: 'deepseek/deepseek-chat',
   xai: 'grok-4.6',
+  deepseek: 'deepseek-v4-flash',
+  cerebras: 'gpt-oss-120b',
 };
 
 /** Vendors with a free tier — the €0 default pool. */

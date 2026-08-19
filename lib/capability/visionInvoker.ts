@@ -224,6 +224,18 @@ export function createVisionInvoker(
             'is text-only so far; no vision request shape has been verified against a live ' +
             'call, and this module does not guess at one',
         );
+      case 'deepseek':
+        throw new Error(
+          `[${SOURCE}] deepseek vision is not implemented — the adapter (lib/ai/providers/` +
+            'deepseek.ts) is text-only so far; no vision request shape has been verified ' +
+            'against a live call, and this module does not guess at one',
+        );
+      case 'cerebras':
+        throw new Error(
+          `[${SOURCE}] cerebras vision is not implemented — the adapter (lib/ai/providers/` +
+            'cerebras.ts) is text-only so far; no vision request shape has been verified ' +
+            'against a live call, and this module does not guess at one',
+        );
     }
   };
 }

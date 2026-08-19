@@ -16,6 +16,7 @@ import {
   MOTION_INTENSITIES,
   motionContractFor,
   motionContractPrompt,
+  motionLibraryHtmlPrompt,
   staggerMsFor,
   staggerSequenceMs,
   STAGGER_BUDGET_MS,
@@ -174,4 +175,32 @@ test('the prompt fragment includes the frame-rate-independent cursor lerp formul
   assert.match(prompt, /exponential smoothing/);
   assert.ok(prompt.includes(CURSOR_LERP_FORMULA));
   assert.match(CURSOR_LERP_FORMULA, /Math\.exp/);
+});
+
+/* -------------------------------------------------------------------- */
+/* motionLibraryHtmlPrompt — the Pass-1 fragment that fixes the plumbing */
+/* gap: a CDN <script> tag has to land in the HTML pass, which never saw */
+/* the full motion contract before this.                                 */
+/* -------------------------------------------------------------------- */
+
+test('"none" and "subtle" tell the HTML pass explicitly not to add a library CDN tag', () => {
+  for (const intensity of ['none', 'subtle'] as const) {
+    const prompt = motionLibraryHtmlPrompt(motionContractFor(intensity));
+    assert.match(prompt, /none recommended/);
+    assert.match(prompt, /do not add/i);
+  }
+});
+
+test('"expressive" and "immersive" name the specific libraries and instruct loading them in THIS document', () => {
+  for (const intensity of ['expressive', 'immersive'] as const) {
+    const prompt = motionLibraryHtmlPrompt(motionContractFor(intensity));
+    assert.match(prompt, /GSAP/);
+    assert.match(prompt, /Lenis/);
+    assert.match(prompt, /THIS document/);
+  }
+});
+
+test('the HTML-pass fragment forbids Locomotive Scroll too, same as the full contract', () => {
+  const prompt = motionLibraryHtmlPrompt(motionContractFor('immersive'));
+  assert.match(prompt, /Locomotive Scroll/);
 });

@@ -362,3 +362,29 @@ If the cursor is not "default" (contextual/magnetic/minimal-custom), the followe
 NEVER, AT ANY INTENSITY:
 ${contract.forbiddenTechniques.map((t) => `  - ${t}`).join('\n')}`;
 }
+
+/**
+ * The HTML-pass fragment of the same contract — deliberately just the
+ * library-loading half, not the full duration/easing/stagger contract,
+ * which the CSS/JS pass alone needs.
+ *
+ * Why this exists: the HTML document is generated and frozen in Pass 1,
+ * before the CSS/JS pass ever runs, and a `<script src="…gsap…">` CDN tag
+ * has to live in that HTML — Pass 2 only returns `css`/`js` strings, with
+ * no channel back into `index.html`. Without this fragment, Pass 1 has no
+ * idea a library is coming and Pass 2's own instruction ("never claim a
+ * library is present without actually loading it") is impossible to keep,
+ * because the one pass that could add the `<script>` tag never saw the
+ * contract that recommends it.
+ */
+export function motionLibraryHtmlPrompt(contract: MotionContract): string {
+  // "recommended" at none/subtle names browser built-ins (CSS, the Web
+  // Animations API) — nothing external to load. Only flag intensities that
+  // name an actual loadable library (GSAP, Lenis, OGL), so this fragment
+  // doesn't tell the HTML pass to CDN-load "the Web Animations API".
+  const loadableLibraries = contract.libraries.recommended.filter((l) => /GSAP|Lenis|OGL/.test(l));
+  if (loadableLibraries.length === 0) {
+    return `MOTION LIBRARIES (intensity: "${contract.intensity}"): none recommended — CSS/browser-native only, do not add a motion-library CDN <script> tag.`;
+  }
+  return `MOTION LIBRARIES (intensity: "${contract.intensity}"): the CSS/JS pass that follows this one is instructed to write ${loadableLibraries.join(' / ')}. If it uses one, that library must be loaded via a CDN <script> tag in THIS document — the CSS/JS pass cannot add one for you. Add it now, near the Google Fonts preconnect or immediately before </body>, so Pass 2's code has something real to call. Forbidden at every intensity: ${contract.libraries.forbidden.join('; ')}.`;
+}

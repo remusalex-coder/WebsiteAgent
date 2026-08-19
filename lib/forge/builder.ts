@@ -14,8 +14,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createModelInvoker } from '../capability/invokers.js';
-import { motionContractFor, motionContractPrompt } from './motion.js';
+import { motionContractFor, motionContractPrompt, motionLibraryHtmlPrompt } from './motion.js';
 import { functionalModulePrompt } from './functionalModules.js';
+import { assetStrategyPrompt } from './assetStrategy.js';
 import type { ExperienceBlueprint, ForgeRouting, GeneratedCode } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
@@ -97,6 +98,8 @@ ${factualDossier.forbiddenAssumptions.map((a) => `- ${a}`).join('\n')}
 REAL PHOTO ASSETS AVAILABLE:
 ${JSON.stringify(factualDossier.realPhotoAssets.map((a) => ({ path: a.localPath, desc: a.realDescription })))}
 
+${assetStrategyPrompt(blueprint.assetStrategy)}
+
 SCENES TO BUILD:
 ${JSON.stringify(signature.scenes, null, 2)}
 
@@ -107,6 +110,8 @@ ${experienceStrategyPrompt(blueprint)}
 
 ${functionalModulePrompt(signature.experienceStrategy.functionalModules, factualDossier)}
 
+${motionLibraryHtmlPrompt(motionContractFor(signature.experienceStrategy.motionIntensity))}
+
 CRITICAL HTML5 MANDATES:
 1. Output valid HTML5 from <!DOCTYPE html> to </html>.
 2. Include <head> with meta tags, title, <link rel="stylesheet" href="styles.css">, Google Fonts preconnect, and Schema.org JSON-LD tailored to the business category.
@@ -116,7 +121,8 @@ CRITICAL HTML5 MANDATES:
 6. Implement the key interaction and central mechanism (${signature.centralMechanism}) with appropriate controls.
 7. Include <dialog id="detail-modal" class="detail-modal"> for popups if relevant.
 8. Implement every functional module specified above with its real fields, states and mailto: mechanism — inside the HTML structure, not deferred.
-9. Include <script src="experience.js"></script> at the bottom before </body>.
+9. If the MOTION LIBRARIES section above names a library, add its CDN <script> tag now (near the Google Fonts preconnect, or immediately before the tag in mandate 10) — Pass 2 cannot add one for you.
+10. Include <script src="experience.js"></script> at the bottom before </body>, AFTER any motion-library CDN <script> tag from mandate 9 (the library must already be loaded when experience.js runs).
 
 Return JSON with a single key "html".`;
 

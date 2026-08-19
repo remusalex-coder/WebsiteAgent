@@ -15,6 +15,8 @@
  */
 
 import { adapter as anthropic } from './anthropic.js';
+import { adapter as cerebras } from './cerebras.js';
+import { adapter as deepseek } from './deepseek.js';
 import { adapter as gemini } from './gemini.js';
 import { adapter as openai } from './openai.js';
 import { adapter as openrouter } from './openrouter.js';
@@ -29,6 +31,8 @@ export const ADAPTERS: Readonly<Record<AIProviderName, ProviderAdapter>> = {
   gemini,
   openrouter,
   xai,
+  deepseek,
+  cerebras,
 };
 
 export function adapterFor(name: AIProviderName): ProviderAdapter {

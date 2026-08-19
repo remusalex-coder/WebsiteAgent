@@ -66,6 +66,8 @@ const GEMINI_KEY = 'GEMINI_API_KEY';
 const OPENAI_KEY = 'OPENAI_API_KEY';
 const ANTHROPIC_KEY = 'ANTHROPIC_API_KEY';
 const OPENROUTER_KEY = 'OPENROUTER_API_KEY';
+const DEEPSEEK_KEY = 'DEEPSEEK_API_KEY';
+const CEREBRAS_KEY = 'CEREBRAS_API_KEY';
 
 /** Shorthand for in-repo code with a real dependency. */
 function tool(
@@ -143,7 +145,11 @@ export const SERVICE_BINDINGS: Readonly<Record<CapabilityId, readonly ServiceBin
     model('reasoning', 'gemini', 'frontier', 0, 'Gemini frontier — free allowance first', GEMINI_KEY),
     model('reasoning', 'openai', 'frontier', 1, 'GPT frontier', OPENAI_KEY),
     model('reasoning', 'openrouter', 'workhorse', 2, 'OpenRouter workhorse', OPENROUTER_KEY),
-    floor('reasoning', 'compose-baseline', 3, 'composeBaseline — strategy derived from the profile'),
+    // Cheapest paid reasoning seat in the catalogue (bf_research, OBSERVED $0.22/$0.66 per
+    // million) — ranks below the free/already-cheap options above on cost alone, never on a
+    // hardcoded preference.
+    model('reasoning', 'deepseek', 'workhorse', 3, 'DeepSeek workhorse — cheapest paid seat', DEEPSEEK_KEY),
+    floor('reasoning', 'compose-baseline', 4, 'composeBaseline — strategy derived from the profile'),
   ],
 
   structured_generation: [
@@ -151,7 +157,13 @@ export const SERVICE_BINDINGS: Readonly<Record<CapabilityId, readonly ServiceBin
     model('structured_generation', 'openai', 'workhorse', 1, 'Native schema enforcement', OPENAI_KEY),
     model('structured_generation', 'anthropic', 'workhorse', 2, 'Schema supplied in-prompt, validated locally', ANTHROPIC_KEY),
     model('structured_generation', 'openrouter', 'workhorse', 3, 'Schema supplied in-prompt', OPENROUTER_KEY),
-    floor('structured_generation', 'reject-directive', 4, 'Discard the response and keep the deterministic value'),
+    model('structured_generation', 'deepseek', 'workhorse', 4, 'Schema supplied in-prompt, validated locally — cheapest paid seat', DEEPSEEK_KEY),
+    // Speed-focused, not cost- or quality-focused: Cerebras's own catalog leaves per-model
+    // pricing and structured-output support unpublished (bf_research flags it "not
+    // deep-dived"). Placed last among paid candidates on purpose, pending a live call that
+    // actually confirms schema compliance under instructed mode.
+    model('structured_generation', 'cerebras', 'workhorse', 5, 'Unverified pricing/schema compliance — last resort', CEREBRAS_KEY),
+    floor('structured_generation', 'reject-directive', 6, 'Discard the response and keep the deterministic value'),
   ],
 
   prose_writing: [
@@ -165,7 +177,11 @@ export const SERVICE_BINDINGS: Readonly<Record<CapabilityId, readonly ServiceBin
     model('creative_direction', 'anthropic', 'frontier', 0, 'Claude frontier — the conceptual leap', ANTHROPIC_KEY),
     model('creative_direction', 'openai', 'frontier', 1, 'GPT frontier', OPENAI_KEY),
     model('creative_direction', 'gemini', 'frontier', 2, 'Gemini frontier — free allowance', GEMINI_KEY),
-    floor('creative_direction', 'derive-character', 3, 'deriveCharacter plus worlds.ts — a directive from the profile'),
+    // bf_research's own Design Battle role table (BUSINESSFORGE_2.0_ARSENAL.md) names DeepSeek
+    // V4 specifically as the cheap, divergent third territory generator — a different vendor
+    // family from the three above, which is exactly what Design Battle needs.
+    model('creative_direction', 'deepseek', 'frontier', 3, 'DeepSeek frontier — cheap, divergent battle seat', DEEPSEEK_KEY),
+    floor('creative_direction', 'derive-character', 4, 'deriveCharacter plus worlds.ts — a directive from the profile'),
   ],
 
   enum_direction: [

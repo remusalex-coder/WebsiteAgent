@@ -15,6 +15,7 @@ import path from 'node:path';
 import { buildFrontend } from '../../lib/forge/builder.js';
 import { fakeCapabilityOrchestrator, noopLogger } from './fixtures/routing.js';
 import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
+import { planAssetStrategy } from '../../lib/forge/assetStrategy.js';
 
 import type { AppConfig } from '../../lib/config.js';
 import type { ExperienceBlueprint } from '../../lib/forge/types.js';
@@ -34,27 +35,30 @@ function fakeConfig(): AppConfig {
 }
 
 function blueprint(): ExperienceBlueprint {
+  const factualDossier = {
+    businessName: 'Ridgeway Motors', category: 'Auto repair', verifiedFacts: [], inferences: [], creativeInterpretations: [],
+    conflicts: [], forbiddenAssumptions: [], realPhotoAssets: [],
+    location: { fullAddress: '', street: '', city: '', region: '' }, contact: { phone: '0700 000 000' }, verifiedReviews: [], primaryLanguage: 'en',
+  };
+  const signature = {
+    selectedTerritoryId: 't1', selectionRationale: 'r', businessTruth: 'truth', humanInsight: 'insight',
+    creativeMetaphor: 'metaphor', centralMechanism: 'mechanism', signatureMoment: 'moment',
+    interactionGrammar: { paceAndMotion: '', openingMoment: '', scrollChoreography: '', microInteractions: [], selectedPatterns: [], rejectedPatterns: [] },
+    visualGrammar: { moodWords: [], colorPalette: { primary: '#000', secondary: '#111', background: '#fff', surface: '#eee', textPrimary: '#000', textMuted: '#555', accent: '#f00' }, typography: { displayFamily: 'Serif', bodyFamily: 'Sans', styleNote: '' }, spatialComposition: '' },
+    restraintContract: { forbiddenAntiPatterns: [], mandatoryDesignRules: [] },
+    experienceStrategy: {
+      ...DEFAULT_EXPERIENCE_STRATEGY,
+      motionIntensity: 'expressive' as const,
+      functionalModules: ['booking-request' as const],
+    },
+    scenes: [{ id: 's1', actName: 'ACT I', purpose: 'p', title: 't', bodyText: 'b', layoutPattern: 'split', keyInteraction: 'none', assetIds: ['hero-shot'] }],
+  };
   return {
     brandName: 'Ridgeway Motors',
-    factualDossier: {
-      businessName: 'Ridgeway Motors', category: 'Auto repair', verifiedFacts: [], inferences: [], creativeInterpretations: [],
-      conflicts: [], forbiddenAssumptions: [], realPhotoAssets: [],
-      location: { fullAddress: '', street: '', city: '', region: '' }, contact: { phone: '0700 000 000' }, verifiedReviews: [], primaryLanguage: 'en',
-    },
-    signature: {
-      selectedTerritoryId: 't1', selectionRationale: 'r', businessTruth: 'truth', humanInsight: 'insight',
-      creativeMetaphor: 'metaphor', centralMechanism: 'mechanism', signatureMoment: 'moment',
-      interactionGrammar: { paceAndMotion: '', openingMoment: '', scrollChoreography: '', microInteractions: [], selectedPatterns: [], rejectedPatterns: [] },
-      visualGrammar: { moodWords: [], colorPalette: { primary: '#000', secondary: '#111', background: '#fff', surface: '#eee', textPrimary: '#000', textMuted: '#555', accent: '#f00' }, typography: { displayFamily: 'Serif', bodyFamily: 'Sans', styleNote: '' }, spatialComposition: '' },
-      restraintContract: { forbiddenAntiPatterns: [], mandatoryDesignRules: [] },
-      experienceStrategy: {
-        ...DEFAULT_EXPERIENCE_STRATEGY,
-        motionIntensity: 'expressive',
-        functionalModules: ['booking-request'],
-      },
-      scenes: [{ id: 's1', actName: 'ACT I', purpose: 'p', title: 't', bodyText: 'b', layoutPattern: 'split', keyInteraction: 'none', assetIds: [] }],
-    },
+    factualDossier,
+    signature,
     conversionStrategy: { primaryActionLabel: 'Call', primaryActionType: 'call', reassurancePoints: [] },
+    assetStrategy: planAssetStrategy(factualDossier, signature),
   };
 }
 
@@ -96,6 +100,20 @@ test('the HTML pass prompt names the selected functional module\'s real fields',
   assert.match(cssJsPrompt!, /MOTION SYSTEM CONTRACT \(intensity: "expressive"\)/);
   assert.match(cssJsPrompt!, /emphasizedDecelerate/);
   assert.match(cssJsPrompt!, /scroll-hijacking/);
+
+  // The plumbing fix: the HTML pass — not just the CSS/JS pass — now sees the
+  // motion library guidance, because a CDN <script> tag has to land in the
+  // HTML this pass writes; Pass 2 has no channel back into index.html.
+  assert.match(htmlPrompt!, /MOTION LIBRARIES \(intensity: "expressive"\)/);
+  assert.match(htmlPrompt!, /GSAP/);
+  assert.match(htmlPrompt!, /THIS document/);
+
+  // The asset strategy reached the HTML pass: "hero-shot" has no matching real
+  // photo, so it must be told to fall back to a non-depictive treatment, not
+  // treated as if a real photograph exists.
+  assert.match(htmlPrompt!, /ASSET STRATEGY/);
+  assert.match(htmlPrompt!, /"hero-shot"/);
+  assert.match(htmlPrompt!, /non-depictive/);
 });
 
 test('a "none" motion intensity tells the CSS/JS pass no animated transitions are available', async () => {

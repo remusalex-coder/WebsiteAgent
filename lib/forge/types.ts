@@ -6,6 +6,7 @@ import type { BusinessProfile } from '../types.js';
 import type { CombinedVerdict } from '../qa/verdict.js';
 import type { AIProviderFactory } from '../ai/factory.js';
 import type { CapabilityOrchestrator } from '../capability/orchestrator.js';
+import type { AssetStrategy } from './assetStrategy.js';
 
 /**
  * What every Forge stage that makes a text/structured model call needs to
@@ -285,6 +286,15 @@ export interface ExperienceBlueprint {
     readonly secondaryActionLabel?: string;
     readonly reassurancePoints: readonly string[];
   };
+  /**
+   * Which real photo backs which asset slot, which slot gets a non-depictive
+   * substitute, and which candidate media-generation capability (if any) a
+   * human would need to approve — computed once, deterministically, by
+   * `lib/forge/assetStrategy.ts`'s `planAssetStrategy`. Never executes a
+   * capability itself; `builder.ts` reads it to tell the model which
+   * `scenes[].assetIds` entries are real and which are not.
+   */
+  readonly assetStrategy: AssetStrategy;
 }
 
 export interface GeneratedCode {

@@ -359,6 +359,15 @@ export const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   // non-dated, broadly-available chat model. Never selected under the
   // zero-budget-by-default capability policy without an explicit override.
   xai: 'grok-4.6',
+  // No free tier (bf_research, api-docs.deepseek.com, OBSERVED 2026-08-19);
+  // deepseek-v4-flash is the cheap/fast tier. Never selected under the
+  // zero-budget-by-default capability policy without an explicit override.
+  deepseek: 'deepseek-v4-flash',
+  // Pricing UNKNOWN (bf_research flags Cerebras as "not deep-dived");
+  // gpt-oss-120b is the reasoning-capable model Cerebras's own catalog lists
+  // (inference-docs.cerebras.ai, OBSERVED 2026-08-19). Never selected under
+  // the zero-budget-by-default capability policy without an explicit override.
+  cerebras: 'gpt-oss-120b',
 };
 
 /**
@@ -609,6 +618,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         gemini: str(env, 'GEMINI_API_KEY', ''),
         openrouter: str(env, 'OPENROUTER_API_KEY', ''),
         xai: str(env, 'XAI_API_KEY', ''),
+        deepseek: str(env, 'DEEPSEEK_API_KEY', ''),
+        cerebras: str(env, 'CEREBRAS_API_KEY', ''),
       },
       baseUrls: {
         anthropic: optional(env, 'ANTHROPIC_BASE_URL'),
@@ -616,6 +627,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         gemini: optional(env, 'GEMINI_BASE_URL'),
         openrouter: optional(env, 'OPENROUTER_BASE_URL'),
         xai: optional(env, 'XAI_BASE_URL'),
+        deepseek: optional(env, 'DEEPSEEK_BASE_URL'),
+        cerebras: optional(env, 'CEREBRAS_BASE_URL'),
       },
       requestTimeoutMs: int(env, 'AI_REQUEST_TIMEOUT_MS', DEFAULTS.ai.requestTimeoutMs),
       maxRetries: int(env, 'AI_MAX_RETRIES', DEFAULTS.ai.maxRetries, 0),

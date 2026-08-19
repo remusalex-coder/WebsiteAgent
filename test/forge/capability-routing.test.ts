@@ -33,6 +33,7 @@ import path from 'node:path';
 import { fakeCapabilityOrchestrator, fakeProviderFactory, noopLogger } from './fixtures/routing.js';
 import { ok } from '../../lib/platform/types.js';
 import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
+import { planAssetStrategy } from '../../lib/forge/assetStrategy.js';
 
 import { harvestResearch } from '../../lib/forge/research.js';
 import { buildFactualDossier } from '../../lib/forge/grounding.js';
@@ -76,15 +77,18 @@ function signature(): ExperienceSignature {
 }
 
 function blueprint(): ExperienceBlueprint {
+  const factualDossier = {
+    businessName: 'Test Co', category: 'Test', verifiedFacts: [], inferences: [], creativeInterpretations: [],
+    conflicts: [], forbiddenAssumptions: [], realPhotoAssets: [],
+    location: { fullAddress: '', street: '', city: '', region: '' }, contact: {}, verifiedReviews: [], primaryLanguage: 'en',
+  };
+  const sig = signature();
   return {
     brandName: 'Test Co',
-    factualDossier: {
-      businessName: 'Test Co', category: 'Test', verifiedFacts: [], inferences: [], creativeInterpretations: [],
-      conflicts: [], forbiddenAssumptions: [], realPhotoAssets: [],
-      location: { fullAddress: '', street: '', city: '', region: '' }, contact: {}, verifiedReviews: [], primaryLanguage: 'en',
-    },
-    signature: signature(),
+    factualDossier,
+    signature: sig,
     conversionStrategy: { primaryActionLabel: 'Call', primaryActionType: 'call', reassurancePoints: [] },
+    assetStrategy: planAssetStrategy(factualDossier, sig),
   };
 }
 

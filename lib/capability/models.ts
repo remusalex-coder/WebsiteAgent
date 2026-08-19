@@ -276,6 +276,63 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     licence: 'commercial-api',
     jurisdiction: 'us',
   },
+
+  /* --------------------------- DeepSeek --------------------------- */
+  // Pricing fetched live from api-docs.deepseek.com/quick_start/pricing (OBSERVED, 2026-08-19):
+  // off-peak, cache-miss rates. deepseek-v4-flash $0.22/$0.66 per million in/out (~22/66
+  // euro-cents at rough parity); no free tier. `structuredOutput: 'instructed'` — the docs
+  // list a JSON-output feature but do not document OpenAI's json_schema+strict contract, so
+  // the adapter validates locally rather than claim a guarantee it cannot back up.
+  {
+    id: 'deepseek-v4-flash',
+    provider: 'deepseek',
+    modelClass: 'workhorse',
+    modalities: TEXT,
+    structuredOutput: 'instructed',
+    contextTokens: 128_000,
+    centsPerMillionInput: 22,
+    centsPerMillionOutput: 66,
+    freeAllowance: null,
+    licence: 'commercial-api',
+    jurisdiction: 'other',
+  },
+  // deepseek-v4-pro: the frontier tier, same source. $0.66/$1.98 per million in/out (off-peak).
+  {
+    id: 'deepseek-v4-pro',
+    provider: 'deepseek',
+    modelClass: 'frontier',
+    modalities: TEXT,
+    structuredOutput: 'instructed',
+    contextTokens: 128_000,
+    centsPerMillionInput: 66,
+    centsPerMillionOutput: 198,
+    freeAllowance: null,
+    licence: 'commercial-api',
+    jurisdiction: 'other',
+  },
+
+  /* --------------------------- Cerebras --------------------------- */
+  // Catalog fetched live from inference-docs.cerebras.ai/models/overview (OBSERVED,
+  // 2026-08-19): gpt-oss-120b, 65k/131k context (free/paid tier). Pricing UNKNOWN — neither
+  // cerebras.ai/pricing nor the inference docs publish a per-model rate on a static page, and
+  // bf_research's own catalog flags Cerebras as "not deep-dived" for the same reason. The cost
+  // figures below are a rough, explicitly-unverified placeholder for ranking only — re-check
+  // before ever raising `allowPaid` for this vendor. `freeAllowance: null` because the
+  // observed "$5 free trial credit" is a wallet balance, not a `{requestsPerDay,
+  // requestsPerMinute}` allowance — it doesn't fit this field's shape and isn't claimed as one.
+  {
+    id: 'gpt-oss-120b',
+    provider: 'cerebras',
+    modelClass: 'workhorse',
+    modalities: TEXT,
+    structuredOutput: 'instructed',
+    contextTokens: 131_000,
+    centsPerMillionInput: 25,
+    centsPerMillionOutput: 69,
+    freeAllowance: null,
+    licence: 'commercial-api',
+    jurisdiction: 'us',
+  },
 ];
 
 /* ------------------------------------------------------------------ */

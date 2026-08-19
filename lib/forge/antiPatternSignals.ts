@@ -210,3 +210,53 @@ export function checkMotionCoherence(code: GeneratedCode, experienceStrategy: Ex
     evidence: offenders.map((d) => `${d}ms`).join(', '),
   }];
 }
+
+/** Where a motion library's call syntax and its expected CDN filename both live, for one library. */
+interface LibraryUsageCheck {
+  readonly name: string;
+  readonly usage: RegExp;
+  readonly srcHint: RegExp;
+}
+
+const MOTION_LIBRARY_USAGE: readonly LibraryUsageCheck[] = [
+  { name: 'GSAP', usage: /\bgsap\s*\./, srcHint: /gsap/i },
+  { name: 'ScrollTrigger', usage: /\bScrollTrigger\s*\./, srcHint: /scrolltrigger/i },
+  { name: 'Lenis', usage: /\bnew\s+Lenis\s*\(/, srcHint: /lenis/i },
+];
+
+/**
+ * Checks that any motion-library call in the generated JS is backed by a
+ * matching CDN `<script>` tag in the generated HTML. `motionContractPrompt`
+ * tells the model explicitly: "never claim a library is present without
+ * actually loading it" — this is the enforcement half of that instruction,
+ * mirroring A-19's "declared vs. actually justified" shape but for the
+ * opposite failure direction (code that assumes a library it never loaded,
+ * rather than code that adds one nothing asked for).
+ *
+ * This never requires a library to be used at any intensity — motion.ts's
+ * library guidance is a recommendation the signature may or may not act on
+ * (`experienceStrategy.motionIntensity` decides that from evidence, and
+ * "none"/"subtle" recommend no library at all). It only catches the one
+ * thing that is not a style disagreement but an actual runtime bug: calling
+ * something that was never loaded, which throws a `ReferenceError` the
+ * moment the page runs — a functional defect, not cosmetic drift, which is
+ * why this fails rather than warns.
+ */
+export function checkMotionLibraryUsage(code: GeneratedCode): AntiPatternFlag[] {
+  const scriptSrcs = [...code.html.matchAll(/<script[^>]*\ssrc\s*=\s*["']([^"']+)["']/gi)]
+    .map((m) => m[1] ?? '')
+    .join(' ');
+
+  const flags: AntiPatternFlag[] = [];
+  for (const { name, usage, srcHint } of MOTION_LIBRARY_USAGE) {
+    if (usage.test(code.js) && !srcHint.test(scriptSrcs)) {
+      flags.push({
+        code: 'MOTION_LIBRARY_UNLOADED',
+        severity: 'fail',
+        message: `experience.js calls ${name} but no matching CDN <script> tag was found in index.html — this throws a ReferenceError on load, not merely a style disagreement.`,
+        evidence: name,
+      });
+    }
+  }
+  return flags;
+}

@@ -2,6 +2,206 @@
 
 _Last updated: 2026-08-19_
 
+## Experience Arsenal V2 becomes a production capability layer (2026-08-19, seventh pass)
+
+**What this closes.** Every prior pass had declared, prompted, or documented
+a piece of the Experience Arsenal; none of them had been exercised
+end-to-end since the contract was wired into `builder.ts`, and one had
+never had a real provider to route to. This pass: (1) adds two new AI
+providers so the capability layer actually has more than four vendors to
+route across, (2) fixes a genuine plumbing gap where the motion contract
+never reached the pass that would need to add a library's `<script>` tag,
+(3) builds the asset-intelligence layer that did not exist anywhere in the
+repository before today, and (4) proves all of it against a real business
+with a real, live, end-to-end forge run — not a test suite alone.
+
+### 1. Provider layer — DeepSeek and Cerebras
+
+`lib/ai/providers/deepseek.ts` and `lib/ai/providers/cerebras.ts`, both
+following `xai.ts`'s established pattern exactly: OpenAI-compatible chat
+completions, `supportsNativeSchema: false` (neither vendor's docs confirm
+OpenAI's `json_schema`+`strict` contract, so both use the instructed/
+locally-validated path openrouter.ts already established, rather than
+claim a guarantee unverified). Wired into every touchpoint `xai.ts`
+required: `AI_PROVIDER_NAMES`, the adapter table, `config.ts`'s
+`apiKeys`/`baseUrls`/`DEFAULT_MODELS`, `orchestrator.ts`'s credential map,
+`visionInvoker.ts`'s exhaustive switch (both throw an honest
+not-implemented, same as xai's vision path), the model catalog, and
+`lib/factory/pool.ts`'s legacy map. Pricing is OBSERVED live
+(api-docs.deepseek.com: deepseek-v4-flash $0.22/$0.66 per million off-peak,
+deepseek-v4-pro $0.66/$1.98; inference-docs.cerebras.ai: gpt-oss-120b,
+131k context) — Cerebras's exact per-token price is UNKNOWN from any
+static page (the bf_research corpus itself flags Cerebras as "not
+deep-dived" for the same reason), so its catalog entry carries an
+explicitly-labelled unverified estimate, not a fabricated precise one.
+
+Both are added to `lib/capability/bindings.ts` as real candidates —
+DeepSeek on `reasoning`, `structured_generation`, and `creative_direction`
+(the last because bf_research's own Design Battle role table names
+DeepSeek specifically as the cheap, divergent third generator), Cerebras
+on `structured_generation` only, ranked last among paid candidates pending
+a live call that confirms schema compliance. Neither has a credential in
+`.env` — by design ("use the existing credentials only"): both are
+code-complete and reachable the moment a key is added, and until then the
+existing `credentialSet()` filter excludes them exactly the way it already
+excludes any unconfigured vendor. Confirmed live: neither was ever
+selected by the real Ridgeway run below, and no paid vendor was either —
+the zero-budget-by-default policy did its job.
+
+Provider/model selection was already capability-aware before this pass
+(`lib/capability/bindings.ts`'s per-capability, hand-curated, cost-ranked
+chains) — that architecture is extended here, not rebuilt.
+
+### 2. The motion-library plumbing gap, found and fixed
+
+Audited before touching anything: `builder.ts`'s CSS/JS pass (Pass 2) has
+told the model to load GSAP/Lenis via a CDN `<script>` tag for
+`expressive`/`immersive` intensity since the prior pass — but Pass 1 (the
+HTML pass) never saw that instruction, and Pass 2 has no channel back into
+`index.html` (its schema only returns `css`/`js`). So the one place a
+`<script src="…gsap…">` tag could actually land never knew one was coming.
+No real forge run had exercised this path at all: every file on disk
+predated the motion contract's existence in the codebase.
+
+Fixed with `lib/forge/motion.ts`'s new `motionLibraryHtmlPrompt()` — the
+library-loading half of the full contract, filtered to only the intensities
+that name an actual loadable library (GSAP/Lenis/OGL; CSS and the Web
+Animations API need nothing external) — wired into `builder.ts`'s Pass 1
+prompt and a new HTML mandate telling the model to add the tag before
+`</body>`, ahead of `experience.js`. Enforcement, not just prompting:
+`lib/forge/antiPatternSignals.ts`'s new `checkMotionLibraryUsage` mirrors
+A-19's shape in the opposite direction — if `experience.js` calls
+`gsap.`/`ScrollTrigger.`/`new Lenis(` with no matching `<script>` tag in
+the HTML, that's a blocking fail (a real `ReferenceError` on load, not a
+style disagreement), wired into `anti-ai-gate.ts` alongside the existing
+checks. Neither change makes a library mandatory at any intensity — `none`/
+`subtle` are told explicitly not to add one.
+
+### 3. Asset intelligence — the layer that did not exist
+
+Confirmed by audit before writing anything: `lib/render/assets.ts`'s
+`AssetPlan` (the classic, non-Forge pipeline) only places already-collected
+real photos on disk and sanitizes URLs — it makes no real-vs-generated
+decision. Forge had no equivalent at all: `builder.ts` handed
+`factualDossier.realPhotoAssets` straight into the HTML prompt as JSON,
+with nothing checking whether `signature.scenes[].assetIds` actually
+referenced one of those real assets or not.
+
+New: `lib/forge/assetStrategy.ts`'s `planAssetStrategy` — pure, deterministic,
+no network call, never executes a gated capability. Per asset slot: a real
+photo is used as-is ($0); a real photo the signature's `mediaStrategy` calls
+for altering is routed to `image_editing` (`gate: 'human'`, per the
+existing O-6 freeze — never auto-invoked); a missing slot with mark/icon
+language in the scene is routed to `vector_generation` (`gate: 'none'`,
+deterministic inline SVG); any other missing slot falls back to
+`image_nondepictive`'s non-depictive texture/gradient — never a fabricated
+photorealistic stand-in, because no capability in this registry synthesizes
+one on purpose. Signature-level: `requiresVideo` proposes `motion_media`
+only if a real photo exists to animate (`gate: 'human'`), otherwise records
+the requirement as honestly unservable; `requires3D` always resolves to
+`three_d_generation`, `gate: 'never'` (frozen, F-18), noting the real
+mechanism is `runtime_tier`'s procedural WebGL — a code capability, not a
+generated asset. Wired into `blueprint.ts` (computed once, deterministically,
+alongside the existing `conversionStrategy` derivation) and `builder.ts`'s
+Pass 1 prompt via `assetStrategyPrompt()`, so the model is told explicitly
+which `assetIds` are real and which are not, rather than left to assume.
+
+### 4. The real end-to-end proof
+
+Ran `runExperienceForge` against Ridgeway Motors's real, previously-collected
+`BusinessProfile` (`output/ab-proof-mechanic/3-profile.json` — 5 real
+photos, verified rating, real hours/contact), through the fully
+capability-routed, asset-strategy-aware, motion-library-plumbed pipeline,
+at $0 (only Gemini's free tier was ever selected; every paid candidate was
+correctly filtered by the zero-budget-by-default policy, confirmed via
+`capabilities.plan('reasoning', {})`'s own `excluded` list). Result:
+**PASS**, quality 70, anti-AI gate passed (structural convergence DISTINCT
+against 4 real peers, one warning: 27 card containers), critic verdict
+`INTENTIONALLY_ART_DIRECTED` at 65/100.
+
+What the real output showed, inspected directly (not inferred from logs):
+- The signature chose `motionIntensity: "subtle"` and a genuinely
+  business-specific central mechanism ("Precision Telemetry Inspection" —
+  a scroll-driven diagnostic breakdown with live-feeling readouts, a
+  service-tolerance filter, and a booking module), not a generic
+  hero-plus-three-cards template.
+- **Zero `<img>` tags anywhere in the generated HTML.** The scene
+  generation invented its own `assetIds` rather than referencing the real
+  photo ids in `factualDossier.realPhotoAssets` — the asset-intelligence
+  layer caught the mismatch (0 real matches out of 7 referenced slots) and
+  correctly fell back to non-depictive CSS treatment for all of them,
+  exactly as designed, rather than emitting a broken or fabricated `<img>`.
+- No GSAP/Lenis/ScrollTrigger anywhere in `experience.js` — correct,
+  because `subtle` intensity recommends none; the CDN-loading fix was not
+  exercised by this particular run (this business's evidence didn't
+  justify `expressive`/`immersive`), which is itself the correct behaviour
+  (§6: never mandatory).
+- **A genuine, concrete improvement over the archived Ridgeway B result**:
+  B's screenshot (`output/ab-proof-mechanic/shots-B/desktop.png`) shows raw
+  alt-text bleeding into the layout — "Digital wheel alignment rig at
+  Ridgeway Motors showing precise sensor array" rendered as unstyled page
+  text — a broken `<img>` reference from before the asset-intelligence
+  layer existed. The new run has no such defect, because it never emitted
+  an `<img>` tag it couldn't back with a real asset.
+- **A shared, pre-existing defect, not introduced by this pass**: both
+  builds carry several thousand pixels of empty dark space below the fold
+  on both desktop and mobile (confirmed identical pattern in
+  `shots-B/mobile.png`, predating every change in this session). The
+  critic caught it in the new build too ("excessive dark negative space");
+  the repair loop's fix attempt hit a real `MAX_TOKENS` truncation and
+  failed over to the `structured_generation` capability's deterministic
+  floor, which surfaced a genuine, separate bug (next section) rather than
+  silently succeeding.
+
+### 5. A real bug the live run surfaced, filed rather than rushed
+
+`grounding.ts`, `builder.ts`, `repair.ts`, and `signature.ts` each call
+`capabilities.run(capabilityId, invoker, ...)` with a single
+`createModelInvoker`-built invoker. Every capability's binding chain
+intentionally ends in a `kind: 'deterministic'` floor
+(`lib/capability/bindings.ts`'s own stated rule), but nothing wires that
+floor to an actual deterministic implementation — `createModelInvoker`
+correctly throws `"handed a non-model step"` when the plan falls through
+to one. Found live in the repair loop above (a real `MAX_TOKENS` failure
+correctly failed over to `reject-directive`, which then threw); `repair.ts`
+happened to catch it and skip the iteration, so this run wasn't fatal, but
+`grounding.ts` has no equivalent guard — the same failure there would crash
+the whole run instead of falling through to `composeBaseline`'s real
+deterministic composition, exactly the survivability `bindings.ts`
+declared the floor to provide. This is a real correctness bug, not an
+architecture question, and fixing it properly means threading a
+deterministic-step handler through every call site — a cross-cutting
+change out of scope for this pass to rush at the end. Filed as a follow-up
+task rather than patched blind.
+
+### 6. What was deliberately not rebuilt
+
+The functional-module system (`functionalModules.ts`) and the closed-vocabulary
+decision system (`experienceStrategy.ts`, validated by
+`normalizeExperienceStrategy`) were spot-checked, not rewritten — both were
+already real, validated, evidence-triggered implementations from the prior
+pass, and the live Ridgeway run exercised both correctly (it selected
+`service-selector`+`booking-request` from real evidence, not a default).
+Capability/provider selection being cost-aware and capability-scoped
+(`lib/capability/plan.ts`, `bindings.ts`) predates this pass entirely and
+is extended, not replaced. No second routing system, no second
+capability-naming convention, no parallel motion or asset system was
+created — every addition in this pass is an extension of an existing file
+or a new file feeding an existing pipeline stage.
+
+### Verification
+
+`npx tsc -p tsconfig.test.json --noEmit` clean. `npm run build` clean.
+Full suite: 1160/1160 passing, 135 suites, 0 failures (33 new tests this
+pass: provider registration ×12, motion-library-load enforcement ×6,
+`motionLibraryHtmlPrompt` ×3, asset-strategy unit tests ×12, plus new
+assertions inside the existing builder-wiring test proving the HTML pass
+now actually receives both the motion-library and asset-strategy prompt
+fragments). Plus the one thing tests alone cannot prove: a real,
+live, end-to-end forge run against a real business, inspected directly —
+screenshots viewed, HTML/CSS/JS grepped, compared side-by-side against the
+archived Ridgeway B result.
+
 ## Experience Arsenal V2 reconciled against the real research corpus (2026-08-19, sixth pass)
 
 **What this closes.** The fifth pass below (motion system, experience

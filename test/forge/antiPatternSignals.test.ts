@@ -6,8 +6,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkAntiPatternSignals, checkMotionCoherence } from '../../lib/forge/antiPatternSignals.js';
+import { checkAntiPatternSignals, checkMotionCoherence, checkMotionLibraryUsage } from '../../lib/forge/antiPatternSignals.js';
 import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
+import { planAssetStrategy } from '../../lib/forge/assetStrategy.js';
 
 import type { ExperienceBlueprint, GeneratedCode } from '../../lib/forge/types.js';
 
@@ -16,23 +17,26 @@ function code(overrides: Partial<GeneratedCode> = {}): GeneratedCode {
 }
 
 function blueprint(overrides: Partial<ExperienceBlueprint> = {}): ExperienceBlueprint {
+  const factualDossier = {
+    businessName: 'Test Co', category: 'Test', verifiedFacts: [], inferences: [], creativeInterpretations: [],
+    conflicts: [], forbiddenAssumptions: [], realPhotoAssets: [],
+    location: { fullAddress: '', street: '', city: '', region: '' }, contact: {}, verifiedReviews: [], primaryLanguage: 'en',
+  };
+  const signature = {
+    selectedTerritoryId: 't1', selectionRationale: 'r', businessTruth: 'truth', humanInsight: 'insight',
+    creativeMetaphor: 'metaphor', centralMechanism: 'mechanism', signatureMoment: 'moment',
+    interactionGrammar: { paceAndMotion: '', openingMoment: '', scrollChoreography: '', microInteractions: [], selectedPatterns: [], rejectedPatterns: [] },
+    visualGrammar: { moodWords: [], colorPalette: { primary: '#000', secondary: '#111', background: '#fff', surface: '#eee', textPrimary: '#000', textMuted: '#555', accent: '#f00' }, typography: { displayFamily: 'Serif', bodyFamily: 'Sans', styleNote: '' }, spatialComposition: '' },
+    restraintContract: { forbiddenAntiPatterns: [], mandatoryDesignRules: [] },
+    experienceStrategy: DEFAULT_EXPERIENCE_STRATEGY,
+    scenes: [],
+  };
   return {
     brandName: 'Test Co',
-    factualDossier: {
-      businessName: 'Test Co', category: 'Test', verifiedFacts: [], inferences: [], creativeInterpretations: [],
-      conflicts: [], forbiddenAssumptions: [], realPhotoAssets: [],
-      location: { fullAddress: '', street: '', city: '', region: '' }, contact: {}, verifiedReviews: [], primaryLanguage: 'en',
-    },
-    signature: {
-      selectedTerritoryId: 't1', selectionRationale: 'r', businessTruth: 'truth', humanInsight: 'insight',
-      creativeMetaphor: 'metaphor', centralMechanism: 'mechanism', signatureMoment: 'moment',
-      interactionGrammar: { paceAndMotion: '', openingMoment: '', scrollChoreography: '', microInteractions: [], selectedPatterns: [], rejectedPatterns: [] },
-      visualGrammar: { moodWords: [], colorPalette: { primary: '#000', secondary: '#111', background: '#fff', surface: '#eee', textPrimary: '#000', textMuted: '#555', accent: '#f00' }, typography: { displayFamily: 'Serif', bodyFamily: 'Sans', styleNote: '' }, spatialComposition: '' },
-      restraintContract: { forbiddenAntiPatterns: [], mandatoryDesignRules: [] },
-      experienceStrategy: DEFAULT_EXPERIENCE_STRATEGY,
-      scenes: [],
-    },
+    factualDossier,
+    signature,
     conversionStrategy: { primaryActionLabel: 'Call', primaryActionType: 'call', reassurancePoints: [] },
+    assetStrategy: planAssetStrategy(factualDossier, signature),
     ...overrides,
   };
 }
@@ -191,5 +195,60 @@ test('motion "immersive" permits a pageRouteTransition-scale duration (600ms)', 
 
 test('no declared durations at all is never flagged, regardless of intensity', () => {
   const flags = checkMotionCoherence(code({ css: '.a{color:red}' }), { ...DEFAULT_EXPERIENCE_STRATEGY, motionIntensity: 'none' });
+  assert.deepEqual(flags, []);
+});
+
+/* -------------------------------------------------------------------- */
+/* Motion library load-vs-use — the plumbing bug this pass fixes         */
+/* -------------------------------------------------------------------- */
+
+test('calling gsap. with no matching CDN <script> tag is a blocking fail — this would be a real ReferenceError', () => {
+  const js = 'gsap.to(".hero", { opacity: 1, duration: 0.4 });';
+  const html = '<html><head></head><body><script src="experience.js"></script></body></html>';
+  const flags = checkMotionLibraryUsage(code({ html, js }));
+  const flag = flags.find((f) => f.code === 'MOTION_LIBRARY_UNLOADED' && f.evidence === 'GSAP');
+  assert.ok(flag, `expected a GSAP flag, got ${JSON.stringify(flags)}`);
+  assert.equal(flag!.severity, 'fail');
+});
+
+test('calling gsap. WITH a matching CDN <script> tag is not flagged', () => {
+  const js = 'gsap.to(".hero", { opacity: 1, duration: 0.4 });';
+  const html = '<html><head><script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script></head><body><script src="experience.js"></script></body></html>';
+  const flags = checkMotionLibraryUsage(code({ html, js }));
+  assert.ok(!flags.some((f) => f.evidence === 'GSAP'));
+});
+
+test('ScrollTrigger. usage needs its OWN script tag — loading gsap.min.js alone is not enough', () => {
+  const js = 'gsap.registerPlugin(ScrollTrigger); ScrollTrigger.create({ trigger: ".hero" });';
+  const html = '<html><head><script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script></head><body><script src="experience.js"></script></body></html>';
+  const flags = checkMotionLibraryUsage(code({ html, js }));
+  const flag = flags.find((f) => f.evidence === 'ScrollTrigger');
+  assert.ok(flag, `expected a ScrollTrigger flag since only gsap.min.js was loaded, got ${JSON.stringify(flags)}`);
+});
+
+test('ScrollTrigger. usage with both gsap.min.js and ScrollTrigger.min.js loaded is not flagged', () => {
+  const js = 'gsap.registerPlugin(ScrollTrigger); ScrollTrigger.create({ trigger: ".hero" });';
+  const html = '<html><head>' +
+    '<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>' +
+    '<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>' +
+    '</head><body><script src="experience.js"></script></body></html>';
+  const flags = checkMotionLibraryUsage(code({ html, js }));
+  assert.ok(!flags.some((f) => f.evidence === 'ScrollTrigger'));
+});
+
+test('new Lenis( with no matching script tag is flagged; with one, it is not', () => {
+  const js = 'const lenis = new Lenis({ duration: 1.2 });';
+  const unloaded = checkMotionLibraryUsage(code({ html: '<html></html>', js }));
+  assert.ok(unloaded.some((f) => f.evidence === 'Lenis'));
+
+  const loaded = checkMotionLibraryUsage(
+    code({ html: '<html><script src="https://unpkg.com/lenis@1/dist/lenis.min.js"></script></html>', js }),
+  );
+  assert.ok(!loaded.some((f) => f.evidence === 'Lenis'));
+});
+
+test('plain CSS-only JS with no library calls at all is never flagged, at any intensity', () => {
+  const js = 'document.querySelectorAll(".reveal").forEach((el) => el.classList.add("is-visible"));';
+  const flags = checkMotionLibraryUsage(code({ html: '<html></html>', js }));
   assert.deepEqual(flags, []);
 });

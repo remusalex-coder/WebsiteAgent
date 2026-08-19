@@ -26,6 +26,7 @@ import path from 'node:path';
 import { auditAntiAIGeneric, checkStructuralConvergence } from '../../lib/forge/anti-ai-gate.js';
 import { createLogger, createConsoleSink } from '../../lib/logger.js';
 import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
+import { planAssetStrategy } from '../../lib/forge/assetStrategy.js';
 
 import type { ExperienceBlueprint, ExperienceSignature, GeneratedCode } from '../../lib/forge/types.js';
 
@@ -75,24 +76,26 @@ async function writePeer(outputDir: string, runId: string, sig: ExperienceSignat
 }
 
 function blueprint(sig: ExperienceSignature): ExperienceBlueprint {
+  const dossier = {
+    businessName: 'Ridgeway Motors',
+    category: 'Auto repair',
+    verifiedFacts: [],
+    inferences: [],
+    creativeInterpretations: [],
+    conflicts: [],
+    forbiddenAssumptions: [],
+    realPhotoAssets: [],
+    location: { fullAddress: '', street: '', city: '', region: '' },
+    contact: {},
+    verifiedReviews: [],
+    primaryLanguage: 'en',
+  };
   return {
     brandName: 'Ridgeway Motors',
-    factualDossier: {
-      businessName: 'Ridgeway Motors',
-      category: 'Auto repair',
-      verifiedFacts: [],
-      inferences: [],
-      creativeInterpretations: [],
-      conflicts: [],
-      forbiddenAssumptions: [],
-      realPhotoAssets: [],
-      location: { fullAddress: '', street: '', city: '', region: '' },
-      contact: {},
-      verifiedReviews: [],
-      primaryLanguage: 'en',
-    },
+    factualDossier: dossier,
     signature: sig,
     conversionStrategy: { primaryActionLabel: 'Book a slot', primaryActionType: 'book', reassurancePoints: [] },
+    assetStrategy: planAssetStrategy(dossier, sig),
   };
 }
 
