@@ -7,8 +7,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  CURSOR_LERP_FORMULA,
   DURATION_BANDS_MS,
   EASING_CATALOG,
+  FORBIDDEN_LIBRARIES,
   FORBIDDEN_TECHNIQUES,
   MOTION_CONTRACTS,
   MOTION_INTENSITIES,
@@ -122,4 +124,54 @@ test('the prompt fragment names every allowed duration and easing, and the uncon
 test('the "none" prompt fragment is explicit that no animated transition is available, not merely quiet', () => {
   const prompt = motionContractPrompt(motionContractFor('none'));
   assert.match(prompt, /no animated transitions beyond instant state changes/);
+});
+
+/* -------------------------------------------------------------------- */
+/* Library guidance — bf_research/BUSINESSFORGE_EXPERIENCE_ARSENAL_v2.md */
+/* -------------------------------------------------------------------- */
+
+test('"none" and "subtle" recommend no JS animation library — CSS only, zero dependencies', () => {
+  assert.deepEqual(motionContractFor('none').libraries.recommended, ['CSS transitions/animations only — no JS animation library']);
+  assert.ok(motionContractFor('subtle').libraries.recommended.every((l) => !/GSAP|Lenis/i.test(l)));
+});
+
+test('"expressive" and "immersive" recommend the OBSERVED real-world stack: GSAP + ScrollTrigger + Lenis', () => {
+  for (const intensity of ['expressive', 'immersive'] as const) {
+    const recommended = motionContractFor(intensity).libraries.recommended.join(' ');
+    assert.match(recommended, /GSAP/);
+    assert.match(recommended, /ScrollTrigger/);
+    assert.match(recommended, /Lenis/);
+  }
+});
+
+test('OGL, not Three.js, is the recommended 3D entry point, and only at immersive intensity', () => {
+  const immersive = motionContractFor('immersive').libraries.recommended.join(' ');
+  assert.match(immersive, /OGL/);
+  // "Three.js" appears only as an explicit negation ("OGL (not Three.js)") —
+  // never as a standalone recommendation of its own.
+  assert.match(immersive, /OGL \(not Three\.js\)/);
+  for (const intensity of ['none', 'subtle', 'expressive'] as const) {
+    assert.doesNotMatch(motionContractFor(intensity).libraries.recommended.join(' '), /OGL/);
+  }
+});
+
+test('Locomotive Scroll is forbidden at every intensity — confirmed unmaintained; Lenis is the direct replacement', () => {
+  assert.deepEqual(FORBIDDEN_LIBRARIES, ['Locomotive Scroll (unmaintained/deprecated — use Lenis for the same job)']);
+  for (const intensity of MOTION_INTENSITIES) {
+    assert.deepEqual(motionContractFor(intensity).libraries.forbidden, FORBIDDEN_LIBRARIES);
+  }
+});
+
+test('the prompt fragment names the recommended libraries and forbids Locomotive Scroll', () => {
+  const prompt = motionContractPrompt(motionContractFor('expressive'));
+  assert.match(prompt, /GSAP/);
+  assert.match(prompt, /Lenis/);
+  assert.match(prompt, /Locomotive Scroll/);
+});
+
+test('the prompt fragment includes the frame-rate-independent cursor lerp formula, not a naive fixed-fraction one', () => {
+  const prompt = motionContractPrompt(motionContractFor('expressive'));
+  assert.match(prompt, /exponential smoothing/);
+  assert.ok(prompt.includes(CURSOR_LERP_FORMULA));
+  assert.match(CURSOR_LERP_FORMULA, /Math\.exp/);
 });

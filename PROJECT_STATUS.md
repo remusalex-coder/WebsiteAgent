@@ -2,6 +2,79 @@
 
 _Last updated: 2026-08-19_
 
+## Experience Arsenal V2 reconciled against the real research corpus (2026-08-19, sixth pass)
+
+**What this closes.** The fifth pass below (motion system, experience
+strategy, functional modules, anti-pattern signals, Design Battle prep,
+media-capability registry rows) was built against `docs/knowledge/` —
+which turned out to be a *substitute* corpus, not the one the user meant.
+The real, authoritative research lives outside this repo at
+`C:\Users\40728\bf_research\` (the Nous Hermes agent's own output folder).
+This pass reconciles the fifth-pass implementation against that real
+corpus rather than rebuilding it, per the user's "Reîntoarce la bf
+research" instruction.
+
+**What changed, concretely.**
+- `lib/forge/motion.ts` gained library guidance the fifth pass didn't
+  have: CSS-only (no JS animation library) at `none`/`subtle`; GSAP +
+  ScrollTrigger + Lenis at `expressive`/`immersive` (the exact stack
+  observed live on cravburgers.shop via curl, not inferred); OGL — not
+  Three.js — as the lightweight WebGL entry point, gated on
+  `experienceStrategy.requires3D` and `immersive` only; Locomotive Scroll
+  forbidden at every intensity (confirmed unmaintained, Lenis is the
+  direct replacement); and the frame-rate-independent cursor lerp formula
+  (`value += (target - value) * (1 - Math.exp(-k * dt))`), not a naive
+  fixed-fraction one. 6 new tests in `test/forge/motion.test.ts`
+  (21/21 in that file, 112/112 across `lib/forge`).
+- `lib/capability/registry.ts`'s media-provider rationale text (written
+  during the fifth pass without the real corpus's pricing pages) was
+  corrected in two directions: filled in where the fifth pass had
+  wrongly written "UNKNOWN" (Higgsfield's price — Free/$19/$47/$99-mo —
+  and its VERIFIED ToS §4.4 no-commercial-restriction clause were both
+  actually published; so is Runway's and Google Veo 3.1's pricing), and
+  narrowed where the fifth pass had overclaimed knowledge it didn't have
+  (`audio_speech`/`three_d_generation` now cite ElevenLabs's and
+  Tripo/Meshy's actual tier prices instead of a generic "researched
+  candidate" line). A genuine risk absent from the fifth pass was added
+  to `motion_media`: Higgsfield is a US company but proxies
+  Chinese-model backends (Kling/Seedance/MiniMax-class) for some camera
+  presets, which carries weaker ToS clarity than Higgsfield's own terms
+  and should be checked per-preset if this row is ever bound — not
+  encoded as a hard block, just recorded so it isn't silently assumed
+  away.
+- **Scope confirmed, not touched:** `CONTROL_PLANE_AUDIT.md` /
+  `CONTROL_PLANE_V2.md` are about `lib/workflow/hermes.ts` and the n8n
+  control plane — a different subsystem, out of scope here.
+  `CREATIVE_DIRECTION_ENGINE_SPEC.md` (and the two Aug-12 docs under it)
+  is explicitly scoped by its own §22 to the classic
+  `lib/design/`/`agents/designDirectorAgent.ts` pipeline, not `lib/forge`
+  — read for deltas, none found that apply to this codebase.
+- **Capability-naming convention: deliberately not adopted.** The real
+  corpus's `01_entry_nav_cursor.md`/`02_layout_scroll_type.md` define a
+  75-pattern taxonomy under a `cap.<domain>.<name>` id scheme with its
+  own JSON blueprint representation. This was not adopted — it would be
+  a second, parallel naming system alongside `lib/capability/registry.ts`'s
+  existing closed `CAPABILITY_IDS` (snake_case) convention. Instead, the
+  same ground the taxonomy covers is closed off through
+  `lib/forge/experienceStrategy.ts`'s 4-value-each closed-vocabulary
+  fields (`layoutGrammar`, `scrollBehavior`, `typographyBehavior`,
+  `loadingModel`, etc.) — a deliberate collapse of the 75-pattern spec
+  into the same "closed vocabulary, not free text" discipline the rest
+  of this pipeline already uses, not an oversight.
+- **Corpus-internal inconsistency, noted not resolved:** the real
+  corpus's own files disagree with each other on Tripo's and Meshy's
+  exact pricing tiers (three different numbers for Tripo's Pro tier
+  across three files). Left unresolved in `registry.ts`'s rationale text
+  because `three_d_generation` is frozen (F-18) and not being activated
+  — recorded here so a future session reopening that row knows to
+  re-verify pricing directly rather than trust any one file.
+
+**Verification.** `npx tsc -p tsconfig.test.json --noEmit` clean.
+Full suite: 1127/1127 passing, 135 suites, 0 failures. No production
+code paths changed — this pass only corrected documentation-as-code
+(rationale strings) and extended `motion.ts` with previously-missing
+library guidance; no other module changed behavior.
+
 ## Experience Arsenal V2 — the research corpus is now executable (2026-08-19, fifth pass)
 
 **What this closes.** `docs/knowledge/` (13 files, 6,463 lines, dated

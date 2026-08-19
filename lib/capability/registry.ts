@@ -226,8 +226,12 @@ export const CAPABILITY_REGISTRY: Readonly<Record<CapabilityId, CapabilityDescri
     gate: 'human',
     rationale:
       'Freeze O-6: the right to redistribute a business’s own social photographs is unresolved, and editing one compounds the question. Human-gated until it is settled. ' +
-      'Researched candidate provider (2026-08-19, BusinessForge Experience Arsenal V2 research pass): Higgsfield — not bound, not credentialed, not live-tested; ' +
-      'binding it is still blocked on the same O-6 rights question this row already names, not on provider availability.',
+      'Researched candidate provider (2026-08-19, C:\\Users\\40728\\bf_research — live curl evidence, not secondhand): Higgsfield, whose docs.higgsfield.ai publishes ' +
+      'a real API index and an `/docs/llms.txt` full-doc dump (OBSERVED). OBSERVED pricing: Free / Starter $19mo / Plus $47mo (1,200 credits) / Ultra $99mo (~9,000 ' +
+      'credits), annual billing. VERIFIED commercial rights (ToS §4.4): "Company does not claim ownership of any of your Inputs or Outputs, nor does it restrict your ' +
+      'commercial use of Outputs," rights survive cancellation, sublicensable to clients. Watermark visibility on exported files remains UNKNOWN (§6.4 permits but ' +
+      'does not warrant persistent watermarking). Not bound, not credentialed, not live-tested; binding it is still blocked on the O-6 rights question this row ' +
+      'already names, not on price, license or provider availability, which are now resolved.',
   },
 
   vector_generation: {
@@ -250,11 +254,18 @@ export const CAPABILITY_REGISTRY: Readonly<Record<CapabilityId, CapabilityDescri
     gate: 'human',
     rationale:
       'Expensive, slow, and rarely better than a still. Declared so the answer to "can we?" is "yes, with a person approving it", not silence. ' +
-      'Researched candidate provider (2026-08-19, BusinessForge Experience Arsenal V2 research pass): Higgsfield, for both ambient-loop generation and image-to-video. ' +
-      'Not bound, not credentialed, no live call made — this row activating requires, in order: a business whose evidence actually justifies motion media ' +
-      '(ExperienceSignature.experienceStrategy.requiresVideo with a real rationale, not a default), commercial/licensing terms verified for the specific output use, ' +
-      'and the human gate above. None of the three has happened yet, so this remains declared infrastructure, not a working path — the same distinction ' +
-      'the freeze draws everywhere else in this table.',
+      'Researched candidate providers (2026-08-19, C:\\Users\\40728\\bf_research, live curl evidence): Higgsfield (director/camera-controlled image-to-video, OBSERVED API + ' +
+      'MCP server + CLI, OBSERVED pricing Free/$19/$47/$99-per-mo, VERIFIED no-commercial-restriction ToS §4.4 — the strongest programmatic-generation signal of the ' +
+      'category) as primary; Runway (OBSERVED: Free $0/125 credits, Standard $12mo, Pro $28mo, Unlimited $76mo, commercial use + no watermark on paid) and Google Veo ' +
+      '3.1 (OBSERVED: $0.40/clip at 720-1080p, $0.60 at 4K, Fast $0.10-0.12, Lite $0.05-0.08, first 5,000 units free via Vertex trial, commercial rights via Google ' +
+      'ToS) as alternates. Watermark policy on Runway\'s free tier and Higgsfield\'s exported files remains UNKNOWN. Caution carried over from the research, not yet ' +
+      'encoded as a hard block: Higgsfield is a US company but proxies Chinese-model backends (Kling/Seedance/MiniMax-class) for some camera presets — data-residency ' +
+      'and ToS clarity on those specific presets is weaker than Higgsfield\'s own terms and should be checked per-preset before this row is ever bound, not assumed ' +
+      'from the vendor-level review above. Not bound, not credentialed, no live call made — this row activating requires, in order: a business whose evidence ' +
+      'actually justifies motion media (ExperienceSignature.experienceStrategy.requiresVideo with a real rationale, not a default), the remaining watermark/preset ' +
+      'caveats above resolved, and the human gate above. None of that has happened yet, so this remains declared infrastructure, not a working path — the same ' +
+      'distinction the freeze draws everywhere else in this table. Explicitly rejected by the research itself: applying video generation to every site by default ' +
+      '— it is gated on business evidence (a hero, lookbook, or walkthrough that specifically benefits from motion), never a template add-on.',
   },
 
   audio_speech: {
@@ -266,9 +277,11 @@ export const CAPABILITY_REGISTRY: Readonly<Record<CapabilityId, CapabilityDescri
     gate: 'never',
     rationale:
       'Freeze F-18. No stage of the website pipeline consumes audio; declaring it keeps the answer recorded instead of rediscovered. ' +
-      'Researched candidate provider (2026-08-19): ElevenLabs, for a future voice/narration capability. Not activated: F-18 is a frozen decision, not an ' +
-      'availability gap, and no business evidence observed by this factory has ever justified voice — reopening this row is a change request against the ' +
-      'freeze, not a provider-binding exercise. Recorded here so the next session that considers it starts from "already researched, still rejected on purpose".',
+      'Researched candidate provider (2026-08-19, C:\\Users\\40728\\bf_research, live pricing-page evidence): ElevenLabs, for a future voice/narration ' +
+      'capability. OBSERVED pricing: $0 free tier, then Commercial License at $6/mo, scaling through $11/$22/$99/$299/$990-per-month tiers by usage volume. ' +
+      'Not activated: F-18 is a frozen decision, not an availability or pricing gap, and no business evidence observed by this factory has ever justified voice ' +
+      '— reopening this row is a change request against the freeze, not a provider-binding exercise. Recorded here so the next session that considers it starts ' +
+      'from "already researched, priced, still rejected on purpose".',
   },
 
   three_d_generation: {
@@ -280,9 +293,11 @@ export const CAPABILITY_REGISTRY: Readonly<Record<CapabilityId, CapabilityDescri
     gate: 'never',
     rationale:
       'Freeze F-18 and the registry review. Generated meshes are heavy, generic and unverifiable; procedural shader work under runtime_tier delivers the same intent at a fraction of the weight. ' +
-      'Researched candidate providers (2026-08-19): Meshy, Tripo. Not activated, same reasoning as audio_speech above — this is a frozen policy decision to leave ' +
-      'unreopened without an evidence-backed change request, not a missing integration. `ExperienceSignature.experienceStrategy.requires3D` exists precisely so a ' +
-      'future change request has a concrete trigger to point at, rather than reopening this row speculatively.',
+      'Researched candidate providers (2026-08-19, C:\\Users\\40728\\bf_research, live pricing-page evidence): Tripo — $0 free tier at 200 credits, non-commercial ' +
+      'only, then paid tiers at $19/$54/$89/$1000/mo; and Meshy — $0/$10/$20/$40/$70/$100/$240/mo tiers, OBSERVED "you own the generated assets, commercial use OK ' +
+      'on any paid plan". Not activated, same reasoning as audio_speech above — this is a frozen policy decision to leave unreopened without an evidence-backed ' +
+      'change request, not a missing integration or a pricing unknown. `ExperienceSignature.experienceStrategy.requires3D` exists precisely so a future change ' +
+      'request has a concrete trigger to point at, rather than reopening this row speculatively.',
   },
 
   /* ---------------- Semantic ---------------- */

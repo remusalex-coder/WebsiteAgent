@@ -172,6 +172,55 @@ export const FORBIDDEN_TECHNIQUES: readonly string[] = [
   'motion as the only signal (a state change must also carry a persistent non-animated signal: color, text, or icon)',
 ];
 
+/**
+ * Library guidance, from `bf_research/BUSINESSFORGE_EXPERIENCE_ARSENAL_v2.md`'s
+ * live-fetched (`curl`) evidence: cravburgers.shop and cuberto.com, reverse
+ * engineered from actual HTML/JS bundles, both run GSAP + ScrollTrigger +
+ * Lenis (+ Framer Motion, React-only) — with **zero WebGL/Three.js/OGL** in
+ * CRAV's case. That is the OBSERVED, load-bearing finding: a premium,
+ * "designed not generated" feel comes from *one coherent DOM-transform
+ * motion language*, not from 3D. `requires3D` (`experienceStrategy.ts`)
+ * already gates 3D on real justification; this is the equivalent gate for
+ * *which* motion library a given intensity earns.
+ *
+ * Deliberately excludes React-only libraries (Framer Motion) — the builder
+ * generates vanilla HTML/CSS/JS, never a framework — and Locomotive Scroll,
+ * confirmed unmaintained (the research corpus's own reconciliation note,
+ * `BUSINESSFORGE_ARSENAL_APPENDIX.md` §B.1): Lenis is the direct, maintained
+ * replacement for the same job.
+ *
+ * `none`/`subtle` stay dependency-free on purpose (CSS transitions, the Web
+ * Animations API where JS is already present) — matching the research's own
+ * Tier 0 ("€0, zero complexity"). `expressive`/`immersive` may load GSAP +
+ * ScrollTrigger + Lenis from a CDN — Forge's generated pages already do this
+ * for Google Fonts, so this is not a new architectural boundary crossed, the
+ * existing one extended to a second, already-permitted category of asset.
+ */
+export interface MotionLibraryGuidance {
+  readonly recommended: readonly string[];
+  readonly forbidden: readonly string[];
+}
+
+export const FORBIDDEN_LIBRARIES: readonly string[] = [
+  'Locomotive Scroll (unmaintained/deprecated — use Lenis for the same job)',
+];
+
+const MOTION_LIBRARIES: Readonly<Record<MotionIntensity, MotionLibraryGuidance>> = {
+  none: { recommended: ['CSS transitions/animations only — no JS animation library'], forbidden: FORBIDDEN_LIBRARIES },
+  subtle: { recommended: ['CSS transitions/animations', 'the Web Animations API for the rare case CSS cannot express it'], forbidden: FORBIDDEN_LIBRARIES },
+  expressive: { recommended: ['GSAP + ScrollTrigger (scroll-linked choreography, timelines)', 'Lenis (smooth/inertia scroll)'], forbidden: FORBIDDEN_LIBRARIES },
+  immersive: { recommended: ['GSAP + ScrollTrigger', 'Lenis', 'the View Transitions API for page/route transitions, as progressive enhancement with a GSAP fallback for unsupported browsers', 'OGL (not Three.js) as the lightweight WebGL entry point, only when experienceStrategy.requires3D is also true'], forbidden: FORBIDDEN_LIBRARIES },
+};
+
+/**
+ * The exponential-smoothing lerp formula OBSERVED (code-extracted) driving
+ * CRAV's and Cuberto's follower cursor — frame-rate-independent, which a
+ * naive fixed-fraction lerp is not. Applies whenever
+ * `experienceStrategy.cursorBehavior` is not `"default"`.
+ */
+export const CURSOR_LERP_FORMULA =
+  'value += (target - value) * (1 - Math.exp(-k * dt))  // k ~ 8-12 for a responsive-but-smooth follow; dt in seconds, from the animation frame delta — NOT a fixed-fraction lerp, which is frame-rate-dependent';
+
 /** One intensity's complete, bounded motion contract. */
 export interface MotionContract {
   readonly intensity: MotionIntensity;
@@ -184,6 +233,7 @@ export interface MotionContract {
   readonly permitsCursorSystem: boolean;
   readonly permitsPinnedStorytelling: boolean;
   readonly forbiddenTechniques: readonly string[];
+  readonly libraries: MotionLibraryGuidance;
   readonly rationale: string;
 }
 
@@ -207,6 +257,7 @@ export const MOTION_CONTRACTS: Readonly<Record<MotionIntensity, MotionContract>>
     permitsCursorSystem: false,
     permitsPinnedStorytelling: false,
     forbiddenTechniques: FORBIDDEN_TECHNIQUES,
+    libraries: MOTION_LIBRARIES.none,
     rationale: 'Content presents at once; only instant, functional state changes (focus, active, error) are permitted. A legitimate outcome for a retrieval-dominant or reputation-through-stillness business.',
   },
   subtle: {
@@ -220,6 +271,7 @@ export const MOTION_CONTRACTS: Readonly<Record<MotionIntensity, MotionContract>>
     permitsCursorSystem: false,
     permitsPinnedStorytelling: false,
     forbiddenTechniques: FORBIDDEN_TECHNIQUES,
+    libraries: MOTION_LIBRARIES.subtle,
     rationale: 'Functional feedback and single-item entrance reveals only. No section-level choreography, no page transitions, no cursor system — motion acknowledges the user\'s action, it does not narrate.',
   },
   expressive: {
@@ -233,6 +285,7 @@ export const MOTION_CONTRACTS: Readonly<Record<MotionIntensity, MotionContract>>
     permitsCursorSystem: true,
     permitsPinnedStorytelling: false,
     forbiddenTechniques: FORBIDDEN_TECHNIQUES,
+    libraries: MOTION_LIBRARIES.expressive,
     rationale: 'Full reveal choreography and one earned emphasized-decelerate moment for the signature reveal. A cursor system is permitted; page-level transitions and pinned/scroll-jacked storytelling are not.',
   },
   immersive: {
@@ -246,6 +299,7 @@ export const MOTION_CONTRACTS: Readonly<Record<MotionIntensity, MotionContract>>
     permitsCursorSystem: true,
     permitsPinnedStorytelling: true,
     forbiddenTechniques: FORBIDDEN_TECHNIQUES,
+    libraries: MOTION_LIBRARIES.immersive,
     rationale: 'Every category is available, including page-route transitions and pinned scroll storytelling — reserved for a signature whose central mechanism genuinely is spatial/temporal. Still bound by the same anti-motion list: immersive is a wider palette, not an exemption.',
   },
 };
@@ -296,6 +350,14 @@ RULES:
   - Pinned/scroll-driven storytelling: ${contract.permitsPinnedStorytelling ? 'permitted' : 'NOT permitted at this intensity'}.
   - Include the reduced-motion CSS block verbatim, unconditionally:
 ${REDUCED_MOTION_CSS}
+
+LIBRARIES for this intensity (OBSERVED real-world stack, cravburgers.shop/cuberto.com — pure DOM-transform motion, zero WebGL):
+${contract.libraries.recommended.map((l) => `  - ${l}`).join('\n')}
+  Forbidden at every intensity: ${contract.libraries.forbidden.join('; ')}.
+  If loading a library, use a CDN <script> tag (this page already does the same for its Google Fonts) — never claim a library is present without actually loading it.
+
+If the cursor is not "default" (contextual/magnetic/minimal-custom), the follower must use frame-rate-independent exponential smoothing, not a fixed-fraction lerp:
+  ${CURSOR_LERP_FORMULA}
 
 NEVER, AT ANY INTENSITY:
 ${contract.forbiddenTechniques.map((t) => `  - ${t}`).join('\n')}`;
