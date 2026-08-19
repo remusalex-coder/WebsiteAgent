@@ -126,3 +126,24 @@ export class ProviderRequestError extends UpstreamError {
     this.provider = provider;
   }
 }
+
+/**
+ * The production preflight gate found a critical failure — an exposed
+ * secret, broken output escaping, or a fabricated trust signal — and refused
+ * to let the run reach deployment.
+ *
+ * Never retryable: rerunning the same content spec produces the same
+ * failure. Whatever the gate flagged has to change first.
+ */
+export class ProductionBlockedError extends AgentError {
+  readonly blockingCheckIds: readonly string[];
+
+  constructor(blockingCheckIds: readonly string[], source: string) {
+    super(
+      `Production preflight blocked this run: ${blockingCheckIds.join(', ')}. ` +
+        'Fix the flagged critical failure(s) before this site can be delivered.',
+      { source, retryable: false },
+    );
+    this.blockingCheckIds = blockingCheckIds;
+  }
+}

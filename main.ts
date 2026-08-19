@@ -22,6 +22,7 @@ import { normalizerAgent } from './agents/normalizerAgent.js';
 import { businessAnalystAgent } from './agents/businessAnalystAgent.js';
 import { writerAgent } from './agents/writerAgent.js';
 import { designAgent } from './agents/designAgent.js';
+import { preflightAgent } from './agents/preflightAgent.js';
 import { lovableAgent } from './agents/lovableAgent.js';
 
 import { loadConfig } from './lib/config.js';
@@ -29,16 +30,18 @@ import { createConsoleSink, createFileSink, createLogger, createMultiSink } from
 import { createBrowserSession } from './lib/browser.js';
 import { createPlatform } from './lib/platform/platform.js';
 import { renderSite, writeRenderedSite } from './lib/render/index.js';
-import { AgentError, InvalidInputError } from './lib/errors.js';
+import { AgentError, InvalidInputError, ProductionBlockedError } from './lib/errors.js';
 
 import type { AppConfig } from './lib/config.js';
 import type { Logger } from './lib/logger.js';
 import type { BrowserSession } from './lib/browser.js';
 import type { Platform } from './lib/platform/platform.js';
+import type { RenderedSite } from './lib/render/types.js';
 import type {
   AgentContext,
   DiscoveryInput,
   PipelineResult,
+  PreflightReport,
   WebsiteContent,
   WebsiteDesign,
 } from './lib/types.js';
@@ -174,6 +177,7 @@ const STAGES = [
   'write',
   'design',
   'render',
+  'preflight',
   'deploy',
 ] as const;
 
@@ -193,7 +197,8 @@ const ARTIFACTS = {
   write: '5-content',
   design: '5b-design',
   render: null,
-  deploy: '6-deployment',
+  preflight: '6-preflight',
+  deploy: '7-deployment',
 } as const satisfies Record<StageName, string | null>;
 
 /**
@@ -211,6 +216,7 @@ const ARTIFACT_KEYS = {
   write: ['businessName', 'tagline', 'voice', 'sections', 'seo'],
   design: ['version', 'tokens', 'layout'],
   render: [],
+  preflight: ['runId', 'results', 'summary', 'productionGate'],
   deploy: ['projectId', 'status'],
 } as const satisfies Record<StageName, readonly string[]>;
 
@@ -272,8 +278,16 @@ const SITE_DIR_NAME = 'site';
  * no context — it is a pure function of `WebsiteContent`. Deployment calls the
  * same `renderSite`, so what ships is byte-identical to what lands here, and a
  * site can be inspected locally before anything is published.
+ *
+ * Returns the in-memory `RenderedSite` alongside the folder it was written
+ * to: the preflight gate inspects the same bytes that landed on disk, rather
+ * than reading them back.
  */
-async function renderStage(run: Run, content: WebsiteContent, design: WebsiteDesign): Promise<string> {
+async function renderStage(
+  run: Run,
+  content: WebsiteContent,
+  design: WebsiteDesign,
+): Promise<{ targetDir: string; site: RenderedSite }> {
   const site = renderSite(content, { design });
   for (const warning of site.warnings) {
     run.logger.warn('renderer degraded a field', { warning });
@@ -290,7 +304,7 @@ async function renderStage(run: Run, content: WebsiteContent, design: WebsiteDes
   }
   run.logger.info('site rendered', { targetDir, files: written.length });
 
-  return targetDir;
+  return { targetDir, site };
 }
 
 /* ------------------------------------------------------------------ */
@@ -351,10 +365,34 @@ async function executePipeline(
     const design = await step('design', () =>
       designAgent.run({ profile, strategy, content }, contextFor(run, designAgent.name)));
 
-    // Not a `step`: it persists no artifact, so there is nothing to load. It is
-    // cheap and deterministic, so it re-runs whenever it is not being skipped.
-    if (STAGES.indexOf('render') >= firstIndex) {
-      await renderStage(run, content, design);
+    // `render` persists no artifact — it is a pure, cheap function of
+    // `content` and `design` — but `preflight` inspects its output, so both
+    // re-run together whenever either is not being skipped. `site` stays
+    // `null` only when resuming from `deploy`, at which point `preflight`
+    // below loads its report from disk instead of needing it.
+    let site: RenderedSite | null = null;
+    if (STAGES.indexOf('preflight') >= firstIndex) {
+      site = (await renderStage(run, content, design)).site;
+    }
+
+    const preflight = await step('preflight', () => {
+      if (site === null) {
+        throw new InvalidInputError(
+          'preflight requires a freshly rendered site; resuming from "deploy" should have loaded it from disk instead',
+          SOURCE,
+        );
+      }
+      return preflightAgent.run(
+        { profile, strategy, content, design, site },
+        contextFor(run, preflightAgent.name),
+      );
+    });
+
+    if (preflight.productionGate.blocksProduction) {
+      throw new ProductionBlockedError(
+        preflight.productionGate.blockingChecks.map((check) => check.id),
+        SOURCE,
+      );
     }
 
     const deployment = await step('deploy', () =>
@@ -369,6 +407,7 @@ async function executePipeline(
       strategy,
       content,
       design,
+      preflight,
       deployment,
       startedAt,
       finishedAt: new Date().toISOString(),

@@ -459,7 +459,21 @@ export interface WebsiteContent {
 export type { WebsiteDesign } from './design/types.js';
 
 /* ------------------------------------------------------------------ */
-/* Stage 6 — deployment                                                */
+/* Stage 6 — production preflight                                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The final gate before delivery.
+ *
+ * Lives in `lib/preflight/types.ts` with the rest of the preflight
+ * vocabulary — the same way the design and render layers keep their own —
+ * and is re-exported here so every pipeline contract can still be read in
+ * one file.
+ */
+export type { PreflightReport } from './preflight/types.js';
+
+/* ------------------------------------------------------------------ */
+/* Stage 7 — deployment                                                */
 /* ------------------------------------------------------------------ */
 
 export interface DeploymentResult {
@@ -486,6 +500,7 @@ export interface PipelineResult {
   readonly strategy: BusinessStrategy;
   readonly content: WebsiteContent;
   readonly design: import('./design/types.js').WebsiteDesign;
+  readonly preflight: import('./preflight/types.js').PreflightReport;
   readonly deployment: DeploymentResult;
   readonly startedAt: string;
   readonly finishedAt: string;
