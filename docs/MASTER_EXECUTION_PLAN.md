@@ -84,14 +84,14 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 - **Acceptance criteria:** partially met — see above.
 - **Next task:** T10.
 
-### T10 — Extend registry-grade grounding to motion intensity
+### T10 — Extend registry-grade grounding to motion intensity — DONE (this pass, different subsystem than originally scoped)
 - **Goal:** the Director's motion-intensity field gets the same mechanical enforcement `runtimePrimitives` has, closing the gap where an advisory field can be silently ignored.
-- **Files:** `lib/design/directive.ts`, `lib/design/experienceRegistry.ts` (or a new sibling module if motion intensity needs its own resolution shape).
-- **Dependencies:** T08 (same risk class — prove safety before extending mechanical surface area).
-- **Implementation:** mirror the `directiveRuntimePrimitiveIds()` → `resolvePrimitives()` two-stage seam: a shape-extraction function for the Director's requested motion intensity, and a registry-side resolution function that's the sole authority on whether that intensity is actually achievable given the resolved runtime primitives.
-- **Tests:** new `test/design/motionIntensitySeam.test.ts` mirroring `directorRuntimeSeam.test.ts`'s structure.
-- **Acceptance criteria:** new test passes; motion intensity requests that exceed what the resolved primitives can support are downgraded, not silently claimed.
-- **Next task:** none — this is the last currently-planned task; re-derive the next batch from `docs/IMPLEMENTATION_GAP.md`'s P2 section once T01-T10 are done.
+- **Architectural finding:** neither `motionIntensity` nor `layoutArchetype` exists as a field on `lib/design/directive.ts`'s classic Director type at all — `motionIntensity` lives only in the separate Forge pipeline's `ExperienceStrategy`, and the classic pipeline's closest analog (`DirectorPacing`) already has real mechanical consumers, not advisory-only status. Rather than inventing a duplicate `motionIntensity` field on the classic Director to satisfy the file list literally (forbidden by the standing "never invent an implementation if an existing one can be reused" rule), read what Forge's own `motion.ts` already mechanically enforces — a substantial amount, predating this session (`checkMotionCoherence`, `checkMotionLibraryUsage`) — and found the one motion-related claim genuinely still unenforced: `motion.ts`'s own mandatory instruction to include a `@media (prefers-reduced-motion: reduce)` CSS block, which nothing verified the model actually did. See `docs/IMPLEMENTATION_GAP.md` P1-6 for the full reasoning.
+- **What shipped:** `checkReducedMotionSafeguard` (`lib/forge/antiPatternSignals.ts`) — flags `REDUCED_MOTION_MISSING` when the CSS declares any animated duration but no reduced-motion media query; exempt when nothing animates, mirroring `checkMotionCoherence`'s own scoping. Wired into `auditAntiAIGeneric` (`anti-ai-gate.ts`), gating delivery the same way the existing motion checks do.
+- **Files:** `lib/forge/antiPatternSignals.ts`, `lib/forge/anti-ai-gate.ts`, `test/forge/antiPatternSignals.test.ts`.
+- **Tests:** 5 new tests — see `docs/IMPLEMENTATION_GAP.md` P1-6 for the full list.
+- **Acceptance criteria:** met for the field that actually had a real, currently-unenforced gap: a mandatory motion claim is now mechanically proven, not merely instructed — the same underlying goal `directiveRuntimePrimitiveIds()`/`resolvePrimitives()` serves for runtime primitives, adapted to how Forge is actually structured (a content-scan gate over a whole generated document, not a resolve-then-render seam over templated data).
+- **Next task:** none — T01-T10 are all done (see the final integration report). Re-derive the next batch from `docs/IMPLEMENTATION_GAP.md`'s P2 section (P2-4, the newly filed Forge content-safety gate, is the natural next P1/P2-boundary item).
 
 ---
 

@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkAntiPatternSignals, checkMotionCoherence, checkMotionLibraryUsage } from '../../lib/forge/antiPatternSignals.js';
+import { checkAntiPatternSignals, checkMotionCoherence, checkMotionLibraryUsage, checkReducedMotionSafeguard } from '../../lib/forge/antiPatternSignals.js';
 import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
 import { planAssetStrategy } from '../../lib/forge/assetStrategy.js';
 
@@ -250,5 +250,42 @@ test('new Lenis( with no matching script tag is flagged; with one, it is not', (
 test('plain CSS-only JS with no library calls at all is never flagged, at any intensity', () => {
   const js = 'document.querySelectorAll(".reveal").forEach((el) => el.classList.add("is-visible"));';
   const flags = checkMotionLibraryUsage(code({ html: '<html></html>', js }));
+  assert.deepEqual(flags, []);
+});
+
+/* -------------------------------------------------------------------- */
+/* T10: reduced-motion safeguard — registry-grade proof, not a comment   */
+/* -------------------------------------------------------------------- */
+
+test('animated CSS with no reduced-motion media query is a blocking fail', () => {
+  const css = '.a{transition-duration:300ms}';
+  const flags = checkReducedMotionSafeguard(code({ css }));
+  const flag = flags.find((f) => f.code === 'REDUCED_MOTION_MISSING');
+  assert.ok(flag, `expected a REDUCED_MOTION_MISSING flag, got ${JSON.stringify(flags)}`);
+  assert.equal(flag!.severity, 'fail');
+});
+
+test('animated CSS WITH a reduced-motion media query is not flagged', () => {
+  const css = '.a{transition-duration:300ms} @media (prefers-reduced-motion: reduce) { .a{transition-duration:0ms} }';
+  const flags = checkReducedMotionSafeguard(code({ css }));
+  assert.deepEqual(flags, []);
+});
+
+test('the reduced-motion query is matched regardless of internal whitespace', () => {
+  const css = '.a{animation-duration:0.3s} @media(prefers-reduced-motion:reduce){.a{animation:none}}';
+  const flags = checkReducedMotionSafeguard(code({ css }));
+  assert.deepEqual(flags, []);
+});
+
+test('CSS with no declared durations at all is never flagged, regardless of motionIntensity', () => {
+  // Nothing animates, so there is nothing for a reduced-motion query to
+  // reduce — the same "no declared durations is never flagged" scoping
+  // checkMotionCoherence already uses.
+  const flags = checkReducedMotionSafeguard(code({ css: '.a{color:red}' }));
+  assert.deepEqual(flags, []);
+});
+
+test('a real motionIntensity "none" build (no durations) is correctly exempt', () => {
+  const flags = checkReducedMotionSafeguard(code({ css: '' }));
   assert.deepEqual(flags, []);
 });

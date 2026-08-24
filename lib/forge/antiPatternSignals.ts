@@ -211,6 +211,42 @@ export function checkMotionCoherence(code: GeneratedCode, experienceStrategy: Ex
   }];
 }
 
+/** `motion.ts`'s mandatory verbatim CSS block — see `motionContractPrompt`'s "include it unconditionally" instruction. */
+const REDUCED_MOTION_QUERY = /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/i;
+
+/**
+ * T10: the registry-grade half of `motion.ts`'s reduced-motion instruction.
+ *
+ * `motionContractPrompt` tells the model to include
+ * `REDUCED_MOTION_CSS`'s `@media (prefers-reduced-motion: reduce)` block
+ * "verbatim, unconditionally" — until this check, nothing verified the
+ * model actually did. That is the same shape of gap `checkMotionCoherence`
+ * closed for duration claims: a mandatory instruction with no mechanical
+ * proof it was followed is exactly the kind of advisory field this
+ * codebase's registry-grade seams (`directiveRuntimePrimitiveIds` →
+ * `resolvePrimitives` for runtime primitives, this for motion) exist to
+ * close.
+ *
+ * Scoped to what actually animates, not to the declared intensity: a build
+ * with zero declared durations has nothing to reduce, so the safeguard
+ * isn't required regardless of what `motionIntensity` claims — the same
+ * "no declared durations is never flagged" scoping `checkMotionCoherence`
+ * already uses, applied consistently here.
+ */
+export function checkReducedMotionSafeguard(code: GeneratedCode): AntiPatternFlag[] {
+  const durations = parseCssDurationsMs(code.css);
+  if (durations.length === 0) return [];
+
+  if (REDUCED_MOTION_QUERY.test(code.css)) return [];
+
+  return [{
+    code: 'REDUCED_MOTION_MISSING',
+    severity: 'fail',
+    message: `the CSS declares ${durations.length} timed transition/animation duration(s) but no "@media (prefers-reduced-motion: reduce)" block. This is a mandatory accessibility safeguard (motion.ts's REDUCED_MOTION_CSS), not an optional style choice — a visitor who has asked their OS to reduce motion gets the full, unreduced experience regardless.`,
+    evidence: `${durations.length} declared duration(s), no reduced-motion media query found`,
+  }];
+}
+
 /** Where a motion library's call syntax and its expected CDN filename both live, for one library. */
 interface LibraryUsageCheck {
   readonly name: string;

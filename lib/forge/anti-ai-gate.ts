@@ -6,6 +6,8 @@
  * - Repetitive card grids & generic brochure patterns
  * - Unmotivated decorative effects (glassmorphism/particles) rejected by Restraint Contract
  * - Structural template convergence against the real corpus of prior builds.
+ * - Runtime libraries used but not declared in `lib/design/experienceRegistry.ts`,
+ *   or over `RUNTIME_PRIMITIVE_BUDGET` (`registryGate.ts`).
  *
  * ## The structural-convergence check, and why it was rewritten
  *
@@ -44,7 +46,8 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { checkAntiPatternSignals, checkMotionCoherence, checkMotionLibraryUsage } from './antiPatternSignals.js';
+import { checkAntiPatternSignals, checkMotionCoherence, checkMotionLibraryUsage, checkReducedMotionSafeguard } from './antiPatternSignals.js';
+import { checkRuntimePrimitiveRegistryGate } from './registryGate.js';
 import type { AntiAIGateResult, ExperienceBlueprint, ExperienceSignature, GeneratedCode } from './types.js';
 import type { Logger } from '../logger.js';
 
@@ -208,6 +211,8 @@ export async function auditAntiAIGeneric(options: AntiAIGateOptions): Promise<An
   flags.push(...checkAntiPatternSignals(code, blueprint));
   flags.push(...checkMotionCoherence(code, blueprint.signature.experienceStrategy));
   flags.push(...checkMotionLibraryUsage(code));
+  flags.push(...checkReducedMotionSafeguard(code));
+  flags.push(...checkRuntimePrimitiveRegistryGate(code));
 
   // 5. Structural template convergence against the real peer corpus
   const structuralConvergence = await checkStructuralConvergence(blueprint.signature, outputDir, runId);
