@@ -492,6 +492,20 @@ export async function runStage(opts: {
     // this block re-records the ledger: a skip is not a new completion, and
     // the entry that made the skip possible is still accurate.
     note = `skipped: ${stage}'s inputs are unchanged since its last successful run (resume, T02)`;
+
+    // T02: `intake` is a real resume gap, not just an optimisation, because
+    // `runJobFullWith` reads `pool` off *this* stage's result to fan the
+    // `research` stage out over — not off `job.json`. Skipping the switch
+    // leaves `providers` at its default (`undefined`), which would make a
+    // resumed run silently fan out over zero providers and skip the entire
+    // research phase. `resolvePool` is cheap, deterministic config resolution
+    // (no model call — that's `draftBrief`'s job, which the skip correctly
+    // avoids repeating), so recomputing it here costs nothing and closes the
+    // gap without re-running the part that was actually expensive.
+    if (stage === 'intake') {
+      const pool = resolvePool('research', config.ai);
+      providers = { used: [], absent: [], pool: pool.members.map((member) => member.provider) };
+    }
   } else {
   // T01: the switch below is unchanged — every case still does exactly what
   // it did before. This try/catch only brackets it, so a real run's failure
