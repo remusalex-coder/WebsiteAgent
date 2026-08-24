@@ -53,12 +53,13 @@ function model(
     kind: 'model',
     provider,
     modelClass,
-    licence: provider === 'gemini' ? 'free-tier-unverified' : 'commercial-api',
+    licence: provider === 'gemini' || provider === 'groq' ? 'free-tier-unverified' : 'commercial-api',
     jurisdiction: provider === 'openrouter' ? 'other' : 'us',
     order,
     detail,
     fixedCents: 0,
     requiredCredentials: [credential],
+    priceConfidence: 'observed',
   };
 }
 
@@ -68,6 +69,7 @@ const ANTHROPIC_KEY = 'ANTHROPIC_API_KEY';
 const OPENROUTER_KEY = 'OPENROUTER_API_KEY';
 const DEEPSEEK_KEY = 'DEEPSEEK_API_KEY';
 const CEREBRAS_KEY = 'CEREBRAS_API_KEY';
+const GROQ_KEY = 'GROQ_API_KEY';
 
 /** Shorthand for in-repo code with a real dependency. */
 function tool(
@@ -89,6 +91,7 @@ function tool(
     detail,
     fixedCents: 0,
     requiredCredentials: [],
+    priceConfidence: 'observed',
   };
 }
 
@@ -112,6 +115,7 @@ function skill(
     detail,
     fixedCents: 0,
     requiredCredentials,
+    priceConfidence: 'observed',
   };
 }
 
@@ -129,6 +133,7 @@ function floor(capability: CapabilityId, id: string, order: number, detail: stri
     detail,
     fixedCents: 0,
     requiredCredentials: [],
+    priceConfidence: 'observed',
   };
 }
 
@@ -143,34 +148,55 @@ export const SERVICE_BINDINGS: Readonly<Record<CapabilityId, readonly ServiceBin
 
   reasoning: [
     model('reasoning', 'gemini', 'frontier', 0, 'Gemini frontier — free allowance first', GEMINI_KEY),
-    model('reasoning', 'openai', 'frontier', 1, 'GPT frontier', OPENAI_KEY),
-    model('reasoning', 'openrouter', 'workhorse', 2, 'OpenRouter workhorse', OPENROUTER_KEY),
+    // T05: a second genuinely-free worker, not a paid fallback — console.groq.com/docs/rate-limits
+    // (OBSERVED live, 2026-08-24) confirms a real no-cost allowance for GPT-OSS models. Ranked
+    // right after Gemini specifically to address the Provider Pool review's "Gemini is the only
+    // vendor confirmed live" single-point-of-failure flag: a quota-exhausted or unreachable
+    // Gemini now fails over to another free seat before any paid vendor is ever asked.
+    model('reasoning', 'groq', 'workhorse', 1, 'Groq gpt-oss-120b — free tier, fast inference', GROQ_KEY),
+    model('reasoning', 'openai', 'frontier', 2, 'GPT frontier', OPENAI_KEY),
+    model('reasoning', 'openrouter', 'workhorse', 3, 'OpenRouter workhorse', OPENROUTER_KEY),
     // Cheapest paid reasoning seat in the catalogue (bf_research, OBSERVED $0.22/$0.66 per
     // million) — ranks below the free/already-cheap options above on cost alone, never on a
     // hardcoded preference.
-    model('reasoning', 'deepseek', 'workhorse', 3, 'DeepSeek workhorse — cheapest paid seat', DEEPSEEK_KEY),
-    floor('reasoning', 'compose-baseline', 4, 'composeBaseline — strategy derived from the profile'),
+    model('reasoning', 'deepseek', 'workhorse', 4, 'DeepSeek workhorse — cheapest paid seat', DEEPSEEK_KEY),
+    // Last-resort reachable provider: Cerebras (gpt-oss-120b) is the only
+    // vendor verified reachable from this environment when the higher-rank
+    // seats are quota-blocked or network-unreachable. Placed immediately before
+    // the deterministic floor so it is used only when every preferred seat fails.
+    model('reasoning', 'cerebras', 'workhorse', 5, 'Cerebras workhorse — reachable fallback', CEREBRAS_KEY),
+    floor('reasoning', 'compose-baseline', 6, 'composeBaseline — strategy derived from the profile'),
   ],
 
   structured_generation: [
     model('structured_generation', 'gemini', 'workhorse', 0, 'Native schema enforcement', GEMINI_KEY),
     model('structured_generation', 'openai', 'workhorse', 1, 'Native schema enforcement', OPENAI_KEY),
-    model('structured_generation', 'anthropic', 'workhorse', 2, 'Schema supplied in-prompt, validated locally', ANTHROPIC_KEY),
-    model('structured_generation', 'openrouter', 'workhorse', 3, 'Schema supplied in-prompt', OPENROUTER_KEY),
-    model('structured_generation', 'deepseek', 'workhorse', 4, 'Schema supplied in-prompt, validated locally — cheapest paid seat', DEEPSEEK_KEY),
+    // T05: console.groq.com/docs/structured-outputs (OBSERVED live, 2026-08-24) confirms strict
+    // json_schema support specifically for openai/gpt-oss-120b — genuinely native, not
+    // schema-in-prompt, and free — so it ranks with the native-schema group above, ahead of the
+    // instructed-mode vendors below.
+    model('structured_generation', 'groq', 'workhorse', 2, 'Native schema enforcement (strict json_schema) — free tier', GROQ_KEY),
+    model('structured_generation', 'anthropic', 'workhorse', 3, 'Schema supplied in-prompt, validated locally', ANTHROPIC_KEY),
+    model('structured_generation', 'openrouter', 'workhorse', 4, 'Schema supplied in-prompt', OPENROUTER_KEY),
+    model('structured_generation', 'deepseek', 'workhorse', 5, 'Schema supplied in-prompt, validated locally — cheapest paid seat', DEEPSEEK_KEY),
     // Speed-focused, not cost- or quality-focused: Cerebras's own catalog leaves per-model
     // pricing and structured-output support unpublished (bf_research flags it "not
     // deep-dived"). Placed last among paid candidates on purpose, pending a live call that
     // actually confirms schema compliance under instructed mode.
-    model('structured_generation', 'cerebras', 'workhorse', 5, 'Unverified pricing/schema compliance — last resort', CEREBRAS_KEY),
-    floor('structured_generation', 'reject-directive', 6, 'Discard the response and keep the deterministic value'),
+    model('structured_generation', 'cerebras', 'workhorse', 6, 'Unverified pricing/schema compliance — last resort', CEREBRAS_KEY),
+    floor('structured_generation', 'reject-directive', 7, 'Discard the response and keep the deterministic value'),
   ],
 
   prose_writing: [
     model('prose_writing', 'anthropic', 'workhorse', 0, 'Claude workhorse — prose a customer reads', ANTHROPIC_KEY),
     model('prose_writing', 'openai', 'workhorse', 1, 'GPT workhorse', OPENAI_KEY),
     model('prose_writing', 'gemini', 'workhorse', 2, 'Gemini workhorse — free allowance', GEMINI_KEY),
-    floor('prose_writing', 'compose-baseline', 3, 'Evidence-derived copy, no invented facts'),
+    // T05: a second free-tier fallback beside Gemini, before the paid/unverified seats below.
+    model('prose_writing', 'groq', 'workhorse', 3, 'Groq workhorse — free tier, fast inference', GROQ_KEY),
+    // Last-resort reachable provider: Cerebras is the only vendor verified
+    // reachable here when the preferred prose seats are down.
+    model('prose_writing', 'cerebras', 'workhorse', 4, 'Cerebras workhorse — reachable fallback', CEREBRAS_KEY),
+    floor('prose_writing', 'compose-baseline', 5, 'Evidence-derived copy, no invented facts'),
   ],
 
   creative_direction: [
@@ -181,7 +207,15 @@ export const SERVICE_BINDINGS: Readonly<Record<CapabilityId, readonly ServiceBin
     // V4 specifically as the cheap, divergent third territory generator — a different vendor
     // family from the three above, which is exactly what Design Battle needs.
     model('creative_direction', 'deepseek', 'frontier', 3, 'DeepSeek frontier — cheap, divergent battle seat', DEEPSEEK_KEY),
-    floor('creative_direction', 'derive-character', 4, 'deriveCharacter plus worlds.ts — a directive from the profile'),
+    // Groq has no `frontier`-class entry in models.ts either (gpt-oss-120b is catalogued as
+    // `workhorse`, same as Cerebras) — ranked ahead of Cerebras specifically because it carries
+    // a real, OBSERVED free allowance where Cerebras carries none.
+    model('creative_direction', 'groq', 'workhorse', 4, 'Groq workhorse — free tier, fast inference fallback', GROQ_KEY),
+    // Cerebras has no `frontier`-class entry in models.ts (gpt-oss-120b is
+    // catalogued as `workhorse`); wired in at the bottom of the paid tier
+    // rather than left out of this capability entirely.
+    model('creative_direction', 'cerebras', 'workhorse', 5, 'Cerebras workhorse — fast inference, unverified pricing', CEREBRAS_KEY),
+    floor('creative_direction', 'derive-character', 6, 'deriveCharacter plus worlds.ts — a directive from the profile'),
   ],
 
   enum_direction: [

@@ -23,8 +23,8 @@ import type { PoolMember } from '../../lib/factory/pool.js';
 
 const baseConfig: AiConfig = {
   provider: 'gemini',
-  apiKeys: { anthropic: '', openai: 'key', gemini: 'key', openrouter: '', xai: '', deepseek: '', cerebras: '' },
-  baseUrls: { anthropic: null, openai: null, gemini: null, openrouter: null, xai: null, deepseek: null, cerebras: null },
+  apiKeys: { anthropic: '', openai: 'key', gemini: 'key', openrouter: '', xai: '', deepseek: '', cerebras: '', groq: '' },
+  baseUrls: { anthropic: null, openai: null, gemini: null, openrouter: null, xai: null, deepseek: null, cerebras: null, groq: null },
   requestTimeoutMs: 300_000,
   maxRetries: 3,
   retryBaseDelayMs: 1_000,

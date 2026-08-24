@@ -40,13 +40,12 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 - **Acceptance criteria:** the acceptance test/manual run produces a live URL; `agents/lovableAgent.ts` is confirmed unreached in the default path by a grep or a test asserting it's never called.
 - **Next task:** T05.
 
-### T05 — Groq adapter
+### T05 — Groq adapter — DONE (this pass)
 - **Goal:** Groq is a second live-exercised free-tier worker, addressing the Gemini single-point-of-failure flag.
-- **Files:** `lib/capability/models.ts`, `lib/capability/invokers.ts`, `test/capability/models.test.ts`.
-- **Dependencies:** none — can run any time after T04, or in parallel.
-- **Implementation:** follow the existing adapter pattern (see how Cerebras or DeepSeek is wired as the closest analog — new vendor, no prior integration) — add model catalogue entries with honest `priceConfidence`, add the invoker, add capability bindings mirroring what Gemini is bound to (since Groq's intended role is as an alternate to Gemini's role, per Provider Pool Final).
-- **Tests:** extend `test/capability/models.test.ts`; add a live probe script `scripts/probe-groq.ts` mirroring the existing `scripts/probe-providers.ts` pattern.
-- **Acceptance criteria:** Groq appears in a `npm run capability-proof`-style live run; a forced-failover test (Gemini unavailable) proves Groq is reachable as a fallback.
+- **What shipped:** `lib/ai/providers/groq.ts` (xai.ts/deepseek.ts pattern, native strict `json_schema` for `openai/gpt-oss-120b` — OBSERVED live from Groq's own docs), registered through every touchpoint a new vendor requires (`AI_PROVIDER_NAMES`, `ADAPTERS`, `lib/config.ts`, `lib/capability/orchestrator.ts`, `lib/capability/visionInvoker.ts`, `lib/capability/models.ts`, `lib/factory/pool.ts`'s `FREE_TIER`, `lib/capability/bindings.ts`'s `reasoning`/`structured_generation`/`prose_writing`/`creative_direction`).
+- **Discovery:** `scripts/probe-providers.ts` already had a `groq` probe target (base URL, `GROQ_API_KEY`, an OpenAI-compatible dialect) predating this pass, with no adapter or registry entry behind it yet — reused as-is rather than duplicated; it independently confirms the base URL/dialect this adapter also uses.
+- **Tests:** `test/ai/groq-provider.test.ts` — see `docs/IMPLEMENTATION_GAP.md` P1-1/T05 for the full list (wiring, real fetch-stubbed request/response/timeout/failure, real planner fallback and budget-gating tests).
+- **Acceptance criteria:** met for everything reachable without a real credential — a live `npm run capability-proof`-style run and `scripts/probe-providers.ts --only=groq` need an actual `GROQ_API_KEY`, not available to this agent; the failover test (Gemini exhausted → Groq selected) is real, exercised code, not a live run.
 - **Next task:** T06.
 
 ### T06 — OpenRouter `:free` liveness probe

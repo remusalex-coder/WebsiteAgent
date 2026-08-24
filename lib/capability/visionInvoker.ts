@@ -35,8 +35,9 @@
  */
 
 import { ProviderRequestError } from '../errors.js';
-import { decodeStructured, postJson } from '../ai/protocol.js';
-import { toGeminiSchema } from '../ai/schema.js';
+import { decodeStructured, postJson, toOpenAIReasoningReserve } from '../ai/protocol.js';
+import { buildSchemaInstruction, toGeminiSchema } from '../ai/schema.js';
+import { toStrictSchema } from '../ai/providers/openai.js';
 
 import type { AiConfig } from '../config.js';
 import type { Logger } from '../logger.js';
@@ -56,9 +57,17 @@ export interface VisionImage {
 /** What the caller wants judged. Everything else comes from the plan step. */
 export interface VisionInvocation {
   /**
-   * The full instruction, including what shape the reply must take. Vision
-   * models are asked in prose here rather than through native schema
-   * enforcement on every vendor — Gemini gets both; see `VisionResult`.
+   * The substantive instruction — what to look at and how to judge it. What
+   * shape the reply must take is *not* this field's job to spell out: each
+   * transport enforces `schema` itself — natively for Gemini and OpenAI
+   * (`responseSchema` / `json_schema` + `strict`), appended as prose only
+   * for OpenRouter, whose routing can't guarantee every backend model
+   * supports native enforcement. A caller that pastes its own "respond
+   * matching the schema" line into this field is not wrong, exactly, but it
+   * is redundant for two of three vendors and, if it doesn't actually name
+   * the required top-level keys, is silently relying on the model reading
+   * one that was never sent — see `callOpenAICompatible`'s `json_object`→
+   * `json_schema` fix, 2026-08-20, for what that looked like in practice.
    */
   readonly prompt: string;
   readonly schema: JsonSchema;
@@ -138,13 +147,44 @@ async function callOpenAICompatible(
     provider === 'openai' ? 'https://api.openai.com/v1' : 'https://openrouter.ai/api/v1';
   const url = `${(baseUrl ?? defaultBase).replace(/\/+$/, '')}/chat/completions`;
 
-  const content: unknown[] = [{ type: 'text', text: request.prompt }];
+  // OpenAI gets native schema enforcement below (`json_schema` + `strict`),
+  // so its prompt text is untouched. OpenRouter's `response_format` only
+  // reaches upstreams that implement it — same reasoning as the text path's
+  // `lib/ai/providers/openrouter.ts` — so the schema is spelled out in the
+  // prompt instead, same as `systemWithSchema(request, false)` does there.
+  //
+  // This is also the fix for the second live-confirmed bug (2026-08-19):
+  // `json_object` mode only guarantees syntactically valid JSON, not any
+  // particular shape, and this request never sent the schema to the vendor
+  // at all — the model had nothing but `critic.ts`'s prose ("matching the
+  // required schema") to go on, which never names the top-level keys. Every
+  // real OpenAI vision critique came back missing `score`,
+  // `feelsArtDirectedVsAi`, and `criteriaScores`, failed `decodeStructured`'s
+  // validation, and degraded to the `uncertain` floor.
+  const promptText =
+    provider === 'openai' ? request.prompt : `${request.prompt}\n\n${buildSchemaInstruction(request.schema)}`;
+
+  const content: unknown[] = [{ type: 'text', text: promptText }];
   for (const image of request.images) {
     content.push({
       type: 'image_url',
       image_url: { url: `data:${image.mimeType};base64,${image.base64}`, detail: 'high' },
     });
   }
+
+  // OpenAI's newer reasoning-capable models (gpt-5.2 among them) reject
+  // `max_tokens` outright ("Unsupported parameter... Use
+  // 'max_completion_tokens'") — confirmed live, 2026-08-19: the vision
+  // critic degraded to `uncertain` on every real OpenAI call until this
+  // fix, because this hand-rolled request never got the same
+  // `max_completion_tokens` migration `lib/ai/providers/openai.ts`'s
+  // `maxCompletionTokensFor` already has for the text path. OpenRouter's
+  // gateway proxies many different backend models and has been observed
+  // accepting `max_tokens` — left unchanged rather than migrated on the
+  // strength of one vendor's fix.
+  const tokenField = provider === 'openai'
+    ? { max_completion_tokens: request.maxTokens + toOpenAIReasoningReserve('medium') }
+    : { max_tokens: request.maxTokens };
 
   const raw = (await postJson(provider, SOURCE, {
     url,
@@ -153,9 +193,19 @@ async function callOpenAICompatible(
     signal: request.signal,
     body: {
       model: modelId,
-      max_tokens: request.maxTokens,
+      ...tokenField,
       messages: [{ role: 'user', content }],
-      response_format: { type: 'json_object' },
+      response_format:
+        provider === 'openai'
+          ? {
+              type: 'json_schema',
+              json_schema: {
+                name: 'vision_critique',
+                strict: true,
+                schema: toStrictSchema(request.schema),
+              },
+            }
+          : { type: 'json_object' },
     },
   })) as { model?: unknown; choices?: readonly { message?: { content?: unknown } }[] };
 
@@ -235,6 +285,14 @@ export function createVisionInvoker(
           `[${SOURCE}] cerebras vision is not implemented — the adapter (lib/ai/providers/` +
             'cerebras.ts) is text-only so far; no vision request shape has been verified ' +
             'against a live call, and this module does not guess at one',
+        );
+      case 'groq':
+        throw new Error(
+          `[${SOURCE}] groq vision is not implemented — the adapter (lib/ai/providers/` +
+            'groq.ts) is text-only so far (Groq documents OCR/image recognition as a ' +
+            'separate feature from the GPT-OSS chat models this adapter targets); no ' +
+            'vision request shape has been verified against a live call, and this module ' +
+            'does not guess at one',
         );
     }
   };

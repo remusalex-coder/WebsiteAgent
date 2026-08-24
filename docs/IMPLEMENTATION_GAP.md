@@ -30,14 +30,11 @@ Strictly prioritized. P0 = blocks the factory end-to-end. P1 = needed for a real
 
 ## P1 — needed for the first real product
 
-### P1-1. Add a Groq adapter
-- **Gap:** highest-rated free-tier find in the research corpus, zero adapter code.
-- **Why:** directly addresses the "Gemini is the only vendor confirmed live" single-point-of-failure flag in the Provider Pool.
-- **Existing code to reuse:** the existing adapter pattern in `lib/capability/invokers.ts`/`models.ts` (same shape as the other 6 active vendors).
-- **Files:** `lib/capability/models.ts`, `lib/capability/invokers.ts`, `test/capability/models.test.ts`.
-- **Dependencies:** a Groq API key.
-- **Estimated complexity:** small — follows an established pattern.
-- **Acceptance criteria:** Groq appears in the capability-proof live run alongside Gemini; failover from Gemini to Groq is exercised by a test.
+### P1-1 / T05. Add a Groq adapter — DONE (this pass)
+- **What was built:** `lib/ai/providers/groq.ts`, following the exact three-step extension `lib/ai/providers/index.ts` documents (adapter file, `AI_PROVIDER_NAMES`, one line in `ADAPTERS`) and the xai.ts/deepseek.ts template. Registered end to end: `lib/config.ts` (`DEFAULT_MODELS.groq`, `GROQ_API_KEY`/`GROQ_BASE_URL`), `lib/capability/orchestrator.ts` (credential map), `lib/capability/visionInvoker.ts` (explicit not-implemented case, text-only), `lib/capability/models.ts` (catalog entry), `lib/factory/pool.ts` (`DEFAULT_MODELS.groq`, added to `FREE_TIER`), `lib/capability/bindings.ts` (added to `reasoning`, `structured_generation`, `prose_writing`, `creative_direction` — ranked as a second free option right after Gemini, or after the native-schema pair for `structured_generation`).
+- **Evidence, not assumption:** fetched live (2026-08-24) — `console.groq.com/docs/overview` (OpenAI-compatible base URL `api.groq.com/openai/v1`), `console.groq.com/docs/rate-limits` (OBSERVED real free tier: GPT-OSS models get 30 req/min, 1,000 req/day, 200,000 tokens/day on the no-cost Developer plan — the actual reason this addresses the single-point-of-failure flag), `console.groq.com/docs/structured-outputs` (OBSERVED native strict `json_schema` support, but only for `openai/gpt-oss-20b` and `openai/gpt-oss-120b` specifically — `defaultModel` is pinned to the 120b id for exactly this reason). Pricing is **not** from a primary source — `groq.com/pricing` is client-rendered and returned no rate table on a live fetch, the same gap this catalogue already documents for Cerebras — so the catalog's cost figures are a third-party-aggregated routing estimate only, correctly marked `priceConfidence: 'estimated'`, per the standing rule against promoting an unverified placeholder to a verified price.
+- **Tests:** `test/ai/groq-provider.test.ts` — wiring (registration, catalog, default model, real free allowance); real fetch-stubbed behavioural tests (request shape including strict `json_schema`, response normalization, a 5xx→retryable error, a 4xx→non-retryable error, a timeout); and two real planner tests — Gemini's allowance exhausted fails over to Groq rather than straight to a paid vendor (the literal "failover from Gemini to Groq" acceptance criterion), and Groq's own exhausted allowance is `unpriced-blocked` exactly like Cerebras's until `allowUnverifiedPricingFor` names it. `test/capability/models.test.ts`'s "Cerebras is the one estimated entry" test was updated to include Groq (a real, evidence-grounded change — Groq's pricing has the same unverified-primary-source gap, not a hidden bug).
+- **Not done in this pass:** a live call against a real `GROQ_API_KEY` (none available to this agent) — per this repository's own doctrine, an adapter's first real call is its test; that remains a manual/documented step, same status xai.ts/deepseek.ts already carry.
 
 ### P1-2. OpenRouter `:free` tier liveness probe
 - **Gap:** free-tier membership on OpenRouter is coded but not probed for actual availability before use.

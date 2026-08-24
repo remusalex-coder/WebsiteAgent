@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  MODEL_CATALOG,
   estimateCents,
   modelKey,
   resolveModel,
@@ -49,6 +50,27 @@ test('modelKey is stable and human-legible', () => {
   const model = resolveModel('gemini', 'workhorse');
   assert.ok(model);
   assert.equal(modelKey(model), `gemini:${model.id}`);
+});
+
+test('every catalogue entry declares a price confidence', () => {
+  for (const record of MODEL_CATALOG) {
+    assert.ok(
+      record.priceConfidence === 'observed' || record.priceConfidence === 'estimated',
+      `${record.provider}:${record.id} has no priceConfidence`,
+    );
+  }
+});
+
+test('Cerebras and Groq are the only catalogue entries marked estimated — their pricing is an unverified placeholder', () => {
+  // Both vendors' primary-source pricing pages returned no per-model rate
+  // table on a live fetch (Cerebras: inference-docs.cerebras.ai; Groq:
+  // groq.com/pricing is client-rendered) — the same gap, not a coincidence.
+  // Every other catalogue entry's price is OBSERVED from a primary source.
+  const observedOnly = MODEL_CATALOG.filter((record) => record.priceConfidence !== 'observed');
+  assert.deepEqual(
+    observedOnly.map((record) => `${record.provider}:${record.id}`).sort(),
+    ['cerebras:gpt-oss-120b', 'groq:openai/gpt-oss-120b'].sort(),
+  );
 });
 
 test('supportsVision reflects the declared modalities', () => {

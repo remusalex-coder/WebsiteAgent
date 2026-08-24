@@ -61,6 +61,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: { requestsPerDay: 20, requestsPerMinute: 2 },
     licence: 'free-tier-unverified',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'gemini-3.6-flash',
@@ -74,6 +75,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: { requestsPerDay: 20, requestsPerMinute: 5 },
     licence: 'free-tier-unverified',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'gemini-3.6-flash-lite',
@@ -87,6 +89,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: { requestsPerDay: 20, requestsPerMinute: 15 },
     licence: 'free-tier-unverified',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'gemini-3.6-flash',
@@ -100,6 +103,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: { requestsPerDay: 20, requestsPerMinute: 5 },
     licence: 'free-tier-unverified',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
 
   /* ------------------------- OpenAI ------------------------- */
@@ -115,6 +119,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'gpt-5.2',
@@ -128,6 +133,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'gpt-5.2-mini',
@@ -141,6 +147,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'gpt-5.2',
@@ -154,6 +161,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'text-embedding-3-small',
@@ -167,6 +175,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
 
   /* ------------------------ Anthropic ----------------------- */
@@ -182,6 +191,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'claude-sonnet-5',
@@ -195,6 +205,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
   {
     id: 'claude-sonnet-5',
@@ -208,6 +219,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
 
   /* ------------------------ OpenRouter ---------------------- */
@@ -223,6 +235,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'other',
+    priceConfidence: 'observed',
   },
   {
     // Verified live, 2026-08-19: `deepseek/deepseek-chat:free` 404s with
@@ -254,6 +267,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: { requestsPerDay: 20, requestsPerMinute: 20 },
     licence: 'free-tier-unverified',
     jurisdiction: 'other',
+    priceConfidence: 'observed',
   },
 
   /* --------------------------- xAI (Grok) --------------------------- */
@@ -275,6 +289,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'observed',
   },
 
   /* --------------------------- DeepSeek --------------------------- */
@@ -295,6 +310,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'other',
+    priceConfidence: 'observed',
   },
   // deepseek-v4-pro: the frontier tier, same source. $0.66/$1.98 per million in/out (off-peak).
   {
@@ -309,6 +325,7 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'other',
+    priceConfidence: 'observed',
   },
 
   /* --------------------------- Cerebras --------------------------- */
@@ -317,7 +334,8 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
   // cerebras.ai/pricing nor the inference docs publish a per-model rate on a static page, and
   // bf_research's own catalog flags Cerebras as "not deep-dived" for the same reason. The cost
   // figures below are a rough, explicitly-unverified placeholder for ranking only — re-check
-  // before ever raising `allowPaid` for this vendor. `freeAllowance: null` because the
+  // before ever raising `allowPaid` for this vendor, hence `priceConfidence: 'estimated'`, the
+  // one entry in this catalogue that isn't. `freeAllowance: null` because the
   // observed "$5 free trial credit" is a wallet balance, not a `{requestsPerDay,
   // requestsPerMinute}` allowance — it doesn't fit this field's shape and isn't claimed as one.
   {
@@ -332,6 +350,38 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     freeAllowance: null,
     licence: 'commercial-api',
     jurisdiction: 'us',
+    priceConfidence: 'estimated',
+  },
+
+  /* ----------------------------- Groq ------------------------------ */
+  // Free tier OBSERVED live from console.groq.com/docs/rate-limits
+  // (2026-08-24): GPT-OSS models get 30 requests/minute, 1,000 requests/day,
+  // 8,000 tokens/minute, 200,000 tokens/day on the no-cost Developer plan —
+  // the second genuinely-free worker this catalogue carries besides Gemini,
+  // addressing the Provider Pool review's "Gemini is the only vendor
+  // confirmed live" single-point-of-failure flag. `structuredOutput:
+  // 'native'` because console.groq.com/docs/structured-outputs (fetched
+  // live, 2026-08-24) confirms strict json_schema support specifically for
+  // this model id. Pricing is NOT from a primary source — groq.com/pricing
+  // is a client-rendered page that returned no rate table on a live fetch,
+  // the same shape of gap this catalogue already documents for Cerebras —
+  // so these are a third-party-aggregated (aipricing.guru, 2026-08-24)
+  // routing estimate only, hence `priceConfidence: 'estimated'`, not
+  // 'observed'. Re-verify against Groq's own docs before this figure is
+  // ever load-bearing for a real spend decision.
+  {
+    id: 'openai/gpt-oss-120b',
+    provider: 'groq',
+    modelClass: 'workhorse',
+    modalities: TEXT,
+    structuredOutput: 'native',
+    contextTokens: 131_000,
+    centsPerMillionInput: 15,
+    centsPerMillionOutput: 60,
+    freeAllowance: { requestsPerDay: 1_000, requestsPerMinute: 30 },
+    licence: 'free-tier-unverified',
+    jurisdiction: 'us',
+    priceConfidence: 'estimated',
   },
 ];
 

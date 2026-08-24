@@ -322,6 +322,7 @@ function credentialSet(config: AppConfig, env: NodeJS.ProcessEnv): ReadonlySet<s
     xai: 'XAI_API_KEY',
     deepseek: 'DEEPSEEK_API_KEY',
     cerebras: 'CEREBRAS_API_KEY',
+    groq: 'GROQ_API_KEY',
   };
   for (const provider of CATALOGUED_PROVIDERS) {
     if (config.ai.apiKeys[provider] !== '') present.add(providerKeys[provider]);

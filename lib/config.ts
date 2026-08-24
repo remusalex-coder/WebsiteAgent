@@ -7,9 +7,11 @@
 
 import path from 'node:path';
 
+import { BUDGET_TIERS } from './capability/budget.js';
 import { InvalidInputError } from './errors.js';
 
 import type { AIProviderName } from './ai/types.js';
+import type { BudgetTier } from './capability/budget.js';
 
 const SOURCE = 'config';
 
@@ -216,6 +218,24 @@ export interface LovableConfig {
 }
 
 /**
+ * The deploy target that replaced the Lovable stub.
+ *
+ * Netlify's "Drop" deploy: a site is created (or an existing `siteId` reused)
+ * and its `dist/` zip is uploaded via the Deploy API. No Lovable account,
+ * no JSX prompt round-trip — the rendered `RenderedFile[]` is uploaded
+ * verbatim, so what ships is exactly what `renderSite` produced. The key is
+ * the switch: empty `NETLIFY_DEPLOY_TOKEN` means deploy is skipped, the same
+ * "key present = run, absent = skip" discipline `PlacesConfig` already uses.
+ */
+export interface NetlifyConfig {
+  /** `NETLIFY_DEPLOY_TOKEN`. Empty disables deploy. */
+  readonly apiKey: string;
+  /** Reuse an existing site instead of creating one. `NETLIFY_SITE_ID`. */
+  readonly siteId: string | null;
+  readonly deployTimeoutMs: number;
+}
+
+/**
  * The Google Places API, used as a content source.
  *
  * **The key is the switch.** There is no separate enable flag, deliberately:
@@ -262,7 +282,21 @@ export interface AppConfig {
   readonly director: DirectorConfig;
   readonly vision: VisionConfig;
   readonly lovable: LovableConfig;
+  /** Deploy target that replaced the Lovable stub (Netlify Drop API). */
+  readonly netlify: NetlifyConfig;
   readonly experienceEngine: 'signature' | 'template';
+  /** `BF_BUDGET_TIER`. Governs whether — and how much — a run may spend. */
+  readonly budgetTier: BudgetTier;
+  /** `BF_BUDGET_CENTS`. Only meaningful for `budgetTier: 'tier3'`. */
+  readonly budgetCustomCents: number | null;
+  /**
+   * `BF_ALLOW_CEREBRAS_SPEND`. Cerebras's catalog pricing is unverified
+   * (`priceConfidence: 'estimated'`), so it is excluded from every chain by
+   * default regardless of budget tier. This flag is the explicit, scoped
+   * "someone said so" that lets Cerebras spend anyway — it authorizes only
+   * Cerebras, never any other unverified-price provider.
+   */
+  readonly allowCerebrasSpend: boolean;
 }
 
 /** Applied wherever the environment leaves a value unset. */
@@ -336,6 +370,11 @@ export const DEFAULTS = {
     baseUrl: 'https://api.lovable.dev',
     deployTimeoutMs: 300_000,
   },
+  netlify: {
+    deployTimeoutMs: 300_000,
+  },
+  budgetTier: 'tier0' as const,
+  allowCerebrasSpend: false,
 } as const;
 
 /**
@@ -348,7 +387,7 @@ export const DEFAULTS = {
  */
 export const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   anthropic: 'claude-opus-5',
-  openai: 'gpt-5',
+  openai: 'gpt-4o',
   // Not `gemini-2.5-pro`: the 2.5 family is no longer served to accounts
   // created after mid-2026 (404 "no longer available to new users"), and Pro
   // lost its free tier in April 2026. A flash model on the free tier is the
@@ -368,6 +407,12 @@ export const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   // (inference-docs.cerebras.ai, OBSERVED 2026-08-19). Never selected under
   // the zero-budget-by-default capability policy without an explicit override.
   cerebras: 'gpt-oss-120b',
+  // Real free tier (console.groq.com/docs/rate-limits, OBSERVED 2026-08-24:
+  // 30 req/min, 1,000 req/day, 200,000 tokens/day for GPT-OSS models on the
+  // no-cost Developer plan). openai/gpt-oss-120b is one of exactly two
+  // models Groq documents strict json_schema support for — see
+  // lib/ai/providers/groq.ts.
+  groq: 'openai/gpt-oss-120b',
 };
 
 /**
@@ -408,6 +453,17 @@ function bool(env: NodeJS.ProcessEnv, key: string, fallback: boolean): boolean {
 function int(env: NodeJS.ProcessEnv, key: string, fallback: number, min = 1): number {
   const raw = env[key]?.trim();
   if (!raw) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < min) {
+    throw new InvalidInputError(`${key} must be a number >= ${min}, got "${raw}"`, SOURCE);
+  }
+  return Math.floor(parsed);
+}
+
+/** Like `int`, but `null` when unset rather than a required fallback. */
+function optionalInt(env: NodeJS.ProcessEnv, key: string, min = 1): number | null {
+  const raw = env[key]?.trim();
+  if (!raw) return null;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed < min) {
     throw new InvalidInputError(`${key} must be a number >= ${min}, got "${raw}"`, SOURCE);
@@ -569,6 +625,20 @@ function effort(env: NodeJS.ProcessEnv, key: string, fallback: Effort): Effort {
   return match;
 }
 
+function budgetTier(env: NodeJS.ProcessEnv, key: string, fallback: BudgetTier): BudgetTier {
+  const raw = env[key]?.trim().toLowerCase();
+  if (!raw) return fallback;
+
+  const match = BUDGET_TIERS.find((tier) => tier === raw);
+  if (!match) {
+    throw new InvalidInputError(
+      `${key} must be one of ${BUDGET_TIERS.join(', ')}, got "${raw}"`,
+      SOURCE,
+    );
+  }
+  return match;
+}
+
 function logLevel(env: NodeJS.ProcessEnv): LogLevel {
   const raw = str(env, 'LOG_LEVEL', DEFAULTS.logLevel).toLowerCase();
   const match = LOG_LEVELS.find((level) => level === raw);
@@ -620,6 +690,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         xai: str(env, 'XAI_API_KEY', ''),
         deepseek: str(env, 'DEEPSEEK_API_KEY', ''),
         cerebras: str(env, 'CEREBRAS_API_KEY', ''),
+        groq: str(env, 'GROQ_API_KEY', ''),
       },
       baseUrls: {
         anthropic: optional(env, 'ANTHROPIC_BASE_URL'),
@@ -629,6 +700,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         xai: optional(env, 'XAI_BASE_URL'),
         deepseek: optional(env, 'DEEPSEEK_BASE_URL'),
         cerebras: optional(env, 'CEREBRAS_BASE_URL'),
+        groq: optional(env, 'GROQ_BASE_URL'),
       },
       requestTimeoutMs: int(env, 'AI_REQUEST_TIMEOUT_MS', DEFAULTS.ai.requestTimeoutMs),
       maxRetries: int(env, 'AI_MAX_RETRIES', DEFAULTS.ai.maxRetries, 0),
@@ -689,6 +761,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       projectId: optional(env, 'LOVABLE_PROJECT_ID'),
       deployTimeoutMs: int(env, 'LOVABLE_DEPLOY_TIMEOUT_MS', DEFAULTS.lovable.deployTimeoutMs),
     },
+    netlify: {
+      apiKey: str(env, 'NETLIFY_DEPLOY_TOKEN', ''),
+      siteId: optional(env, 'NETLIFY_SITE_ID'),
+      deployTimeoutMs: int(env, 'NETLIFY_DEPLOY_TIMEOUT_MS', DEFAULTS.netlify.deployTimeoutMs),
+    },
     experienceEngine: str(env, 'EXPERIENCE_ENGINE', DEFAULTS.experienceEngine) === 'template' ? 'template' : 'signature',
+    budgetTier: budgetTier(env, 'BF_BUDGET_TIER', DEFAULTS.budgetTier),
+    budgetCustomCents: optionalInt(env, 'BF_BUDGET_CENTS', 1),
+    allowCerebrasSpend: bool(env, 'BF_ALLOW_CEREBRAS_SPEND', DEFAULTS.allowCerebrasSpend),
   };
 }

@@ -54,10 +54,22 @@ const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   xai: 'grok-4.6',
   deepseek: 'deepseek-v4-flash',
   cerebras: 'gpt-oss-120b',
+  groq: 'openai/gpt-oss-120b',
 };
 
-/** Vendors with a free tier — the €0 default pool. */
-const FREE_TIER: readonly AIProviderName[] = ['gemini'];
+/**
+ * Vendors with a free tier — the €0 default pool.
+ *
+ * `groq` joins `gemini` here (T05): console.groq.com/docs/rate-limits
+ * (OBSERVED live, 2026-08-24) confirms a real, no-cost Developer-plan
+ * allowance for GPT-OSS models (30 req/min, 1,000 req/day) — this is a
+ * genuinely free second worker, not a paid vendor being widened into the
+ * zero-cost default, so it fits this list's own invariant. It directly
+ * addresses the Provider Pool review's "Gemini is the only vendor confirmed
+ * live" single-point-of-failure flag: a role that names no explicit `BF_POOL`
+ * now fans out over two independent free vendors instead of one.
+ */
+const FREE_TIER: readonly AIProviderName[] = ['gemini', 'groq'];
 
 export interface PoolMember {
   readonly role: PoolRole;
