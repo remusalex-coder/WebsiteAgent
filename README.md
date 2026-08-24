@@ -7,12 +7,40 @@ Autonomous website builder. One Google Maps URL in, one deployed website out.
 > Executive Dashboard. This README covers running the code; the HQ covers why it
 > is the way it is.
 
-**Status: stages 1–5b and the renderer implemented; stage 6 is a stub.**
-Stages 1–3 are verified against live sites. **Stages 4 and 5 have never executed
-against a real model** — they are built, typechecked and unit-tested, and their
-first live call is the current milestone.
+**Status: BusinessForge 2.0 Autonomous Experience Factory (V1) is live and verified.**
+Legacy stages 1–5b and the renderer are preserved for backwards compatibility. The new Experience Signature factory in `lib/forge/` delivers Awwwards-grade digital experiences directly from Instagram, Google Maps, or Website URLs.
 
-## Pipeline
+## BusinessForge 2.0 — Autonomous Experience Factory
+
+```
+URL (Instagram / Maps / Web)
+  -> 1. Sourcing & Evidence Harvesting    (lib/forge/research.ts)   [verified live]
+  -> 2. Factual Firewall & Grounding      (lib/forge/grounding.ts)  [verified live]
+  -> 3. Creative Territories & Signature  (lib/forge/signature.ts)  [verified live]
+  -> 4. Experience Blueprint Compilation  (lib/forge/blueprint.ts)  [verified live]
+  -> 5. Two-Pass Autonomous Frontend     (lib/forge/builder.ts)    [verified live]
+  -> 6. Anti-AI-Generic Gate              (lib/forge/anti-ai-gate.ts)[verified live]
+  -> 7. Playwright Headless Settle & Snap (lib/forge/browser.ts)    [verified live]
+  -> 8. Multi-Modal Vision QA Critic      (lib/forge/critic.ts)     [verified live]
+  -> 9. Autonomous Code Repair Loop       (lib/forge/repair.ts)     [verified live]
+  -> 10. Auto Live Browser Launch         (lib/forge/preview.ts)    [verified live]
+```
+
+### Quick Start (Autonomous Experience Factory)
+
+```bash
+# Run on Instagram URL or Web URL
+npm run forge -- "https://www.instagram.com/river.park.events/"
+
+# Run on Bakery benchmark
+npm run forge -- "https://go-sweet.ro"
+```
+
+Full technical reference: [docs/EXPERIENCE_SIGNATURE_PIPELINE.md](docs/EXPERIENCE_SIGNATURE_PIPELINE.md) and [lib/forge/README.md](lib/forge/README.md).
+
+---
+
+## Legacy Pipeline (Deterministic Renderer)
 
 ```
 mapsUrl
@@ -35,7 +63,10 @@ failed deploy never means re-scraping.
 
 Underneath the pipeline sits a **capability platform**: pluggable AI providers, skills
 and MCP servers. Agents ask it for what they need and never learn how it is provided —
-see [docs/architecture.md](docs/architecture.md).
+see [docs/architecture.md](docs/architecture.md) for the platform layer specifically, or
+[docs/BUSINESSFORGE_FINAL_ARCHITECTURE.md](docs/BUSINESSFORGE_FINAL_ARCHITECTURE.md) and
+[docs/MASTER_INVENTORY.json](docs/MASTER_INVENTORY.json) for the current whole-system
+architecture (Forge, Hermes, Design Director, capability router included).
 
 Beside the design stage sits the **experience system** — the layer that makes each site
 feel conceived for its business rather than styled from a template. It reads the
@@ -350,7 +381,9 @@ board should show.
 `platform.describe()` gives a credential-free summary safe to log: it reports which
 credential variable **names** are set, never their values.
 
-Full detail: [docs/](docs/) — [architecture](docs/architecture.md),
+Full detail: [docs/](docs/) — [current architecture](docs/BUSINESSFORGE_FINAL_ARCHITECTURE.md)
+([machine-readable inventory](docs/MASTER_INVENTORY.json)),
+[platform-layer architecture (superseded, capability-platform section only)](docs/architecture.md),
 [providers](docs/providers.md), [skills](docs/skills.md), [MCP](docs/mcp.md),
 [capability orchestration](docs/capability-orchestration.md),
 [configuration](docs/configuration.md), [developer guide](docs/developer-guide.md).

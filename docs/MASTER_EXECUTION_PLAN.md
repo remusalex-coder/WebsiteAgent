@@ -6,13 +6,13 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 
 ---
 
-### T01 — Rename and wire the stage ledger
+### T01 — Rename and wire the stage ledger — DONE (commit `c86330a`), implemented differently than planned
 - **Goal:** every `stage.ts` stage completion produces a real ledger entry.
-- **Files:** `lib/workflow/ledger.ts` → rename to `lib/workflow/stageLedger.ts`; update its own test file's import path; `scripts/n8n/stage.ts` (add a call after each stage handler resolves).
-- **Dependencies:** none.
-- **Implementation:** rename the file (git mv), fix the import in its test, then in `stage.ts` add one call per stage handler completion: `await recordStageEntry(jobId, stageName, inputHash, outputRef)` (function name/signature per what `stageLedger.ts` already exports — do not redesign its API, just call it).
-- **Tests:** extend `test/workflow/*` (or add `test/workflow/stageLedger-integration.test.ts`) asserting a full job run through `stage.ts` produces one ledger entry per stage with a non-empty input hash and output reference.
-- **Acceptance criteria:** new integration test passes; existing `ledger.ts`/`stageLedger.ts` unit tests still pass unmodified in substance (path updated only).
+- **Original plan (below, kept for history — NOT what was actually built):** rename `lib/workflow/ledger.ts` → `lib/workflow/stageLedger.ts`, update its test's import path, add a `recordStageEntry` call after each `stage.ts` stage handler resolves.
+- **Correction — what was actually built:** on inspection, `lib/workflow/ledger.ts` was NOT the input/output content-addressing module this task assumed. It is a different, already-correctly-scoped module — the retry/rebuild/reconcept counters Hermes's ceiling checks read (`ARCHITECTURE_FREEZE.md` §F-04) — and renaming or repurposing it would have broken that real, unrelated usage. No `git mv` happened; `ledger.ts` is untouched. The actual stage-persistence gap was in `lib/workflow/hashes.ts` (`AddressedStage`/`shouldSkip`, previously tested in isolation but never persisted). Fixed there instead: added `StageLedger`/`recordStage`/`loadStageLedger` (atomic write, in-process lock, same pattern as `candidates.ts`'s index file) to `hashes.ts`, and wired `recordStage` into `runStage`'s single dispatch point — every real stage completion or failure gets one merged ledger entry, without touching any of the 22 case bodies individually. See `docs/IMPLEMENTATION_GAP.md` P0-1 for the fuller writeup.
+- **Files actually touched:** `lib/workflow/hashes.ts`, `scripts/n8n/stage.ts` (single `recordStage` call at the `runStage` dispatch point).
+- **Tests:** `test/workflow/hashes.test.ts`, `test/workflow/stageLedgerWiring.test.ts` — full job run through `stage.ts` produces one ledger entry per stage with a non-empty input hash and output reference.
+- **Acceptance criteria:** met — same tests above.
 - **Next task:** T02.
 
 ### T02 — Skip-unchanged-stage resume — DONE (commit `b6da711` + follow-up)

@@ -2,6 +2,15 @@
 
 _Last updated: 2026-08-06._
 
+> **⚠ SUPERSEDED (2026-08-24).** This document describes the original six-agent
+> classic pipeline and predates Forge (`lib/forge/`), Hermes, the Design Director,
+> and the capability router's current 31-binding form. It is kept because the
+> **capability platform** section below (Platform/AI providers/skills/MCP) is still
+> largely accurate for that subsystem specifically. For the current, whole-system
+> architecture, start at `docs/BUSINESSFORGE_FINAL_ARCHITECTURE.md` and
+> `docs/MASTER_INVENTORY.json` (machine-readable). See `docs/IMPLEMENTATION_GAP.md`
+> and `docs/MASTER_EXECUTION_PLAN.md` for what has actually been built and verified.
+
 BusinessForge is a pipeline of six single-responsibility agents sitting on top of a
 platform of pluggable capabilities. The two halves are deliberately separate, and the
 line between them is the point of the whole design.
