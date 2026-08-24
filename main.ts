@@ -29,10 +29,17 @@ import { loadConfig } from './lib/config.js';
 import { createConsoleSink, createFileSink, createLogger, createMultiSink } from './lib/logger.js';
 import { createBrowserSession } from './lib/browser.js';
 import { createPlatform } from './lib/platform/platform.js';
+import { resolveBudgetTier } from './lib/capability/budget.js';
+import { shouldAttemptEnhance } from './lib/forge/decide.js';
+import { writeCostReport } from './lib/cost/report.js';
+import { loadJob, saveJob } from './lib/workflow/jobState.js';
 import { renderSite, writeRenderedSite } from './lib/render/index.js';
 import { brandSeedFor } from './lib/art/seed.js';
 import { composeDesign } from './lib/design/compose.js';
 import { planNarrative } from './lib/design/plan.js';
+import { resolvePrimitives } from './lib/design/experienceRegistry.js';
+import { directiveRuntimePrimitiveIds } from './lib/design/directive.js';
+import { NEUTRAL_ARCHITECTURE } from './lib/design/experience.js';
 import { directContent, auditContent } from './lib/content/index.js';
 import { AgentError, InvalidInputError } from './lib/errors.js';
 
@@ -52,6 +59,8 @@ import type {
 } from './lib/types.js';
 import type { NarrativePlan } from './lib/design/plan.js';
 import type { ContentAudit } from './lib/content/index.js';
+import type { RuntimePrimitiveId } from './lib/design/experience.js';
+import type { JobStage } from './lib/workflow/jobState.js';
 
 const SOURCE = 'main';
 
@@ -106,6 +115,10 @@ async function createRun(config: AppConfig, runId: string): Promise<Run> {
     logger,
     signal: controller.signal,
     outputDir,
+    capabilityPolicy: {
+      ...resolveBudgetTier(config.budgetTier, config.budgetCustomCents ?? undefined),
+      ...(config.allowCerebrasSpend ? { allowUnverifiedPricingFor: ['cerebras'] as const } : {}),
+    },
   });
 
   return {
@@ -188,6 +201,15 @@ const STAGES = [
   'direct',
   'design',
   'render',
+  // 5c. The Experience Signature enhancement pass (`lib/forge/orchestrator.ts`).
+  // Off unless `experienceEngine === 'signature' && budgetTier !== 'tier0'`
+  // (`lib/forge/decide.ts:shouldAttemptEnhance`), and a no-op when off — the
+  // stage still runs, records that it did not attempt, and `site/` keeps
+  // exactly what `render` just wrote. When attempted, it either replaces
+  // `site/` with Forge's build (verdict PASS) or leaves `render`'s
+  // deterministic output in place (verdict FAIL) — always recorded, never a
+  // silent overwrite.
+  'enhance',
   'deploy',
 ] as const;
 
@@ -208,6 +230,13 @@ const ARTIFACTS = {
   direct: '5a-directive',
   design: '5b-design',
   render: null,
+  // `enhance` persists whether it ran and what shipped, but never re-derives
+  // `site/` from this artifact the way `deploy` never re-derives it from
+  // `render`'s (nonexistent) one — `site/` is always a side effect of
+  // actually running `render` (and then, maybe, `enhance`), not something
+  // resumed from JSON. `--from=enhance` re-runs `render` first for exactly
+  // this reason (see the `enhance` step below).
+  enhance: '5c-experience',
   deploy: '6-deployment',
 } as const satisfies Record<StageName, string | null>;
 
@@ -230,6 +259,11 @@ const ARTIFACT_KEYS = {
   direct: ['directive', 'provenance'],
   design: ['version', 'tokens', 'layout'],
   render: [],
+  // `attempted`/`shipped` are both present even when the enhance stage never
+  // attempted a build: the artifact then records why, the same "off is
+  // legible, not ambiguous with never-existed" contract `direct`/`directive`
+  // already established.
+  enhance: ['attempted', 'shipped'],
   deploy: ['projectId', 'status'],
 } as const satisfies Record<StageName, readonly string[]>;
 
@@ -269,12 +303,38 @@ const ARTIFACT_DEFAULTS = {
   direct: { directive: null, provenance: null },
   design: {},
   render: {},
+  enhance: { attempted: false, shipped: false },
   deploy: {},
 } as const satisfies Record<StageName, Readonly<Record<string, unknown>>>;
 
 function isStageName(value: string): value is StageName {
   return (STAGES as readonly string[]).includes(value);
 }
+
+/**
+ * Maps this pipeline's own stage vocabulary onto `jobState.ts`'s `JobStage`.
+ *
+ * T03 (Consolidation Map / Master Execution Plan): a classic CLI run must
+ * feed the one canonical `JobState`, not invent a second job-state model.
+ * The two vocabularies do not line up one-to-one — this pipeline's nine
+ * stages are the direct/local invocation path, `JobStage`'s seventeen values
+ * describe the production (`scripts/n8n/stage.ts`) pipeline's finer-grained
+ * loop — so this is a deliberate best-fit by what each classic stage
+ * actually produces, not a renumbering. `render` has no entry because it is
+ * never `step()`'d on its own (see `ARTIFACTS.render`'s doc comment above);
+ * it is folded into `enhance`'s produce() and reported under `'build'`.
+ */
+const STAGE_TO_JOB_STAGE: Record<Exclude<StageName, 'render'>, JobStage> = {
+  discovery: 'evidence',
+  collect: 'evidence',
+  normalize: 'evidence',
+  analyze: 'character',
+  write: 'content',
+  direct: 'creative',
+  design: 'design',
+  enhance: 'build',
+  deploy: 'delivery',
+};
 
 /** Reads a stage's persisted artifact back, checking it is that stage's. */
 async function readArtifact<T>(outputDir: string, stage: StageName): Promise<T> {
@@ -334,8 +394,31 @@ const SITE_DIR_NAME = 'site';
  * same `renderSite`, so what ships is byte-identical to what lands here, and a
  * site can be inspected locally before anything is published.
  */
-async function renderStage(run: Run, content: WebsiteContent, design: WebsiteDesign): Promise<string> {
-  const site = renderSite(content, { design });
+/**
+ * Renders and writes the site.
+ *
+ * `runtimePrimitives` is the Creative Director's selection, already run
+ * through `resolvePrimitives` (registry-validated, budget-capped) at the
+ * call site in `executePipeline` — never trusted again here. Defaults to
+ * `[]`, which is what every call before this parameter existed passed
+ * implicitly: `renderSite(content, { design })` with no `runtime`/
+ * `runtimePrimitives` keys at all, byte-identical output. `runtime` only
+ * ever engages when the resolved list is non-empty — an empty list (director
+ * off, or a directive that requested nothing) never adds `data-runtime` to
+ * the page, exactly as before this parameter existed.
+ */
+async function renderStage(
+  run: Run,
+  content: WebsiteContent,
+  design: WebsiteDesign,
+  runtimePrimitives: readonly RuntimePrimitiveId[] = [],
+  location: { readonly lat: number; readonly lng: number } | null = null,
+): Promise<string> {
+  const site = renderSite(content, {
+    design,
+    ...(runtimePrimitives.length > 0 ? { runtime: 'scroll-progress' as const, runtimePrimitives } : {}),
+    ...(location !== null ? { location } : {}),
+  });
   for (const warning of site.warnings) {
     run.logger.warn('renderer degraded a field', { warning });
   }
@@ -374,16 +457,25 @@ async function executePipeline(
   const run = await createRun(config, runId);
   const firstIndex = STAGES.indexOf(from);
 
-  /** Runs a stage and persists it, or loads what an earlier run left behind. */
-  async function step<T>(name: StageName, produce: () => Promise<T>): Promise<T> {
+  /**
+   * Runs a stage and persists it, or loads what an earlier run left behind —
+   * and either way, records the `JobState` this run has reached (T03). This
+   * is the persisted job identity's only writer in this pipeline: whether a
+   * stage actually ran or was resumed from disk, `job.json` moves forward
+   * with it, so a `main.ts` run is loadable by id and shows up in job
+   * history exactly like an n8n-triggered one, per the Consolidation Map.
+   */
+  async function step<T>(name: Exclude<StageName, 'render'>, produce: () => Promise<T>): Promise<T> {
     if (STAGES.indexOf(name) < firstIndex) {
       const loaded = await readArtifact<T>(run.outputDir, name);
       run.logger.info('stage loaded from artifacts', { stage: name });
+      await saveJob(run.outputDir, { stage: STAGE_TO_JOB_STAGE[name] });
       return loaded;
     }
     const value = await produce();
     const base = ARTIFACTS[name];
     if (base !== null) await persistStage(run, base, value);
+    await saveJob(run.outputDir, { stage: STAGE_TO_JOB_STAGE[name] });
     return value;
   }
 
@@ -392,6 +484,14 @@ async function executePipeline(
     from,
     mapsUrl: input.mapsUrl,
   });
+
+  // Ensures a persisted JobState exists (or is already there, on resume)
+  // before the first stage runs. `business` is set once here from the Maps
+  // URL, since it is a readonly identity field on JobState and a business
+  // name is not known until `normalize` — the same "identify by input, not
+  // by a fact only discovered later" pattern `createJob`'s own callers use
+  // elsewhere in the codebase.
+  await saveJob(run.outputDir, { jobId: runId, business: input.mapsUrl, maxIter: 3 });
 
   try {
     const discovery = await step('discovery', () =>
@@ -430,18 +530,43 @@ async function executePipeline(
     });
 
     /*
-     * Stage 5a. The only model call in the design path, and the only stage
-     * that is off by default.
+     * Whether the Experience Signature enhancement pass (`lib/forge/`) will
+     * be attempted for this run — decided once, up front, because both the
+     * cheap Director step below and the `enhance` step near the end need to
+     * agree on it. `shouldAttemptEnhance` (`lib/forge/decide.ts`) is the same
+     * function `scripts/benchmark-10.ts` calls, so the benchmark harness and
+     * this pipeline can never silently disagree about when Forge runs the
+     * way they used to.
+     */
+    const attemptEnhance = shouldAttemptEnhance(config.experienceEngine, config.budgetTier);
+
+    /*
+     * Stage 5a. The only model call in the design path when the enhance
+     * stage will not also run, and the only stage that is off by default.
      *
      * It runs as a `step` even when disabled, so the artifact exists either
      * way and records which it was. A run whose `5a-directive.json` says
      * `"enabled": false` is legible; a run with no file at all is ambiguous
      * between "the director was off" and "this ran before the director
      * existed".
+     *
+     * Skipped whenever `attemptEnhance` is true: `lib/forge/signature.ts`'s
+     * territory-and-signature step is a grounded, richer superset of what
+     * this single-prompt Director produces, and only one of the two designs
+     * ends up shipping (`enhance` below either replaces `design`'s output
+     * entirely or leaves it as the fallback) — paying for a directive that
+     * gets discarded whenever the enhance pass succeeds is pure waste. If the
+     * enhance pass then fails or is skipped mid-run, this run simply does not
+     * get the Director's cheap enhancement either for that run; re-run with
+     * `--from=direct` after disabling the enhance engine to get it.
      */
     const directed = await step('direct', async () => {
-      if (!config.director.enabled) {
-        run.logger.info('design director skipped', { reason: 'DIRECTOR_ENABLED is false' });
+      if (!config.director.enabled || attemptEnhance) {
+        run.logger.info('design director skipped', {
+          reason: !config.director.enabled
+            ? 'DIRECTOR_ENABLED is false'
+            : 'experience enhance stage will run instead',
+        });
         return { directive: null, provenance: null };
       }
       const result = await directDesign(
@@ -462,26 +587,135 @@ async function executePipeline(
         contextFor(run, designAgent.name),
       ));
 
-    // Not a `step`: it persists no artifact, so there is nothing to load. It is
-    // cheap and deterministic, so it re-runs whenever it is not being skipped.
-    if (STAGES.indexOf('render') >= firstIndex) {
-      await renderStage(run, content, design);
-      if (config.experienceEngine === 'signature') {
-        try {
-          const { runExperienceForge } = await import('./lib/forge/orchestrator.js');
-          await runExperienceForge({
-            runId: run.runId,
-            outputDir: config.outputDir,
-            profile,
-            autoOpen: false,
-          });
-        } catch (err: unknown) {
-          run.logger.warn('Experience Signature generation warning (fallback to template build)', {
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
+    /*
+     * The Creative Director's runtime-primitive selection, resolved.
+     *
+     * `directiveRuntimePrimitiveIds` only checks shape (a non-empty string
+     * id); `resolvePrimitives` is the actual authority — registered,
+     * executable, within `RUNTIME_PRIMITIVE_BUDGET` — the same "declare a
+     * name, the registry decides whether it is allowed" seam
+     * `lib/design/experienceRegistry.ts` already proved for Lenis, GSAP
+     * ScrollTrigger and the Three.js hero object. `NEUTRAL_ARCHITECTURE` is
+     * `resolvePrimitives`' structurally-required first argument; it is never
+     * actually read because `declared` is always supplied here explicitly,
+     * even when empty (see that constant's own doc comment in
+     * `lib/design/experience.ts`).
+     *
+     * Director off (the default) → `directed.directive` is `null` →
+     * `directiveRuntimePrimitiveIds` returns `[]` → `resolvePrimitives`
+     * returns `[]` → `renderStage` below takes its default `[]` in every
+     * observable way — byte-identical to every run before this wiring
+     * existed. Only an explicit, registry-valid Director selection ever
+     * changes what ships.
+     *
+     * Deliberately not wired to the real `ExperienceArchitecture` this run
+     * computed during content direction (`plan.experience`, discarded at the
+     * "write" step above): reaching it here would mean carrying it across a
+     * resume boundary that has no persisted carrier for it today. Since
+     * `resolvePrimitives`'s architecture argument is inert whenever
+     * `declared` is supplied (as it always is here), that gap costs nothing
+     * for this pass; it would start to matter only for a future
+     * mode-aware compatibility layer (e.g. rejecting three-js-hero-object
+     * outright for a `brochure`-mode business even if requested) — see
+     * `NEUTRAL_ARCHITECTURE`'s doc comment.
+     */
+    const resolvedRuntimePrimitives = resolvePrimitives(
+      NEUTRAL_ARCHITECTURE,
+      directiveRuntimePrimitiveIds(directed.directive ?? undefined, run.logger),
+    );
+    run.logger.info('runtime primitives resolved', {
+      requested: (directed.directive?.runtimePrimitives ?? []).map((r) => r.id),
+      resolved: resolvedRuntimePrimitives,
+    });
+
+    /*
+     * Stage 5c (`render` + `enhance` combined into one `step`).
+     *
+     * `render` itself persists no artifact of its own (`ARTIFACTS.render` is
+     * `null` — it is a pure, millisecond-cheap function of `content`/`design`,
+     * documented above `renderStage`), so it is folded into `enhance`'s
+     * `produce()` rather than given a separate resume gate: whenever this
+     * `step('enhance', …)` call decides to produce (i.e. `firstIndex` is at
+     * or before `enhance`), it re-renders the deterministic baseline first,
+     * exactly the condition the old standalone `if (STAGES.indexOf('render')
+     * >= firstIndex)` gate expressed. This is what makes `--from=enhance`
+     * reproducible from artifacts alone: it never trusts whatever happened to
+     * be sitting in `site/` from a previous attempt.
+     *
+     * `attemptEnhance` false (the €0 default) → `site/` holds exactly
+     * `render`'s output, nothing else runs, and the artifact records why.
+     *
+     * `attemptEnhance` true → Forge builds into its own candidate directory
+     * (never directly into the shared `site/` — see `ForgeOptions.siteDir`),
+     * routed through this run's own capability orchestrator so
+     * `BF_BUDGET_TIER` actually governs its spend and its cost lands in this
+     * run's own cost report. `finalVerdict.verdict === 'PASS'`
+     * (`shouldShipEnhancedSite`) copies the candidate over `site/`; `FAIL` —
+     * or the pass throwing outright — leaves `render`'s deterministic output
+     * as what ships. Either way the outcome is recorded, never inferred from
+     * a log line.
+     */
+    await step('enhance', async () => {
+      await renderStage(run, content, design, resolvedRuntimePrimitives, profile.coordinates?.value ?? null);
+
+      if (!attemptEnhance) {
+        const reason = config.experienceEngine !== 'signature' ? 'engine=template' : 'tier0 budget';
+        run.logger.info('experience enhance skipped', { reason });
+        return { attempted: false, shipped: false, reason };
       }
-    }
+
+      const candidateSiteDir = path.join(run.outputDir, 'forge', 'site-candidate');
+      try {
+        const { runExperienceForge } = await import('./lib/forge/orchestrator.js');
+        const { shouldShipEnhancedSite } = await import('./lib/forge/decide.js');
+        const forgeResult = await runExperienceForge({
+          runId: run.runId,
+          outputDir: config.outputDir,
+          profile,
+          autoOpen: false,
+          siteDir: candidateSiteDir,
+          routing: { capabilities: run.platform.capabilities, providers: run.platform.providers },
+        });
+
+        if (shouldShipEnhancedSite(forgeResult.finalVerdict)) {
+          const targetSiteDir = path.join(run.outputDir, SITE_DIR_NAME);
+          await fs.cp(candidateSiteDir, targetSiteDir, { recursive: true, force: true });
+          run.logger.info('experience enhance shipped', {
+            territoryId: forgeResult.signature.selectedTerritoryId,
+            verdict: forgeResult.finalVerdict.verdict,
+            quality: forgeResult.finalVerdict.quality,
+          });
+          return {
+            attempted: true,
+            shipped: true,
+            territoryId: forgeResult.signature.selectedTerritoryId,
+            selectionRationale: forgeResult.signature.selectionRationale,
+            verdict: forgeResult.finalVerdict.verdict,
+            quality: forgeResult.finalVerdict.quality,
+          };
+        }
+
+        run.logger.info('experience enhance did not pass verdict; keeping deterministic baseline', {
+          verdict: forgeResult.finalVerdict.verdict,
+          blockingFailure: forgeResult.finalVerdict.blockingFailure,
+        });
+        return {
+          attempted: true,
+          shipped: false,
+          reason: forgeResult.finalVerdict.blockingFailure ?? forgeResult.finalVerdict.uncertain ?? 'verdict FAIL',
+          verdict: forgeResult.finalVerdict.verdict,
+        };
+      } catch (err: unknown) {
+        run.logger.warn('experience enhance failed; keeping deterministic baseline', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return {
+          attempted: true,
+          shipped: false,
+          reason: err instanceof Error ? err.message : String(err),
+        };
+      }
+    });
 
     /*
      * Stage 6. Skipped when nothing is configured to deploy to.
@@ -493,19 +727,11 @@ async function executePipeline(
      * `LOVABLE_API_KEY` is unset.
      */
     const deployment = await step('deploy', async () => {
-      if (config.lovable.apiKey === '') {
-        run.logger.warn('deployment skipped', {
-          reason: 'LOVABLE_API_KEY is not set; the rendered site is the run output',
-        });
-        return {
-          projectId: '',
-          liveUrl: null,
-          editorUrl: null,
-          status: 'skipped',
-          promptUsed: 'LOVABLE_API_KEY is not set, so no deployment was attempted.',
-          deployedAt: new Date().toISOString(),
-        } satisfies DeploymentResult;
-      }
+      // The deploy agent decides its own skip: it deploys to Netlify when
+      // NETLIFY_DEPLOY_TOKEN is set, and returns `skipped` (never `failed`)
+      // otherwise — so a working site is never recorded as broken just because
+      // no host was configured. (The old `LOVABLE_API_KEY` gate is gone with
+      // the Lovable stub; see agents/lovableAgent.ts.)
       return lovableAgent.run(content, contextFor(run, lovableAgent.name));
     });
 
@@ -526,8 +752,50 @@ async function executePipeline(
     await persistStage(run, 'result', result);
     run.logger.info('pipeline finished', { liveUrl: deployment.liveUrl });
 
+    // The terminal JobState write: `stage`/`decision`/`finalOutput` together
+    // are what a resumed or externally-observed job reads to know this run
+    // actually finished, not merely that its last stage happened to be
+    // 'deploy'. `finalOutput` prefers the live URL, the thing a delivered
+    // job is actually for; a run with no deploy target configured (Netlify
+    // token unset, `deployment.status === 'skipped'`) still finishes with a
+    // real, inspectable local site, so it falls back to that path rather
+    // than recording nothing.
+    await saveJob(run.outputDir, {
+      stage: 'delivery',
+      decision: 'deliver',
+      finalOutput: deployment.liveUrl ?? path.join(run.outputDir, SITE_DIR_NAME, 'index.html'),
+    });
+
     return result;
+  } catch (error) {
+    // A stage failure must be visible on the persisted job, not only in the
+    // log file — the whole point of feeding JobState from this pipeline is
+    // that a failure is observable without reading `run.log.ndjson`. Best
+    // effort: if the job itself cannot be loaded/saved (a disk error on top
+    // of the original failure), the original error is still what the caller
+    // sees; it is never masked by a secondary failure here.
+    const message = error instanceof Error ? error.message : String(error);
+    try {
+      const existing = await loadJob(run.outputDir);
+      await saveJob(run.outputDir, { errors: [...(existing?.errors ?? []), message] });
+    } catch (saveError) {
+      run.logger.warn('failed to record the run error on JobState', {
+        error: saveError instanceof Error ? saveError.message : String(saveError),
+      });
+    }
+    throw error;
   } finally {
+    // Written whether the run succeeded or threw — a failed run still spent
+    // whatever it spent before it failed, and that is exactly when "what did
+    // this cost" matters most. A report-write failure never masks the run's
+    // real outcome: it is logged and swallowed, not rethrown.
+    try {
+      await writeCostReport(run.outputDir, run.platform.capabilities.spend());
+    } catch (error) {
+      run.logger.warn('cost report could not be written', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     await run.dispose();
   }
 }
@@ -575,6 +843,58 @@ export async function resumePipeline(
   const discovery = await readArtifact<{ sourceUrl: string }>(outputDir, 'discovery');
 
   return executePipeline(config, { runId, input: { mapsUrl: discovery.sourceUrl }, from });
+}
+
+/**
+ * Stages 1–3 only: a Maps URL becomes `3-profile.json`, and nothing else runs.
+ *
+ * The factory needs exactly this much of the pipeline. `build` starts from a
+ * profile, so an order that has been researched into a search query needs the
+ * evidence half — discovery, collection, normalisation — and none of the
+ * generation half, which the production loop owns and iterates on its own terms.
+ *
+ * `executePipeline` cannot express it: it runs `from` a stage to the end, and
+ * there is no `to`. Rather than add a bound that every existing caller would
+ * have to reason about, this runs the same three agents through the same run
+ * scaffolding and persists the same three artifacts — so a profile sourced by
+ * the factory is byte-for-byte the kind `--from=analyze` and `--compose`
+ * already accept.
+ *
+ * The URL may be a *search* rather than a place: `discoveryAgent` opens the
+ * first result of a result feed, which is what lets an order name a trade and a
+ * city instead of a business.
+ */
+export async function acquireProfile(
+  runId: string,
+  input: DiscoveryInput,
+  config: AppConfig,
+): Promise<{ profile: BusinessProfile; outputDir: string; sourceUrl: string }> {
+  const run = await createRun(config, runId);
+  try {
+    run.logger.info('sourcing started', { runId, mapsUrl: input.mapsUrl });
+
+    const discovery = await discoveryAgent.run(input, contextFor(run, discoveryAgent.name));
+    await persistStage(run, ARTIFACTS.discovery, discovery);
+
+    const collected = await collectorAgent.run(discovery, contextFor(run, collectorAgent.name));
+    await persistStage(run, ARTIFACTS.collect, collected);
+
+    const profile = await normalizerAgent.run(
+      { discovery, collected, sources: collected.provenanceSources },
+      contextFor(run, normalizerAgent.name),
+    );
+    await persistStage(run, ARTIFACTS.normalize, profile);
+
+    run.logger.info('sourcing finished', {
+      runId,
+      business: profile.name.value,
+      sources: profile.sources.length,
+    });
+
+    return { profile, outputDir: run.outputDir, sourceUrl: discovery.canonicalUrl };
+  } finally {
+    await run.dispose();
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -831,7 +1151,17 @@ export async function composeStandalone(
     'utf8',
   );
 
-  const site = renderSite(content, { design });
+  // The runtime declaration: a closed-vocabulary name (RuntimePrimitiveId),
+  // derived deterministically from the Experience Architecture already
+  // computed above — never a style, a duration, or a selector. The renderer
+  // (lib/render/runtime-rules.ts) owns the one implementation behind each
+  // name; nothing here, and nothing upstream of it, ever writes CSS/JS.
+  const runtimeEngaged = plan.experience.mode === 'narrative' && plan.character.visualWeight === 'image-led';
+  const site = renderSite(content, {
+    design,
+    runtime: runtimeEngaged ? 'scroll-progress' : 'none',
+    runtimePrimitives: runtimeEngaged ? resolvePrimitives(plan.experience) : [],
+  });
   const targetDir = path.join(outputDir, SITE_DIR_NAME);
   const { missingAssets } = await writeRenderedSite(site, { sourceDir: outputDir, targetDir });
 
