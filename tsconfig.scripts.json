@@ -1,0 +1,8 @@
+{
+  "// ": "Typechecks scripts/. These are run with tsx, which strips types WITHOUT checking them, so nothing under scripts/ was ever type-verified before this config existed — several smoke scripts were passing at runtime while building fixtures that do not match the real types. Kept out of tsconfig.test.json so pre-existing script debt does not mask regressions in main/agents/lib/test; run it with `npm run typecheck:scripts`.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["main.ts", "agents/**/*.ts", "lib/**/*.ts", "scripts/**/*.ts"]
+}

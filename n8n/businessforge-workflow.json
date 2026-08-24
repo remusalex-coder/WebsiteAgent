@@ -1,0 +1,265 @@
+{
+  "id": "8be0b268-47dd-4d38-beeb-15ed4a8a2a14",
+  "name": "BusinessForge — Control Surface",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bf-order",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Order Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -220,
+        200
+      ],
+      "webhookId": "bf-order",
+      "notes": "POST /webhook/bf-order  {\"order\": \"...\", \"maxIter\": 3}\nAlso accepts ?order= on the query string."
+    },
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        420
+      ],
+      "notes": "Runs the demo order baked into Job Intake."
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "runId",
+              "name": "runId",
+              "value": "={{ ($json.body && $json.body.runId) ? $json.body.runId : (($json.query && $json.query.runId) ? $json.query.runId : 'bf' + $now.toMillis().toString(36)) }}",
+              "type": "string"
+            },
+            {
+              "id": "order",
+              "name": "order",
+              "value": "={{ ($json.body && $json.body.order) ? $json.body.order : (($json.query && $json.query.order) ? $json.query.order : 'Construieste un website premium pentru o brutarie artizanala din Sibiu') }}",
+              "type": "string"
+            },
+            {
+              "id": "maxIter",
+              "name": "maxIter",
+              "value": "={{ ($json.body && $json.body.maxIter) ? $json.body.maxIter : (($json.query && $json.query.maxIter) ? $json.query.maxIter : 3) }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Job Intake",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        300
+      ],
+      "notes": "The job identity. POST /job reads runId/order/maxIter from here."
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:7717/job",
+        "method": "POST",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "runId",
+              "value": "={{ $(\"Job Intake\").first().json.runId }}"
+            },
+            {
+              "name": "order",
+              "value": "={{ $(\"Job Intake\").first().json.order }}"
+            },
+            {
+              "name": "maxIter",
+              "value": "={{ $(\"Job Intake\").first().json.maxIter }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-bf-token",
+              "value": "8ab99ef780a48746d362a42e5ba2f0594152e266d012a80c"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 3600000
+        }
+      },
+      "name": "Start Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        240,
+        300
+      ],
+      "notes": "POST /job?runId=<id>&order=<order>&maxIter=<n>. Runs the WHOLE job host-side — the loop lives in runJobFull, not here.",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:7717/job",
+        "method": "GET",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "runId",
+              "value": "={{ $(\"Job Intake\").first().json.runId }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-bf-token",
+              "value": "8ab99ef780a48746d362a42e5ba2f0594152e266d012a80c"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 3600000
+        }
+      },
+      "name": "Poll Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        480,
+        300
+      ],
+      "notes": "GET /job?runId=<id> — confirm the terminal decision (deliver/escalate). Bound by maxIter inside runJobFull.",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary",
+              "name": "summary",
+              "value": "={{ \"Job \" + $(\"Job Intake\").first().json.runId + \" -> \" + $json.decision + \" (iter \" + $json.iteration + \"/\" + $json.maxIter + \"). Site: \" + ($json.finalOutput || \"none\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Summarise",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        960,
+        300
+      ],
+      "notes": "One line the caller can act on."
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        960,
+        300
+      ],
+      "notes": "Answers the Order Webhook with the final job summary."
+    }
+  ],
+  "connections": {
+    "Order Webhook": {
+      "main": [
+        [
+          {
+            "node": "Job Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Job Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job Intake": {
+      "main": [
+        [
+          {
+            "node": "Start Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Job": {
+      "main": [
+        [
+          {
+            "node": "Poll Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Job": {
+      "main": [
+        [
+          {
+            "node": "Summarise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarise": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 7200,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

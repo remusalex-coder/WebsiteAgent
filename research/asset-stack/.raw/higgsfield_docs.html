@@ -1,0 +1,29 @@
+URL: https://docs.higgsfield.ai/
+HTTP: 200
+LEN: 2691
+
+Higgsfield API - Higgsfield API Docs Documentation Index Fetch the complete documentation index at: /docs/llms.txt Use this file to discover all available pages before exploring further. Skip to main content Higgsfield API Docs home page Search... ⌘ K Status Support Get API key Get API key Search... Navigation Get started Higgsfield API Get started Overview Quickstart Authentication Core concepts Requests and lifecycle Polling Webhooks File uploads Errors and retries Rate limits Billing and retention SDKs Client libraries Guides Generate Images from Text Generate Videos from Images API reference API reference GET Get request status POST Cancel a queued request Resources Changelog FAQ Support close On this page Make a request Choose your path Get started Higgsfield API Copy page Copy page Generate images, video, audio, and 3D content through one asynchronous API. Copy page Copy page Higgsfield provides one integration point for generative media models. Submit a request to a model endpoint, then poll for the result or receive a webhook when processing finishes. 
+ Run your first request Create credentials and complete a generation from submission to result. Get an API key Create and manage server-side credentials in Higgsfield Cloud. 
+ ​ Make a request 
+ Every model uses the same authentication and asynchronous request lifecycle. The JSON body depends on the selected model. 
+ cURL curl --request POST \ 
+ --url https://platform.higgsfield.ai/higgsfield-ai/soul/standard \ 
+ --header "Authorization: Key ${ HF_API_KEY_ID }:${ HF_API_KEY_SECRET }" \ 
+ --header "Content-Type: application/json" \ 
+ --data &#x27;{ 
+ "prompt": "Editorial portrait in soft daylight", 
+ "aspect_ratio": "4:3", 
+ "resolution": "720p" 
+ }&#x27; 
+ 
+ The API immediately returns a request identifier and links for checking or canceling the request. 
+ { 
+ "status" : "queued" , 
+ "request_id" : "d7e6c0f3-6699-4f6c-bb45-2ad7fd9158ff" , 
+ "status_url" : "https://platform.higgsfield.ai/requests/d7e6c0f3-6699-4f6c-bb45-2ad7fd9158ff/status" , 
+ "cancel_url" : "https://platform.higgsfield.ai/requests/d7e6c0f3-6699-4f6c-bb45-2ad7fd9158ff/cancel" 
+ } 
+ 
+ ​ Choose your path 
+ Build a prototype Use the Python or TypeScript SDK to submit a request and wait for its result. Ship to production Learn the request lifecycle, polling, webhooks, errors, and limits. Upload media Upload input files to Higgsfield storage before generation. 
+ Output files are available for at least seven days. Download completed output to your own storage for long-term retention. Quickstart Next ⌘ I x instagram discord youtube Powered by This documentation is built and hosted on Mintlify, a developer documentation platform

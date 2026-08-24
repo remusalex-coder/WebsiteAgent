@@ -1,0 +1,205 @@
+{
+  "topics": [
+    {
+      "topic": "(a) Computational design quality / aesthetic preference evaluation",
+      "sources": [
+        {
+          "title": "Calista: A deep learning-based system for understanding and evaluating website aesthetics",
+          "url": "https://www.sciencedirect.com/science/article/pii/S1071581923000253",
+          "year": "2023",
+          "key_idea": "Proposes an automatic website-aesthetics evaluator built on deep-learning models that achieve high correlation with human perception, trained on two datasets (one with crowdsourced aesthetic ratings).",
+          "takeaway": "Automated scoring of website aesthetics that tracks human judgment is already SOTA-feasible (2023) and can serve directly as a quality gate in a generator pipeline."
+        },
+        {
+          "title": "Predicting Visual Aesthetics Distributions of Mobile GUIs Using Deep Learning: The Appsthetics Histogram",
+          "url": "https://iadisportal.org/ijwi/papers/2025230204.pdf",
+          "year": "2025",
+          "key_idea": "Represents GUI visual aesthetics not as one score but as a distribution of individual raters; the median encodes degree of aesthetics, the average encodes consensus. A deep model predicts this distribution.",
+          "takeaway": "Aesthetic quality is user-dependent and multi-modal; anti-template gates should reason over rating distributions (dispersion = disagreement/diversity), not a single threshold."
+        },
+        {
+          "title": "AesthetiQ: Enhancing Graphic Layout Design via Aesthetic-Aware Preference Alignment (AAPA)",
+          "url": "https://arxiv.org/abs/2503.00591",
+          "year": "2025",
+          "key_idea": "Prior layout generators ignore the final rendered aesthetic; AAPA trains an MLLM for layout prediction using the MLLM's own aesthetic preferences via Direct Preference Optimization.",
+          "takeaway": "Aesthetic preference can be aligned into generation (not just measured post-hoc) via DPO; a generator can be steered toward human-like aesthetics while keeping outputs distinct."
+        },
+        {
+          "title": "Unveiling the factors of aesthetic preferences with explainable AI",
+          "url": "https://arxiv.org/abs/2311.14410",
+          "year": "2023",
+          "key_idea": "Uses multiple ML models on interpretable aesthetic attributes (color harmony, balance, etc.) to predict aesthetic scores, then SHAP to explain which attributes drive preference.",
+          "takeaway": "Aesthetic preference is decomposable into measurable attributes; these become the monitorable feature dimensions for an anti-template / quality gate."
+        },
+        {
+          "title": "A computational framework for aesthetic preferences in architecture using computer vision and ANNs",
+          "url": "https://journals.sagepub.com/doi/10.1177/14780771241279350",
+          "year": "2024",
+          "key_idea": "Builds a computational-aesthetics framework (CV + artificial neural networks) to predict group aesthetic preference, grounded in part-to-whole theories from aesthetics and cognitive psychology.",
+          "takeaway": "Aesthetic prediction generalizes across design domains via part-to-whole composition modeling - the same CV/ANN approach transfers to web layout, typography and composition scoring."
+        }
+      ]
+    },
+    {
+      "topic": "(b) What distinguishes Awwwards / award-winning web design",
+      "sources": [
+        {
+          "title": "Award-Winning Web Design: Judging Criteria Decoded",
+          "url": "https://www.utsubo.com/blog/award-winning-website-design-guide",
+          "year": "2025",
+          "key_idea": "Fewer than 365 of >15,000 yearly Awwwards submissions earn Site of the Day; criteria are published and scored across design, usability, creativity and content, and winning sites also outperform on engagement/conversion.",
+          "takeaway": "Awards are rubric-driven (design/usability/creativity/content + execution); a template cannot score on 'creativity/novelty' - the gate must measure originality explicitly."
+        },
+        {
+          "title": "Award-winning website examples (what judges look for)",
+          "url": "https://www.sliderrevolution.com/design/award-winning-websites/",
+          "year": "2024",
+          "key_idea": "Breaks down actual Awwwards/Webby/CSS-Design-Awards winners, showing the design patterns and execution craft that separate memorable sites from forgettable ones.",
+          "takeaway": "Distinctiveness, narrative, bespoke interaction and execution quality are the differentiators; generic templates fail the 'memorable' bar on all of them."
+        },
+        {
+          "title": "Best Of Design Awards 2025: Key Findings (DesignRush)",
+          "url": "https://www.designrush.com/best-designs/websites/trends/best-of-design-awards-2025",
+          "year": "2025",
+          "key_idea": "2025 award winners favored clarity and restraint, with strong ideas outperforming decorative complexity; 'functional storytelling' and emotional intelligence defined the year more than novelty for its own sake.",
+          "takeaway": "Winning = clear narrative + emotional intelligence + restraint, not ornamentation; the anti-template system should reward coherent concept and storytelling, not merely 'busy' novelty."
+        },
+        {
+          "title": "A Guide on Building Awwwards Worthy Websites",
+          "url": "https://medium.com/@alex.streza/a-guide-on-building-awwwards-worthy-websites-c4fa710b1c43",
+          "year": "2022",
+          "key_idea": "A practitioner account of the animation, interaction and cross-disciplinary (design + engineering + creative direction) craft behind an Awwwards-published portfolio.",
+          "takeaway": "Awwwards-level work fuses motion, interaction and technical craft - the structural opposite of static, Word-document-like templated layouts."
+        },
+        {
+          "title": "How to Win an Awwward - lessons from a decade on Awwwards",
+          "url": "https://medium.com/design-bootcamp/how-to-win-an-awwward-beautiful-webdesign-8194451b4f7a",
+          "year": "2021",
+          "key_idea": "Argues the winning combination is visual creativity plus technical craft, and that originality of concept, motion design and bespoke interaction are what set featured work apart.",
+          "takeaway": "Consistent differentiators are originality of concept, motion and bespoke interaction - the explicit anti-thesis of template/Word-document output."
+        }
+      ]
+    },
+    {
+      "topic": "(c) Novelty / diversity / distinctness metrics usable as automated gates",
+      "sources": [
+        {
+          "title": "DeCoDe Lab (MIT) - Design Diversity & Novelty Metrics",
+          "url": "https://decode.mit.edu/projects/metrics/",
+          "year": "2023",
+          "key_idea": "Consolidates metrics from design-methodology research for calculating diversity and novelty of designs, used when working with deep generative models that should produce diverse, novel designs.",
+          "takeaway": "An established metric toolkit exists (novelty = distance to nearest reference design; diversity = set-level dispersion) that maps directly onto anti-template gates."
+        },
+        {
+          "title": "Beyond Statistical Similarity: Rethinking Metrics for Deep Generative Models in Engineering Design",
+          "url": "https://arxiv.org/abs/2302.02913",
+          "year": "2023",
+          "key_idea": "Formalizes novelty as a point metric (dissimilarity of a sample from a reference/training set, e.g. nearest-neighbor distance) and diversity as a set metric (aggregate pairwise/coverage/entropy dispersion).",
+          "takeaway": "Define the anti-template gate as: novelty = min distance of a candidate to a corpus of prior/reference designs (must exceed threshold); diversity = dispersion/entropy across a batch."
+        },
+        {
+          "title": "NoveltyBench: Evaluating Language Models for Humanlike Diversity",
+          "url": "https://novelty-bench.github.io/",
+          "year": "2025",
+          "key_idea": "Shows SOTA models generate far less diversity than humans (fewer than ~4 distinct responses in 10 samples) using the distinct-k metric; novelty scales inversely with model size.",
+          "takeaway": "Off-the-shelf generators are biased toward low-diversity outputs - an explicit diversity gate (distinct-k / entropy) is necessary to avoid repetition across artifacts."
+        },
+        {
+          "title": "DivGenBench: Measuring Generative Diversity (Preference Mode Collapse)",
+          "url": "https://www.emergentmind.com/topics/divgenbench",
+          "year": "2026",
+          "key_idea": "Quantifies Preference Mode Collapse via IDS, ASC, SDI and PVS metrics over identity, style, layout and tone attributes on 3,200 curated prompts, detecting output homogenization in diffusion models.",
+          "takeaway": "Provides concrete, implementable metrics (intra-set diversity, attribute-specific collapse) to detect when a generator collapses onto one style/layout - directly usable as a per-batch gate."
+        },
+        {
+          "title": "Diversity and Novelty: Measurement, Learning and Optimization (UMD dissertation)",
+          "url": "https://drum.lib.umd.edu/items/536643c1-56f3-470f-bf82-562f2df45b49/full",
+          "year": "2019",
+          "key_idea": "Proposes an entropy-based diversity metric (more accurate/sensitive than benchmarks) and learns triplet embeddings from human judgments to measure novelty of a design item.",
+          "takeaway": "Structural entropy of a design set is a principled diversity gate; embedding-based novelty (triplet/contrastive) complements nearest-neighbor distance for composition/typography fingerprinting."
+        }
+      ]
+    },
+    {
+      "topic": "(d) LLM / vision-model visual critique: feasibility and limits",
+      "sources": [
+        {
+          "title": "Can Multimodal Large Language Models Understand Graphic Design? A Comparative Study",
+          "url": "https://www.microsoft.com/en-us/research/publication/can-multimodal-large-language-models-understand-graphic-design-a-comparative-study/",
+          "year": "2026",
+          "key_idea": "Proposes a three-level evaluation framework (recognition, semantic, overall) plus an image-to-text benchmark of 8 tasks to measure MLLM alignment with human judgments of graphic design.",
+          "takeaway": "MLLMs can be structured to critique design at element/relation/whole levels - feasible as automated critique, but must be benchmarked against humans per level."
+        },
+        {
+          "title": "From concept to manufacturing: evaluating vision-language models for design (GPT-4V benchmark)",
+          "url": "https://link.springer.com/article/10.1007/s10462-025-11290-y",
+          "year": "2025",
+          "key_idea": "Ran >1,000 queries evaluating GPT-4V across nine design tasks including design similarity, sketch description, engineering-drawing/CAD understanding, and manufacturability assessment.",
+          "takeaway": "GPT-4V is usable for design-similarity and critique tasks but accuracy varies strongly by subtask - good as a screening critic, not a sole judge."
+        },
+        {
+          "title": "Judging LLM-as-a-Judge with LLM-as-a-Judge (LLM-as-a-Judge, Zheng et al.)",
+          "url": "https://arxiv.org/abs/2306.05685",
+          "year": "2023",
+          "key_idea": "Establishes the LLM-as-a-judge paradigm and documents its systematic biases (position, verbosity, self-enhancement) and the need for calibration/pairwise comparison.",
+          "takeaway": "LLM critique is scalable and feasible but biased - design evaluation must use debiased, pairwise/calibrated judging, not a single uncalibrated score."
+        },
+        {
+          "title": "MLLM-Bench: Evaluating Multi-modal LLMs using GPT-4V as a Judge",
+          "url": "https://arxiv.org/abs/2311.13951",
+          "year": "2023",
+          "key_idea": "Uses GPT-4V as a judge to compare multimodal LLMs across user-experience dimensions, revealing significant performance gaps between models.",
+          "takeaway": "Vision-LLM-as-judge is a working pattern for design critique; the judge model itself must be validated, so pair it with metric gates rather than trusting it alone."
+        },
+        {
+          "title": "An Empirical Evaluation of the GPT-4 Multimodal Model on Visualization Literacy Tasks",
+          "url": "https://dl.acm.org/doi/10.1109/TVCG.2024.3456155",
+          "year": "2024",
+          "key_idea": "Empirically evaluates GPT-4V on visualization literacy (VLAT, chart QA, deceptive-design detection, visualization-design choices), establishing baseline performance.",
+          "takeaway": "Even strong VLMs have clear ceilings on design/layout reasoning - critique must be scoped to what the model reliably handles and combined with hard metric gates."
+        }
+      ]
+    },
+    {
+      "topic": "(e) 'Design memory' / avoiding repetition across generated artifacts",
+      "sources": [
+        {
+          "title": "DiverseGRPO: Mitigating Mode Collapse in Image Generation via Diversity-Aware Reward",
+          "url": "https://arxiv.org/abs/2512.21514",
+          "year": "2025",
+          "key_idea": "Shows RL (GRPO) improves image-generation quality but later training homogenizes outputs (loss of creativity/diversity); proposes a diversity-aware reward based on group diversity.",
+          "takeaway": "Generative pipelines naturally drift toward repetition; a diversity term in the reward (or a post-hoc distinctness gate over recent outputs) is required to keep artifacts distinct."
+        },
+        {
+          "title": "DivGAN: A diversity-enforcing generative adversarial network for mode collapse",
+          "url": "https://www.sciencedirect.com/science/article/pii/S0004370223000097",
+          "year": "2023",
+          "key_idea": "Introduces DivNet, a module that enforces output diversity and alleviates mode collapse in any GAN without changing its architecture.",
+          "takeaway": "Diversity-enforcing components (a 'memory' of modes) prevent repetition and can be added as an anti-repetition module to a web-design generator."
+        },
+        {
+          "title": "DivGenBench: Measuring Generative Diversity (Preference Mode Collapse)",
+          "url": "https://www.emergentmind.com/topics/divgenbench",
+          "year": "2026",
+          "key_idea": "Quantifies Preference Mode Collapse across identity, style, layout and tone, detecting when a generator collapses onto a narrow output region.",
+          "takeaway": "A rolling memory of recent outputs + PMC metrics (IDS/ASC/SDI/PVS) flags repetition and triggers regeneration/variation when collapse is detected."
+        },
+        {
+          "title": "Embrace the Diversity: Avoiding Mode Collapse with Polarized Models (ICML 2025)",
+          "url": "https://icml.cc/virtual/2025/48709",
+          "year": "2025",
+          "key_idea": "Shows that retraining on reward-selected synthetic data (e.g. maximizing a single alignment signal) can trigger mode collapse; diversity preservation is needed.",
+          "takeaway": "Optimizing toward one reward (e.g. a single 'aesthetic score') collapses variety - balance the reward with a coverage/diversity objective and a memory of the output distribution."
+        },
+        {
+          "title": "NoveltyBench: Evaluating Language Models for Humanlike Diversity",
+          "url": "https://novelty-bench.github.io/",
+          "year": "2025",
+          "key_idea": "Demonstrates models produce far fewer distinct outputs than humans and proposes distinct-k as the measurement; novelty scales inversely with model size.",
+          "takeaway": "Without explicit diversity pressure, generators repeat - measure distinct-k over the recent-output buffer to enforce variety and break template loops."
+        }
+      ]
+    }
+  ],
+  "synthesis": "Anti-template generation for BusinessForge should combine three layers, all grounded in the 2023-2026 literature above. (1) QUALITY GATE: automated aesthetic scoring is SOTA-feasible (Calista 2023; Appsthetics 2025 distributional view; AesthetiQ 2025 preference-alignment) and can be decomposed into measurable attributes (XAI/SHAP 2023) - score every candidate on layout balance, color harmony, typography and composition, treating aesthetic quality as a distribution not a single number. (2) DISTINCTNESS GATE (the core anti-template mechanism): treat novelty as a point metric = distance of a candidate to a reference corpus of prior/competitor/template designs, and diversity as a set metric over the batch (DeCoDe MIT metrics; Beyond Statistical Similarity 2023). Implement a 'design fingerprint' via embedding distance (CLIP/DINO or layout/attribute embeddings) to a memory of all previously generated artifacts; reject candidates whose nearest-neighbor distance or set entropy (UMD entropy metric 2019; DivGenBench IDS/ASC/SDI/PVS 2026) falls below threshold. Track distinct-k (NoveltyBench 2025) across the recent-output buffer to catch repetition early. (3) CRITIQUE LAYER: an MLLM critic is feasible and valuable (Microsoft 3-level framework 2026; Springer GPT-4V design-similarity benchmark 2025) but must be debiased and pairwise-calibrated (LLM-as-a-Judge 2023; MLLM-Bench 2023) and scoped to its proven strengths, never used as the sole judge (TVCG GPT-4V literacy baseline 2024). For the 'design memory' requirement specifically: no single paper coins that term, but the operational equivalent is well-established - maintain a persistent buffer/embedding index of all generated designs and apply diversity/novelty metrics as gates (DiverseGRPO 2025 diversity reward; DivGAN 2023 mode memory; ICML 2025 coverage objective; NoveltyBench 2025 distinct-k). Concrete pipeline: generate -> embed & compare to memory (novelty distance + batch entropy) -> MLLM critique on element/relation/whole levels -> aesthetic attribute scoring -> KEEP only if distinct AND high-quality AND critique-passing, else regenerate with a diversity nudge. Award-winning differentiators to actively engineer (Utsubo 2025; SliderRevolution 2024; DesignRush 2025): original concept, motion/interaction craft, narrative/storytelling and restraint - none of which a static Word-document template can ever satisfy, so the distinctness gate is what structurally prevents template-like output."
+}
