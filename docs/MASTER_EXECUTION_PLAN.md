@@ -24,12 +24,10 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 - **Next task:** T03.
 
 ### T03 — `main.ts` feeds `JobState`
-- **Goal:** a classic CLI run is persisted and resumable like an n8n-triggered run.
-- **Files:** `main.ts`.
-- **Dependencies:** none (can run in parallel with T01/T02, but do after them if one person is doing this sequentially, since T01/T02 touch the same persistence layer this task also touches).
-- **Implementation:** at the start of `main.ts`'s run, call `createJob`/`loadJob` from `jobState.ts`; after each of the 9 `STAGES` entries, call `saveJob` with the appropriate `JobStage` value (map `main.ts`'s 9 stage names to the closest `JobStage` enum values — `discovery`→`research`/`evidence` as appropriate per what each stage actually produces, `write`→`content`, `design`→`design`, etc. — read `jobState.ts`'s `JobStage` union before mapping, don't guess).
-- **Tests:** a test asserting a `main.ts`-invoked run produces a `JobState` loadable by id via `loadJob`, with a plausible stage progression.
-- **Acceptance criteria:** new test passes; a manual CLI run (documented in the test or a comment) shows a job file appearing in the expected job-state storage location.
+- **Goal:** a classic CLI run is persisted and resumable like an n8n-triggered run. DONE — commit `7a79ef2`.
+- **Files:** `main.ts`, `test/main.jobstate.test.ts`.
+- **What shipped:** a `STAGE_TO_JOB_STAGE` best-fit map (`discovery`/`collect`/`normalize`→`evidence`, `analyze`→`character`, `write`→`content`, `direct`→`creative`, `design`→`design`, `enhance`→`build`, `deploy`→`delivery`); `step()` calls `saveJob` after every stage, run or resumed; a job is created before the first stage; a terminal write on success records `stage:'delivery'`/`decision:'deliver'`/`finalOutput`; a `catch` records a failure's message on `errors` before rethrowing.
+- **Tests:** `test/main.jobstate.test.ts` — a real resumed run (`enhance`→`deploy`, no mocks) reaches delivery and is reloadable by id; a real failure (missing artifact) records the error and never fabricates delivery.
 - **Next task:** T04.
 
 ### T04 — Netlify as the default deploy target

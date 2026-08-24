@@ -25,14 +25,10 @@ Strictly prioritized. P0 = blocks the factory end-to-end. P1 = needed for a real
 - **Estimated complexity:** small — the hard part (a working Netlify integration) is reportedly already coded; this is a default-selection and confirmation change.
 - **Acceptance criteria:** a full job run ends with a live, reachable Netlify URL, verified by an actual HTTP fetch in a test or a documented manual run; the Lovable path is no longer reached by default.
 
-### P0-4. `main.ts` classic pipeline feeds `JobState`
-- **Gap:** the classic CLI path never calls `createJob`/`saveJob` — a `main.ts` run is invisible to persistence, not resumable, and doesn't show up in job history.
-- **Why:** required for the control-plane consolidation (Consolidation Map) and for P0-1/P0-2 to have any effect on CLI-invoked runs, not just n8n-invoked ones.
-- **Existing code to reuse:** `lib/workflow/jobState.ts`.
-- **Files:** `main.ts`.
-- **Dependencies:** none blocking, but should land alongside P0-1/P0-2 for consistency.
-- **Estimated complexity:** small.
-- **Acceptance criteria:** a `main.ts` run produces a loadable `JobState` with correct stage transitions; a test proves a CLI-invoked job can be reloaded by id.
+### P0-4. `main.ts` classic pipeline feeds `JobState` — DONE (commit `7a79ef2`)
+- **What was built:** `main.ts`'s generic `step()` helper (its own resume/persist mechanism, unchanged) now also calls `saveJob` after every stage — whether that stage actually ran or was loaded back from a resumed run's artifacts — via a `STAGE_TO_JOB_STAGE` best-fit map from this pipeline's nine stage names onto `jobState.ts`'s `JobStage`. A job is created (`saveJob` with no prior job on disk) before the first stage, identified by the Maps URL (the one thing known before `normalize` produces a business name). A successful run's terminal write records `stage: 'delivery'`, `decision: 'deliver'`, and `finalOutput` (the live URL, or the local `site/index.html` when no deploy target is configured). A failed run's `catch` records the error message onto the job's `errors` array before rethrowing — so a `main.ts` failure is visible on `JobState`, not only in the log file, and never silently leaves the job at `decision: 'running'` while claiming success.
+- **No duplicate created:** no second job-state shape, no parallel persistence file — same `lib/workflow/jobState.ts` module `scripts/n8n/stage.ts` uses.
+- **Acceptance:** met — see `test/main.jobstate.test.ts` (a resumed real run reaches `delivery`/`deliver` with a `finalOutput` and is reloadable by id; a run that fails partway records the error and never fabricates delivery). Both tests exercise real code — `enhance` really renders, `deploy` really calls `deployToNetlify` with an explicitly-forced-empty token, no mocks.
 
 ---
 
