@@ -9,3 +9,18 @@ dist/
 # Generated run artifacts — the folder itself is tracked, its contents are not.
 output/*
 !output/.gitkeep
+
+# Shared secret for the n8n stage server (generated on first run).
+n8n/.stage-token
+
+# Secrets/credentials (dot-env variants beyond the base .env/.env.local above).
+.env.*
+
+# Generated benchmark/preview/verification run artifacts, same pattern as output/.
+benchmark/
+benchmark-10/
+preview/
+verify-director-enrichment/
+
+# Local agent-harness skill config, not project source.
+.agents/
