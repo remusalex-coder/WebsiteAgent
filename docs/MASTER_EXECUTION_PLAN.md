@@ -74,13 +74,14 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 - **Acceptance criteria:** met — test passes proving the invariant holds; the one real gap found is documented and filed as P2-4, not this task's problem to fix.
 - **Next task:** T09.
 
-### T09 — CI pipeline
+### T09 — CI pipeline — DONE (this pass, live trigger unverified)
 - **Goal:** typecheck + full test suite run automatically on push/PR.
-- **Files:** new `.github/workflows/test.yml`.
-- **Dependencies:** none — can run any time, cheap.
-- **Implementation:** standard Node.js GitHub Actions workflow: checkout, setup-node, `npm ci`, `npm run typecheck`, `npm test`.
-- **Tests:** N/A (this task adds test infrastructure, not new tests).
-- **Acceptance criteria:** a push to a branch triggers the workflow and it reports pass/fail correctly (verify with a deliberately broken test on a throwaway branch, then revert).
+- **What shipped:** `.github/workflows/test.yml` — checkout → setup-node (version read from `package.json`'s `engines.node`) → `npm ci` → `npx playwright install-deps chromium` → `npm run typecheck` → `npm test` → `npm run build`, on every push/PR, with cancel-in-progress concurrency. No prior CI of any kind existed (confirmed: no `.github/`, no other CI config anywhere in the repo) — this is a new addition, not a duplicate. See `docs/IMPLEMENTATION_GAP.md` P1-5 for the full writeup, including why a fresh GitHub-hosted runner plus `npm ci` already satisfies "must not silently reuse Windows node_modules" and "respect the lockfile."
+- **Verified locally:** the real `npm run build` (not run at all earlier in this session) completes cleanly, alongside the typecheck/test commands every other task already exercised.
+- **Not done this pass:** the plan's own acceptance test (push a throwaway branch with a deliberately broken test, confirm the workflow fails, then revert) requires pushing to the real `origin` remote — every commit this session has been local-only, and that live push-and-observe step is left as a manual step, the same treatment this session has given every other live-external-system check (T04 Netlify, T05 Groq, T06 OpenRouter, T07 Places). Separately, `.github/workflows/*.yml` is a protected path the file-delivery tooling refuses to write to the user's machine (a deliberate guardrail, respected rather than routed around) — `test.yml` was delivered directly to the user and still needs to be placed at `.github/workflows/test.yml` and committed by the user or an agent authorized to write that path.
+- **Files:** `.github/workflows/test.yml`.
+- **Tests:** N/A (this task adds test infrastructure, not new tests) — its own correctness was checked by running every command it invokes locally.
+- **Acceptance criteria:** partially met — see above.
 - **Next task:** T10.
 
 ### T10 — Extend registry-grade grounding to motion intensity
