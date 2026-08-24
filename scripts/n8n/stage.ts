@@ -121,6 +121,7 @@ export const STAGES = [
   'hermes',
   'repair',
   'preflight',
+  'deploy',
   'report',
   'experience-forge',
 ] as const;
@@ -1436,6 +1437,63 @@ export async function runStage(opts: {
       break;
     }
 
+    case 'deploy': {
+      /*
+       * T04: publish the delivered site to Netlify — the same real
+       * integration `main.ts`'s classic pipeline already uses
+       * (`lib/deploy/netlify.ts`), not a second deploy path invented for
+       * this production loop. Netlify is the master architecture's named
+       * default (Consolidation Map); until this stage existed, this
+       * pipeline's "delivered" jobs never reached it — `finalOutput` was
+       * only ever the local `SITE` path hermes's deliver branch set, so
+       * "browser opens on a live URL" was unreachable no matter how the
+       * run went.
+       *
+       * Only ever attempted for a job preflight has not downgraded: an
+       * escalated job has nothing that should go live (its `finalOutput`
+       * was already cleared by the `preflight` case above). A missing
+       * `NETLIFY_DEPLOY_TOKEN` is not a failure — `deployToNetlify` itself
+       * returns `status: 'skipped'`, never `failed` — so a run with no
+       * deploy target configured still finishes with the local site path
+       * it already had, not a broken one. `deployToNetlify` also never
+       * throws (it catches its own network/API errors and returns
+       * `status: 'failed'`), so no try/catch is needed here beyond the one
+       * already wrapping this whole switch.
+       */
+      if (job.decision !== 'deliver') {
+        note = `deploy skipped: job decision is "${job.decision}", not deliver`;
+        break;
+      }
+
+      const { deployToNetlify } = await import('../../lib/deploy/netlify.js');
+      const deployController = new AbortController();
+      const deployment = await deployToNetlify(SITE, config, {
+        signal: deployController.signal,
+        logger: { info: (m) => logger.info(m), warn: (m) => logger.warn(m) },
+      });
+      await writeJson(path.join(outputDir, 'qa', 'deployment.json'), deployment);
+
+      if (deployment.status === 'failed') {
+        // A deploy failure must never surface as a false DELIVERED status:
+        // downgrade to escalate — the same action a blocking preflight
+        // finding uses — and leave `finalOutput` exactly as it was (the
+        // local site path hermes already recorded) rather than a broken
+        // live URL. This is the recoverable path the acceptance criteria
+        // names: the local build is never lost, and a human sees why.
+        job = await saveJob(outputDir, { stage: 'human', decision: 'escalate' });
+        note = `deploy FAILED: ${deployment.promptUsed}; job escalated, local site preserved at ${job.finalOutput}`;
+        break;
+      }
+
+      if (deployment.liveUrl !== null) {
+        job = await saveJob(outputDir, { finalOutput: deployment.liveUrl });
+      }
+      note = deployment.status === 'skipped'
+        ? 'deploy skipped: NETLIFY_DEPLOY_TOKEN is not set; local site remains the final output'
+        : `deployed to ${deployment.liveUrl ?? '(build still settling on Netlify)'}`;
+      break;
+    }
+
     case 'report': {
       /*
        * A summary a human can act on without opening five files.
@@ -1449,6 +1507,13 @@ export async function runStage(opts: {
       const audit = job.layoutAudit as LayoutAudit | null;
       const critique = job.visualCritique as VisualCritique | null;
       const preflightResult = job.preflight as PreflightResult | null;
+      // T04: best-effort — a run that never reached `deploy` (escalated
+      // earlier, or predates this stage) simply has no file here, and the
+      // report says so rather than guessing.
+      const deployment = await readJsonIfExists<{
+        readonly status: string;
+        readonly liveUrl: string | null;
+      }>(path.join(outputDir, 'qa', 'deployment.json'));
       // The observability board, aggregated from the run's own ledger.
       const okCalls = job.providerLog.filter((call) => call.outcome === 'ok');
       const failedCalls = job.providerLog.filter((call) => call.outcome === 'failed');
@@ -1476,6 +1541,8 @@ export async function runStage(opts: {
           ),
         },
         budget: { cents: job.budgetCents, status: job.budgetCents >= 0 ? 'within' : 'exhausted' },
+        deployment:
+          deployment === null ? null : { status: deployment.status, liveUrl: deployment.liveUrl },
         gate:
           gate === null
             ? null
@@ -1653,6 +1720,10 @@ export async function runJobFullWith(
     // report should always reflect what preflight found. Only a pending
     // `deliver` can be downgraded by it; see the `preflight` stage handler.
     await run({ stage: 'preflight', runId, maxIter });
+    // T04: deploy sits after preflight (never publish something the gate
+    // just blocked) and before report (the summary should reflect the real
+    // outcome, live URL or otherwise).
+    await run({ stage: 'deploy', runId, maxIter });
     return run({ stage: 'report', runId, maxIter });
   }
 }

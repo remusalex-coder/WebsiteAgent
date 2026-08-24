@@ -30,8 +30,9 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 - **Tests:** `test/main.jobstate.test.ts` — a real resumed run (`enhance`→`deploy`, no mocks) reaches delivery and is reloadable by id; a real failure (missing artifact) records the error and never fabricates delivery.
 - **Next task:** T04.
 
-### T04 — Netlify as the default deploy target
+### T04 — Netlify as the default deploy target — DONE (this pass)
 - **Goal:** a completed job ends with a live, fetchable Netlify URL by default; the Lovable stub is no longer the selected path.
+- **Resolution:** `agents/lovableAgent.ts` was already real (delegates to `lib/deploy/netlify.ts`, no stub) and already the classic `main.ts` pipeline's path. The actual gap was that the production `scripts/n8n/stage.ts` pipeline had no `deploy` stage at all. Added one, sequenced preflight → deploy → report, calling the same `deployToNetlify` — see `docs/IMPLEMENTATION_GAP.md` P0-3/T04 for the full writeup and `test/workflow/deploy.test.ts` for the tests.
 - **Files:** the deploy-selection code in `stage.ts` (or wherever the deploy/report stage picks a target), `lib/deploy/netlify.ts`, `agents/lovableAgent.ts` (left in place, just not selected).
 - **Dependencies:** none — can run in parallel with T01-T03.
 - **Implementation:** change the deploy-stage's target selection to default to `lib/deploy/netlify.ts`; confirm it reads a Netlify API token from config/env consistent with how other provider keys are read in `lib/config.ts`.

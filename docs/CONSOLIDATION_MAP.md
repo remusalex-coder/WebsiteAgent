@@ -86,7 +86,7 @@ Its 9 stages stay as the direct/local invocation path (useful for fast iteration
 
 **MCP transports, skills scaffold (`lib/platform/mcp/*`, `lib/platform/skills/*`) → DEFER.** Real, well-structured, not load-bearing for the P0 goal. Do not invest further until the pipeline gaps below are closed — this is explicitly not the place extra effort should go next.
 
-**Deployment (`agents/lovableAgent.ts` stub vs `lib/deploy/netlify.ts`) → REPLACE.** Netlify becomes the default deploy target; the Lovable stub is left in place but no longer the selected path (removing it outright is unnecessary risk for zero benefit — DEFER its deletion, REPLACE its role). This is P0: without it there is no "browser opens on a live URL," which the brief names as the literal end-to-end target.
+**Deployment (`agents/lovableAgent.ts` vs `lib/deploy/netlify.ts`) → DONE (T04, this pass).** `agents/lovableAgent.ts` was already real — no stub, no `NotImplementedError` — and already delegated to `lib/deploy/netlify.ts`; that was true before T04 and is what `main.ts`'s classic pipeline used. The real gap was that the production `scripts/n8n/stage.ts` pipeline had no `deploy` stage at all — `preflight` and `report` existed with nothing publishing in between, so a "delivered" job there never left a local `site/` path. T04 added a `deploy` stage (preflight → deploy → report) calling the same `deployToNetlify`, so both pipelines now reach the one real deploy implementation — no second one was created. See `docs/IMPLEMENTATION_GAP.md` P0-3/T04.
 
 ## Specimens
 
