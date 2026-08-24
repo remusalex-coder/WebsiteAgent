@@ -65,13 +65,13 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 - **Acceptance criteria:** not met this pass — no credential available for the live call this task exists to make. Everything achievable without one has been done.
 - **Next task:** T08.
 
-### T08 — Static safety proof for Forge's writing modules
+### T08 — Static safety proof for Forge's writing modules — DONE (this pass)
 - **Goal:** prove, the same way `no-agent-spawn.test.ts` proves it for the CLI autofix path, that Forge's writing modules (`builder.ts`, `repair.ts`) cannot write bytes to a customer artifact outside the fenced, gated path.
-- **Files:** new `test/qa/forge-writing-bounds.test.ts`, read (don't modify unless a real gap is found) `lib/forge/anti-ai-gate.ts`.
-- **Dependencies:** none — high value, should not be delayed past P1.
-- **Implementation:** import-graph-walk analysis (same technique as `no-agent-spawn.test.ts`) proving every reachable path from a job entry point into `builder.ts`/`repair.ts` passes through `anti-ai-gate.ts`'s constraints before any write.
-- **Tests:** the new test itself; if it finds a real gap, that becomes a new P0 task, not silently patched mid-task.
-- **Acceptance criteria:** test passes proving the invariant holds, OR a documented, filed gap if it doesn't (either outcome is a valid completion of this task — the goal is proof, not a predetermined result).
+- **What shipped:** `test/qa/forge-writing-bounds.test.ts` — a source-scan static proof (same technique as `no-agent-spawn.test.ts`, adapted: `anti-ai-gate.ts` turned out to audit generated *content*, not write location, so this proof is a source-level path-shape check rather than an import-graph walk). Enumerates every `fs.writeFile`/`fs.copyFile`/`fs.mkdir`/`fs.rm`/`fs.unlink`/`fs.rename` call site across all of `lib/forge/*.ts` and checks each against a hand-verified allowlist of safe path shapes, recursing through local `const` declarations to their `path.join(...)` origin; independently proves the model's own generated-content variables never appear as a `path.join`/`path.resolve` argument in `builder.ts`/`repair.ts`; confirms `auditAntiAIGeneric` is actually wired into `orchestrator.ts` (not just defined); and guards the scanner itself against a vacuous pass. Verified as a real control by temporarily injecting an unsafe write into a scratch copy of `builder.ts` and confirming the tests fail loudly, then restoring and reconfirming green.
+- **Result:** the invariant holds — no code gap found in the file-write path. A related but out-of-scope finding (Forge's generated HTML/CSS/JS has no content-safety gate for `javascript:` URLs, inline event handlers, or unauthorized external script domains, unlike the deterministic renderer's `safeHref`/`escapeText`/etc.) was filed as `docs/IMPLEMENTATION_GAP.md` P2-4, not silently patched mid-task.
+- **Files:** new `test/qa/forge-writing-bounds.test.ts`; `lib/forge/anti-ai-gate.ts` and the rest of `lib/forge/*.ts` read, none changed.
+- **Tests:** the 4 tests in the new file — see `docs/IMPLEMENTATION_GAP.md` P1-4 for the full list.
+- **Acceptance criteria:** met — test passes proving the invariant holds; the one real gap found is documented and filed as P2-4, not this task's problem to fix.
 - **Next task:** T09.
 
 ### T09 — CI pipeline
