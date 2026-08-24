@@ -48,13 +48,12 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 - **Acceptance criteria:** met for everything reachable without a real credential — a live `npm run capability-proof`-style run and `scripts/probe-providers.ts --only=groq` need an actual `GROQ_API_KEY`, not available to this agent; the failover test (Gemini exhausted → Groq selected) is real, exercised code, not a live run.
 - **Next task:** T06.
 
-### T06 — OpenRouter `:free` liveness probe
+### T06 — OpenRouter `:free` liveness probe — DONE (this pass)
 - **Goal:** stale/removed `:free` model ids are caught before a job run depends on them.
-- **Files:** new `scripts/probe-openrouter-free.ts` (mirror `scripts/probe-providers.ts`).
-- **Dependencies:** none.
-- **Implementation:** a script that calls each `:free`-tier model id currently in `models.ts` with a trivial prompt and reports which are live vs. dead/renamed.
-- **Tests:** the script itself is the artifact; add a lightweight test asserting the script's shape (exports a checkable function) rather than hitting the live network in CI.
-- **Acceptance criteria:** running the script against the real OpenRouter API produces a pass/fail per free model id; a dead id is documented for removal from `models.ts` in a follow-up (not this task, to avoid silently changing the catalogue as a side effect).
+- **What shipped:** `scripts/probe-openrouter-free.ts` — `freeModelIds()` reads every `:free`-suffixed OpenRouter id straight out of `MODEL_CATALOG` (catalogue-driven, not a hardcoded guess like `probe-providers.ts`'s single OpenRouter target), `probeFreeModels()` probes each one for real and reports `ok`/`failed`/`skipped` per id, writes a timestamped record to `probes/`, and prints a dead-id summary without touching `models.ts`. Added `npm run probe-openrouter-free`.
+- **Files:** `scripts/probe-openrouter-free.ts`, `test/ai/probe-openrouter-free.test.ts`, `package.json`.
+- **Tests:** `test/ai/probe-openrouter-free.test.ts` — see `docs/IMPLEMENTATION_GAP.md` P1-2 for the full list (catalogue-shape proof, no-credential real-code `skipped` path, empty-list short-circuit).
+- **Acceptance criteria:** met for everything reachable without a real credential; a live `npm run probe-openrouter-free` run against a real `OPENROUTER_API_KEY` (none available to this agent) remains the manual/documented step, the same status this repo's other live-provider runs already carry.
 - **Next task:** T07.
 
 ### T07 — Re-verify Places API credential
