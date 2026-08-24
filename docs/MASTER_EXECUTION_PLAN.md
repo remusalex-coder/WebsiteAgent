@@ -56,13 +56,13 @@ Executable tasks for Claude Code, Copilot, or any future agent. Each task is sel
 - **Acceptance criteria:** met for everything reachable without a real credential; a live `npm run probe-openrouter-free` run against a real `OPENROUTER_API_KEY` (none available to this agent) remains the manual/documented step, the same status this repo's other live-provider runs already carry.
 - **Next task:** T07.
 
-### T07 — Re-verify Places API credential
+### T07 — Re-verify Places API credential — BLOCKED on missing credential (code-verified this pass)
 - **Goal:** confirm the Evidence Intelligence live-data path actually works.
-- **Files:** `lib/sources/*` (Places integration).
-- **Dependencies:** none — do this early if a credential is available, since every other Evidence-dependent task benefits from confirming this works.
-- **Implementation:** make one live call against a real, known business; if it 401s, check the credential/scope configuration against Places API's current requirements (the API surface may have changed since the integration was written).
-- **Tests:** a manual/documented run, logged in this task's completion notes; if a code fix is needed, add/update a test accordingly.
-- **Acceptance criteria:** one successful live call, documented; or, if broken, a follow-up task is filed with the specific root cause (do not leave this open-ended).
+- **What was verified (no code gap found):** `lib/sources/placesApi.ts` read end to end against every item this task lists — FTID vs. place id resolution, the API key never reaching a URL (photo media resolved via `skipHttpRedirect=true` before it touches an artifact), field authority (`lib/sources/authority.ts`) and conflicting-data resolution (`lib/sources/merge.ts`'s earlier-harvest-wins, per field/item), blocked/missing-data handling (`EMPTY_HARVEST` on every failure path, never a throw, never a fabrication), and do-not-invent-facts (a stated `false` stays a stated absence; an unanswered field states nothing). All of it is real and already covered by `test/sources/placesApi.test.ts`, `test/sources/merge.test.ts`, `test/sources/provenance.test.ts`. See `docs/IMPLEMENTATION_GAP.md` P1-3 for the full writeup.
+- **What's blocked:** the live call. `PLACES_API_KEY` is not set anywhere in this environment (confirmed absent from both `process.env` and the project's `.env`) — this agent has no credential to call with. The prior session's `401 UNAUTHENTICATED` was diagnosed as a wrong API scope; a future credential holder should first confirm the key's project has "Places API (New)" enabled, since this integration calls the `v1` surface (`places.googleapis.com/v1/places`), not the legacy API.
+- **Files:** `lib/sources/placesApi.ts`, `lib/sources/authority.ts`, `lib/sources/merge.ts` — read, none changed.
+- **Tests:** none added — nothing checkable without a credential was found unproven; the existing suite already covers every code-level claim above.
+- **Acceptance criteria:** not met this pass — no credential available for the live call this task exists to make. Everything achievable without one has been done.
 - **Next task:** T08.
 
 ### T08 — Static safety proof for Forge's writing modules
