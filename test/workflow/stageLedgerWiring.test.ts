@@ -1,11 +1,15 @@
 /**
- * T01 — the stage ledger (`lib/workflow/hashes.js`'s `recordStage`) wired into
- * real execution via `scripts/n8n/stage.ts`'s `runStage`.
+ * T01/T02 — the stage ledger (`lib/workflow/hashes.js`'s `recordStage`,
+ * `loadStageLedger`, `shouldSkip`) wired into real execution via
+ * `scripts/n8n/stage.ts`'s `runStage`: every real stage gets a ledger entry
+ * (T01), and a stage whose exact call is repeated against an unchanged job is
+ * skipped rather than re-run for real (T02).
  *
  * These are integration tests on purpose: `hashes.test.ts` already proves
- * `recordStage`/`loadStageLedger` correct in isolation. What that cannot
- * prove is that `runStage` actually calls them — on both the success path and
- * the failure path — for a real stage execution. That is what these assert.
+ * `recordStage`/`loadStageLedger`/`shouldSkip` correct in isolation. What
+ * that cannot prove is that `runStage` actually calls them — on the success
+ * path, the failure path, and the skip path — for a real stage execution.
+ * That is what these assert.
  */
 
 import test from 'node:test';
@@ -43,6 +47,7 @@ test('a real "create" stage execution produces a ledger entry associated with th
     assert.equal(typeof entry?.inputHash, 'string', 'a real input hash is recorded');
     assert.equal(typeof entry?.outputHash, 'string', 'a real output hash is recorded');
     assert.ok(entry?.completedAt !== null, 'a successful stage records a completion time');
+    assert.equal(entry?.outputPath, 'job.json', 'T02: the output path that makes this entry skippable next time');
 
     // Not a second source of truth for job stage identity: job.json still owns it.
     const job = JSON.parse(fs.readFileSync(path.join(runDir, 'job.json'), 'utf8'));
@@ -50,19 +55,38 @@ test('a real "create" stage execution produces a ledger entry associated with th
   });
 });
 
-test('re-running the same stage produces a fresh ledger entry for it', async () => {
+test('T02: repeating an identical call against an unchanged job is skipped, not re-run', async () => {
   await withTempOutputDir(async (tmpRoot) => {
-    const runId = 'ledgertest-rerun';
+    const runId = 'ledgertest-skip';
     await runStage({ stage: 'create', runId, maxIter: 3 });
     const runDir = path.join(tmpRoot, 'output', runId);
     const firstLedger = await loadStageLedger(runDir);
-    const firstCompletedAt = firstLedger.stages.create?.completedAt;
+    const firstEntry = firstLedger.stages.create;
+    assert.ok(firstEntry !== undefined);
 
-    await runStage({ stage: 'create', runId, maxIter: 3 });
+    const second = await runStage({ stage: 'create', runId, maxIter: 3 });
     const secondLedger = await loadStageLedger(runDir);
 
-    assert.ok(secondLedger.stages.create !== undefined, 'the entry still exists after a second run');
-    assert.notEqual(secondLedger.stages.create?.completedAt, firstCompletedAt, 'a fresh run records a fresh completion time');
+    assert.match(second.note ?? '', /skipped/, 'the result says this call was skipped');
+    assert.deepEqual(secondLedger.stages.create, firstEntry, 'the ledger entry is untouched — a skip never re-records');
+  });
+});
+
+test('T02: a changed call against the same job is not skipped — it re-runs for real', async () => {
+  await withTempOutputDir(async (tmpRoot) => {
+    const runId = 'ledgertest-changed';
+    await runStage({ stage: 'create', runId, maxIter: 3 });
+    const runDir = path.join(tmpRoot, 'output', runId);
+    const firstEntry = (await loadStageLedger(runDir)).stages.create;
+
+    // Same stage, same job — but a different maxIter changes `opts`, which is
+    // part of what gets hashed, so this must not be recognised as the same call.
+    const second = await runStage({ stage: 'create', runId, maxIter: 7 });
+    const secondEntry = (await loadStageLedger(runDir)).stages.create;
+
+    assert.equal(second.note, undefined, 'a real re-run has no skip note');
+    assert.notEqual(secondEntry?.inputHash, firstEntry?.inputHash, 'the changed opts produced a different input hash');
+    assert.notEqual(secondEntry?.completedAt, firstEntry?.completedAt, 'a real re-run records a fresh completion time');
   });
 });
 

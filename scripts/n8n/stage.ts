@@ -57,7 +57,7 @@ import { finalizeBest, recordCandidate } from '../../lib/workflow/candidates.js'
 import { decide } from '../../lib/workflow/hermes.js';
 import { createJob, loadJob, saveJob } from '../../lib/workflow/jobState.js';
 import type { WorkerCall, JobState } from '../../lib/workflow/jobState.js';
-import { hashValue, recordStage } from '../../lib/workflow/hashes.js';
+import { hashValue, recordStage, loadStageLedger, shouldSkip } from '../../lib/workflow/hashes.js';
 import { deriveCharacter } from '../../lib/design/character.js';
 import { defaultsFor } from '../../lib/design/industries.js';
 import type { WebsiteDesign, WebsiteContent, BusinessProfile } from '../../lib/types.js';
@@ -464,11 +464,35 @@ export async function runStage(opts: {
   // below — so it reflects the state every stage handler actually reads from.
   const previousJobSnapshot = job;
 
+  // T02: this call's content-addressed input — the same hash `recordStage`
+  // stamps on success, so a later call with an unchanged `opts` against an
+  // unchanged job can recognise itself. Reused below for both the skip check
+  // and the eventual ledger write, rather than recomputed twice.
+  const currentInputHash = hashValue({ opts, job: forHash(previousJobSnapshot) });
+
+  // T02: `hermes` is excluded from skip eligibility. Its case body is not a
+  // pure read of job state: with `decideOnly` off (the Production Loop's
+  // default) a `continue` decision calls `reconceptBuild` inline — real
+  // repair work, not a no-op — and either way it is the one stage whose body
+  // sets `loop`/`nextStage`, the signal `runJobFullWith` uses to keep
+  // repairing. Skipping it would silently drop both.
+  const skipEligible = stage !== 'hermes';
+  const priorEntry = skipEligible ? (await loadStageLedger(outputDir)).stages[stage] : undefined;
+  const skipped = priorEntry !== undefined && shouldSkip(priorEntry, currentInputHash);
+
   let loop = false;
   let nextStage: string | null = null;
   let note: string | undefined;
   let providers: StageResult['providers'];
 
+  if (skipped) {
+    // T02: `job` is left exactly as loaded — job.json already holds this
+    // stage's last real output, which is what "reuse the previous output"
+    // means here (see `lib/workflow/hashes.ts`'s module doc). Nothing below
+    // this block re-records the ledger: a skip is not a new completion, and
+    // the entry that made the skip possible is still accurate.
+    note = `skipped: ${stage}'s inputs are unchanged since its last successful run (resume, T02)`;
+  } else {
   // T01: the switch below is unchanged — every case still does exactly what
   // it did before. This try/catch only brackets it, so a real run's failure
   // is recorded in the stage ledger (never silently dropped, never mistaken
@@ -1493,23 +1517,32 @@ export async function runStage(opts: {
     // this wiring existed.
     await recordStage(outputDir, {
       stage,
-      inputHash: hashValue({ opts, job: forHash(previousJobSnapshot) }),
+      inputHash: currentInputHash,
       outputHash: null,
       failed: true,
     });
     throw error;
   }
 
-  // T01: the stage completed. One merged entry per stage in `ledger.json`,
-  // keyed by stage name and scoped to this job's own outputDir — never a
-  // second source of truth for *what stage the job is at* (that stays
-  // `job.stage` in job.json), only a content-addressed record of what this
-  // stage read and produced, for `resume.ts` (T02) to consult.
+  // T01/T02: the stage completed for real. One merged entry per stage in
+  // `ledger.json`, keyed by stage name and scoped to this job's own
+  // outputDir — never a second source of truth for *what stage the job is
+  // at* (that stays `job.stage` in job.json), only a content-addressed
+  // record of what this stage read and produced.
+  //
+  // `outputPath: 'job.json'` (T02) is what makes this entry skippable next
+  // time: every stage here folds its output into that one file rather than a
+  // stage-specific artifact, so job.json genuinely is "the stage's own
+  // artifact path" the field's contract asks for. Recording it is what lets
+  // `shouldSkip` say yes on a later call whose `currentInputHash` still
+  // matches — see the skip check above.
   await recordStage(outputDir, {
     stage,
-    inputHash: hashValue({ opts, job: forHash(previousJobSnapshot) }),
+    inputHash: currentInputHash,
     outputHash: hashValue({ job: forHash(job) }),
+    outputPath: 'job.json',
   });
+  }
 
   return {
     runId,
