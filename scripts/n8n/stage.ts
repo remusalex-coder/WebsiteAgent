@@ -669,8 +669,16 @@ export async function runStage(opts: {
           status: spatial3dProviderConfigured ? 'available' : 'unavailable/configuration-required',
           fallback: 'css3d-procedural-webgl',
         },
+        // WQ-010 / MASTER_INVENTORY.json A11: this label previously said
+        // 'google-places-and-bright-data'. Bright Data (the commercial
+        // scraping/proxy service) has no client module, config field, or
+        // credential anywhere in this repository — a repo-wide grep found
+        // zero references outside this one display string. The real
+        // fallback when Places' API key is absent is lib/sources/mapsListing.ts,
+        // an in-house Playwright read of Google Maps' own public,
+        // unauthenticated listing page — not a third-party provider.
         evidence: {
-          provider: 'google-places-and-bright-data',
+          provider: 'google-places-and-maps-listing',
           status: config.places.apiKey !== '' ? 'available' : 'fallback-direct-fetch',
         },
       };

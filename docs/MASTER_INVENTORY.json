@@ -493,8 +493,8 @@
     {
       "id": "A11",
       "title": "Bright Data's actual scope unclear -- named in stage.ts but no dedicated client module found distinct from placesApi.ts",
-      "status": "OPEN",
-      "next_step": "Read scripts/n8n/stage.ts's evidence/research stage in full to clarify."
+      "status": "RESOLVED 2026-08-25",
+      "next_step": "Resolved (WORK_QUEUE.json WQ-010): read scripts/n8n/stage.ts's evidence-collection stage in full, plus a repo-wide case-insensitive grep for 'brightdata'/'bright data' across lib/, scripts/, and test/. Finding: Bright Data has zero client module, config field, or credential anywhere in the codebase -- the only reference in the entire repository was the hardcoded display string 'google-places-and-bright-data' in stage.ts's /stage/router capability-router output (0-routes.json), purely aspirational/stale, never backed by an implementation. The real fallback when Places' API key is absent is lib/sources/mapsListing.ts, an in-house Playwright read of Google Maps' own public unauthenticated listing page -- not a third-party provider. Corrected the label to 'google-places-and-maps-listing' to reflect what actually runs; no test asserted the old string. Zero MASTER_CAPABILITY_TOOL_REGISTRY.json entries reference Bright Data either, so no registry change was needed beyond this."
     },
     {
       "id": "A12",

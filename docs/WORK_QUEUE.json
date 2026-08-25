@@ -217,17 +217,20 @@
       "description": "A11: clarify Bright Data's actual scope \u2014 named in stage.ts but no dedicated client module distinct from placesApi.ts",
       "priority": "P3",
       "dependencies": [],
-      "status": "QUEUED",
+      "status": "DONE",
       "assignedWorker": "claude, read-only investigation",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "scripts/n8n/stage.ts's evidence/research stage",
-      "outputs": "a MASTER_INVENTORY.json entry closing or reclassifying A11",
-      "artifacts": null,
-      "validationState": "UNVERIFIED",
+      "outputs": "MASTER_INVENTORY.json A11 resolved. Repo-wide grep confirms Bright Data has zero client module, config field, or credential anywhere -- the only reference in the entire codebase was one hardcoded display string in scripts/n8n/stage.ts's capability-router output ('google-places-and-bright-data' in the evidence entry of 0-routes.json), aspirational and never backed by an implementation. Fixed the label to 'google-places-and-maps-listing', the real fallback (lib/sources/mapsListing.ts, an in-house Playwright read of Google Maps' own public page, not a third-party service). No test asserted the old string; no MASTER_CAPABILITY_TOOL_REGISTRY.json entry references Bright Data either, so this was the complete fix.",
+      "artifacts": [
+        "scripts/n8n/stage.ts (evidence.provider label corrected)",
+        "docs/MASTER_INVENTORY.json A11 (RESOLVED)"
+      ],
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "MASTER_INVENTORY A11",
       "createdAt": "2026-08-24",
-      "updatedAt": "2026-08-24"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "WQ-011",
