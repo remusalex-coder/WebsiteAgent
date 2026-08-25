@@ -505,12 +505,14 @@
       "dependencies": [
         "WQ-019"
       ],
-      "status": "QUEUED",
+      "status": "DONE",
       "assignedWorker": "claude, deterministic -- needs a real or fixture-based n8n contract check before editing the generator",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "lib/workflow/stageMapping.ts, scripts/n8n/build-workflow-json.ts",
-      "outputs": "scripts/n8n/build-workflow-json.ts's generated workflow updated if and only if a verification path against a real/fixture n8n contract exists (e.g. a schema/contract test mirroring test/qa/p7-n8n.test.ts's static-structure discipline, or a real n8n instance to import the generated JSON into and confirm it parses/runs).",
-      "artifacts": null,
+      "outputs": "CLOSED: the premise was false, verified by directly reading scripts/n8n/build-workflow-json.ts in full (252 lines) rather than continuing to defer it as 'needs live n8n verification'. That file's own doc comment (Freeze P7-1/M-10) states the generated workflow is exactly three steps -- Webhook Trigger -> Job Intake -> POST /job -> poll GET /job -> Respond -- and 'n8n holds no decision'; the Reconcept? IF node and the per-stage loop it used to own are already gone (moved to runJobFull on the host, a prior freeze). Every node name in the generated workflow is a generic role name (Order Webhook, Job Intake, Start Job, Poll Job, Summarise, Respond) -- none of them reference the 17/16/12-value stage vocabulary in any form. There is no per-concrete-stage label, order, or branch anywhere in this file for lib/workflow/stageMapping.ts's abstract-stage vocabulary to be 'wired into' -- the original task description (inherited unverified from WQ-019, written before this file was actually re-read) was simply wrong about what needed migrating. No code changed; no live/fixture n8n verification was needed because there was nothing to verify against. This resolves what had been tracked as the project's one remaining n8n-contract-blocked item without requiring the live n8n instance this session never had access to.",
+      "artifacts": [
+        "scripts/n8n/build-workflow-json.ts (read in full, confirmed no change needed)"
+      ],
       "validationState": "UNVERIFIED",
       "failureState": null,
       "provenance": "WQ-019, 2026-08-25 -- split out as the one part of WQ-019's scope this session could not safely complete without a live/fixture n8n verification path",
