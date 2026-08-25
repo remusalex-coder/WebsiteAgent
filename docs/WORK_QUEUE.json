@@ -185,20 +185,22 @@
     },
     {
       "id": "WQ-009",
-      "description": "A5: Forge's motionIntensity is not rationale-gated like requires3D \u2014 add a rationale-presence check for 'expressive'/'immersive' selections",
+      "description": "A5 -- Forge's motionIntensity is not rationale-gated like requires3D. Fixed 2026-08-25: ExperienceStrategy.motionIntensityRationale added; normalizeExperienceStrategy now discards an 'expressive'/'immersive' claim with no non-empty rationale (downgrades to 'subtle', mirroring requires3D/requiresVideo's existing gate exactly, including that the performanceTier-raise rule now reads the gated value not the raw claim).",
       "priority": "P2",
       "dependencies": [],
-      "status": "QUEUED",
+      "status": "DONE",
       "assignedWorker": "claude, deterministic",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "lib/forge/experienceStrategy.ts (requires3D pattern), motionIntensity call sites",
-      "outputs": "a rationale-presence gate + test",
-      "artifacts": null,
-      "validationState": "UNVERIFIED",
+      "outputs": "lib/forge/types.ts (motionIntensityRationale field), lib/forge/experienceStrategy.ts (gate + schema + prompt text), test/forge/experienceStrategy.test.ts (8 new/updated tests)",
+      "artifacts": [
+        "commit 08a0fbf on the Windows checkout (C:\\Users\\40728\\WebsiteAgent): A5/WQ-009: gate motionIntensity expressive/immersive on a rationale"
+      ],
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "MASTER_INVENTORY A5",
       "createdAt": "2026-08-24",
-      "updatedAt": "2026-08-24"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "WQ-010",
