@@ -117,7 +117,7 @@ Playwright (`^1.49.1`) is the one other real npm dependency, driving evidence co
 2. **G-N6-LEGAL** (high, legal not technical) — rights to redistribute a business's own social-media photographs remain unresolved; blocks `image_editing`/`motion_media` from moving past their conservative defaults.
 3. **G-XAI-01** (medium) — `xai` is fully wired and tested but bound to zero capabilities; the adapter cost was paid, the capability value was never realized.
 4. **G-STAGE-01** (medium) — three job-stage vocabularies still coexist; the unification module built to fix this has zero adopters.
-5. **G-RUNNER-01** (medium) — `runner.ts`'s bounded concurrency pool is fully built and unused; naive parallelization of `diverge` without it would introduce a real candidate-loss race.
+5. **G-RUNNER-01** (RESOLVED 2026-08-25) — `diverge`'s K=3 candidate battle now builds in parallel through `runPool`/`SerializedWriter`, with a shadow-directory isolation pattern so concurrent builds cannot interleave writes to the shared run root. New regression tests prove the underlying race was real and is now gone; verified natively (Windows, including `fs.symlink`) with 0 regressions.
 6. **G-BATTLE-01** (medium) — `lib/forge/battle.ts`'s multi-candidate Design Battle is fully implemented but unreachable from the production entrypoint.
 7. **G-MCP-01** (low-medium) — MCP is a fully-designed `ServiceKind` with zero populated bindings; a real seam sitting idle.
 8. **G-ANTIGRAVITY-01** (low) — Antigravity's eight named patterns are not yet mapped one-to-one against live code.

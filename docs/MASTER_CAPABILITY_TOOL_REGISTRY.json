@@ -1675,10 +1675,10 @@
     },
     {
       "id": "G-RUNNER-01",
-      "title": "runner.ts's runPool/SerializedWriter is fully built and unused; naive parallelization of diverge would race",
-      "severity": "medium",
-      "detail": "scripts/n8n/stage.ts's diverge stage builds K candidates sequentially. lib/workflow/candidates.ts's recordCandidate has no in-process mutex on its read-modify-write index update.",
-      "recommendedNextStep": "Wire diverge through runPool with SerializedWriter around recordCandidate (this is A3, the standing next task chosen at the end of the prior session before this registry task interrupted it)."
+      "title": "RESOLVED 2026-08-25 — diverge's K=3 candidate battle now builds in parallel through runPool/SerializedWriter",
+      "severity": "resolved (was medium)",
+      "detail": "The real blocker was deeper than the recordCandidate index race alone: reconceptBuild and recordCandidate both read/write a SHARED outputDir, so naive parallelization would have interleaved concurrent builds' writes to the same 5b-design.json/site/. Fixed with a shadow-directory isolation pattern (each direction builds into a symlinked copy of outputDir; only the cheap candidate-id-assignment + index-append is serialized) plus a new sourceDir option on recordCandidate. Also fixed a real ordering bug the change surfaced: runPool's results array is completion order, not task order (its docstring was wrong and is now corrected) — stage.ts now matches results back to directions by id. New regression tests prove the race is real without serialization and gone with it. Verified natively on Windows (including fs.symlink) and in the cloud sandbox: 1439/1439 native, 0 regressions.",
+      "recommendedNextStep": "None — closed. See docs/MASTER_INVENTORY.json's A3 entry and commit 019367f for full detail."
     },
     {
       "id": "G-MCP-01",
