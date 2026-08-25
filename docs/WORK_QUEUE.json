@@ -415,9 +415,10 @@
       "artifacts": [
         "n8n/factory-v1.json (deleted), scripts/n8n/build-factory-workflow.ts (deleted)",
         "test/factory/stage-router.test.ts, test/factory/url-intake.test.ts (2 tests removed, rest kept)",
-        "n8n/README.md, docs/CONSOLIDATION_MAP.md, docs/BUSINESSFORGE_MASTER_INVENTORY.md, docs/REALITY_MAP.md, docs/MASTER_INVENTORY.md, docs/IMPLEMENTATION_GAP.md P2-1"
+        "n8n/README.md, docs/CONSOLIDATION_MAP.md, docs/BUSINESSFORGE_MASTER_INVENTORY.md, docs/REALITY_MAP.md, docs/MASTER_INVENTORY.md, docs/IMPLEMENTATION_GAP.md P2-1",
+        "commit b410cda on branch design-director-smoke (C:\\Users\\40728\\WebsiteAgent)"
       ],
-      "validationState": "UNVERIFIED",
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "docs/IMPLEMENTATION_GAP.md P2-1, queued and closed in the same pass 2026-08-25",
       "createdAt": "2026-08-25",
