@@ -1747,7 +1747,7 @@
       "title": "MCP is a fully-designed ServiceKind with zero populated bindings",
       "severity": "low-medium",
       "detail": "The architecture already anticipates MCP-served capabilities (ServiceKind.mcp, serviceRef() mapping) but no capability in SERVICE_BINDINGS actually uses kind:'mcp'.",
-      "recommendedNextStep": "When a real MCP-served capability need arises, bind it through the existing seam rather than inventing a new one — the seam is FAZA 6/8-complete already."
+      "recommendedNextStep": "When a real MCP-served capability need arises, bind it through the existing seam rather than inventing a new one -- the seam is FAZA 6/8-complete already. EVALUATED 2026-08-25 (WQ-028) for the most plausible candidate -- evidence/research gathering, currently agents/collectorAgent.ts (a bespoke, tested, free, deeply-integrated 1128-line crawler+harvester, not a thin fetch wrapper) -- and REJECTED: no documented deficiency exists that a hosted scraping/research MCP server (e.g. Bright Data, Firecrawl) would fix, and swapping a free in-house crawler for a paid, credentialed external one with no demonstrated win would be exactly the 'artificial connection' the mandate warns against. Re-evaluate only if a real, specific limitation of the current crawler surfaces (a real business site it cannot handle, a bot-detection failure actually observed)."
     },
     {
       "id": "G-ANTIGRAVITY-01",
