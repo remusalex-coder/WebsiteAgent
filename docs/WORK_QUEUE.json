@@ -407,12 +407,17 @@
       "dependencies": [
         "WQ-006"
       ],
-      "status": "QUEUED",
+      "status": "IN_PROGRESS",
       "assignedWorker": "claude, deterministic -- design task first, then a coordinated multi-file migration + tests",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "lib/workflow/state.ts, lib/workflow/jobState.ts, scripts/n8n/stage.ts, main.ts, lib/workflow/summary.ts, scripts/n8n/controlSurfacePage.ts, scripts/n8n/build-workflow-json.ts",
-      "outputs": "a documented concrete-to-abstract stage mapping; a back-compat job.json reader; summary.ts/control-surface/n8n-workflow-generator updated in lockstep; tests proving old job.json files still load and the n8n contract fields are unchanged",
-      "artifacts": null,
+      "outputs": "Outputs (1) and (2) DONE, additive-only, tested: new lib/workflow/stageMapping.ts documents the full concrete-to-abstract mapping (derived by reading every saveJob(outputDir, {stage: ...}) call in scripts/n8n/stage.ts directly, not inferred from names) and exports JOB_STAGE_TO_ABSTRACT (compile-time-exhaustive Record<JobStage, AbstractJobState>, `satisfies`-checked so a future JobStage addition is a type error if unmapped) plus abstractStageOf(stage: string) -- the back-compat reader itself: takes a raw string (not the JobStage type) because loadJob's JSON.parse(...) as JobState is an assertion, not a validation, so a genuinely old/foreign job.json's stage value must degrade to null rather than throw. Wired into summary.ts as a new additive JobSummary.abstractStage field (job.stage/JobStage itself untouched, so scripts/n8n/controlSurfacePage.ts's STAGE_LABELS/STAGE_ORDER, which key directly on JobStage, are unaffected and unbroken). Confirmed the mapping surfaces two real findings: three JobStage values (experience/asset/design) are never written by any live stage.ts case today (mapped to 'plan' by best-fit, documented as reserved not dead); state.ts's 'aborted' abstract state has no JobStage equivalent at all -- an unrecoverable failure currently throws rather than persisting a terminal stage (a real gap, left for a follow-up that wires TRANSITION_TABLE's aborted edges to something that writes state). 16 new tests (7 in test/workflow/stageMapping.test.ts table-driven over all 17 JobStage values plus the back-compat-null case; 2 in summary.test.ts). Sandbox suite: 1507 tests, 1499 passing, 8 known Playwright-dependent failures (unchanged baseline -- none of the new tests touch a browser). REMAINING for output (3), not started: scripts/n8n/controlSurfacePage.ts needs a parallel ABSTRACT_STAGE_LABELS/ABSTRACT_STAGE_ORDER (12 entries) alongside its existing 17-value ones (replacing would lose per-concrete-stage progress detail); scripts/n8n/build-workflow-json.ts's generated workflow is a live n8n contract this module has no way to verify against and needs a task that can test against a real n8n instance before touching it. Left IN_PROGRESS rather than DONE for this reason -- see stageMapping.ts's own doc comment for the itemized remaining work.",
+      "artifacts": [
+        "lib/workflow/stageMapping.ts (new file -- JOB_STAGE_TO_ABSTRACT, UNUSED_JOB_STAGES, abstractStageOf)",
+        "lib/workflow/summary.ts (JobSummary.abstractStage field, additive)",
+        "test/workflow/stageMapping.test.ts (new file, 7 tests)",
+        "test/workflow/summary.test.ts (+2 tests)"
+      ],
       "validationState": "UNVERIFIED",
       "failureState": null,
       "provenance": "WQ-006's audit, 2026-08-25 -- confirms docs/MASTER_CAPABILITY_TOOL_REGISTRY.json G-STAGE-01's own caution that state.ts must be verified as a superset before adoption; it is not one",
@@ -489,6 +494,25 @@
       "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "docs/IMPLEMENTATION_GAP.md P2-2, split from WQ-021 2026-08-25 -- deliberately scoped separately since it touches already-shipped code, unlike WQ-021's purely additive new primitive",
+      "createdAt": "2026-08-25",
+      "updatedAt": "2026-08-25"
+    },
+    {
+      "id": "WQ-023",
+      "description": "WQ-019's output (3), split out because it needs a different kind of verification: wire lib/workflow/stageMapping.ts's abstract-stage vocabulary into scripts/n8n/controlSurfacePage.ts (add ABSTRACT_STAGE_LABELS/ABSTRACT_STAGE_ORDER, 12 entries, alongside -- not replacing -- the existing 17-value STAGE_LABELS/STAGE_ORDER, so per-concrete-stage progress detail is not lost) and scripts/n8n/build-workflow-json.ts's generated workflow (a live n8n contract). Needs a way to verify against a real n8n instance or an equivalent fixture-based contract test before touching the generator -- unlike WQ-019's step 1/2, a mistake here risks silently breaking the live control surface or the n8n workflow JSON, which stageMapping.ts's own additive design (see its doc comment's 'why this is additive' section) deliberately avoided doing without that verification path.",
+      "priority": "P3",
+      "dependencies": [
+        "WQ-019"
+      ],
+      "status": "QUEUED",
+      "assignedWorker": "claude, deterministic -- needs a real or fixture-based n8n contract check before editing the generator",
+      "attempts": 0,
+      "inputs": "lib/workflow/stageMapping.ts, scripts/n8n/controlSurfacePage.ts, scripts/n8n/build-workflow-json.ts",
+      "outputs": "ABSTRACT_STAGE_LABELS/ABSTRACT_STAGE_ORDER added to controlSurfacePage.ts; build-workflow-json.ts's generated workflow updated if and only if a verification path against a real/fixture n8n contract exists; tests proving the existing 17-value STAGE_LABELS/STAGE_ORDER and their consumers are byte-for-byte unchanged",
+      "artifacts": null,
+      "validationState": "UNVERIFIED",
+      "failureState": null,
+      "provenance": "WQ-019, 2026-08-25 -- split out as the one part of WQ-019's scope this session could not safely complete without a live/fixture n8n verification path",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
     }

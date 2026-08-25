@@ -23,8 +23,10 @@ import path from 'node:path';
 
 import { loadJob } from './jobState.js';
 import { loadIndex } from './candidates.js';
+import { abstractStageOf } from './stageMapping.js';
 
 import type { JobDecision, JobStage, JobState, PhaseStatus, WorkerCall } from './jobState.js';
+import type { JobState as AbstractJobState } from './state.js';
 
 const SOURCE = 'workflow.summary';
 
@@ -85,6 +87,15 @@ export interface JobSummary {
   readonly jobId: string;
   readonly business: string;
   readonly stage: JobStage;
+  /**
+   * `stage` projected onto `lib/workflow/state.ts`'s twelve-state abstract
+   * vocabulary (WQ-019 step 1 — see `stageMapping.ts`). `null` only for a
+   * `stage` value that predates today's `JobStage` type and cannot be
+   * placed on the abstract vocabulary; every current `JobStage` maps to a
+   * real abstract state. Additive: `stage` above is unchanged and remains
+   * the field every existing reader (the control surface above all) uses.
+   */
+  readonly abstractStage: AbstractJobState | null;
   readonly iteration: number;
   readonly maxIter: number;
   readonly decision: JobDecision;
@@ -136,6 +147,7 @@ export function summarizeJob(job: JobState, candidateCount = 0): JobSummary {
     jobId: job.jobId,
     business: job.business,
     stage: job.stage,
+    abstractStage: abstractStageOf(job.stage),
     iteration: job.iteration,
     maxIter: job.maxIter,
     decision: job.decision,

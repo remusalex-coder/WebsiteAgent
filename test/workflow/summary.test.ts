@@ -221,6 +221,17 @@ test('summarizeJob: tolerates a hand-written/partial job object missing provider
   assert.equal(summary.budgetCents, 0);
   assert.equal(summary.gate, null);
   assert.equal(summary.battle, null);
+  assert.equal(summary.abstractStage, 'verify'); // stage 'browser' -> abstract 'verify' (WQ-019)
+});
+
+test('summarizeJob: abstractStage is null for a stage value that is not a recognised JobStage (WQ-019 back-compat reader)', () => {
+  // Simulates a job.json written by a since-renamed or hand-authored producer
+  // — abstractStageOf must degrade to null rather than throw, so a reader of
+  // an old/foreign job.json never crashes on this field.
+  const foreign = { ...createJob('job-foreign', 'Acme Bakery', 3), stage: 'some-future-stage' } as unknown as JobState;
+  const summary = summarizeJob(foreign);
+  assert.equal(summary.abstractStage, null);
+  assert.equal(summary.stage, 'some-future-stage'); // the raw field is untouched — only the derived one degrades
 });
 
 test('summarizeJob: carries stage/iteration/decision/phases/errors/finalOutput straight through', () => {
@@ -241,6 +252,7 @@ test('summarizeJob: carries stage/iteration/decision/phases/errors/finalOutput s
   assert.equal(summary.jobId, 'job-7');
   assert.equal(summary.business, 'Acme Bakery');
   assert.equal(summary.stage, 'build');
+  assert.equal(summary.abstractStage, 'candidate_build');
   assert.equal(summary.iteration, 2);
   assert.equal(summary.maxIter, 5);
   assert.equal(summary.decision, 'reconcept');
