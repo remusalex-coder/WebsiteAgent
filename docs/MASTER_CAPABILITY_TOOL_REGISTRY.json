@@ -1512,6 +1512,30 @@
       "rationale": "Real code exists (lib/render/sections.ts's renderContactFormBlock, gated by RenderOptions.contactForm / CONTACT_FORM_ENABLED) and is tested (test/render/site.test.ts), but shipped OFF BY DEFAULT: WebFetch against Netlify's official docs (2026-08-25) confirmed the mechanism (data-netlify=\"true\" + build-time form-name scan) and current free/unlimited pricing, but could not confirm whether the scanner fires on this project's actual deploy path -- lib/deploy/netlify.ts uploads a pre-built zip via the Deploy API ('Drop'), not a git-connected build, and no live NETLIFY_DEPLOY_TOKEN exists in this environment to test end-to-end. See gap G-CONTACT-01.",
       "documentarySource": "lib/render/sections.ts; lib/render/runtime-rules.ts (contactFormRules); Netlify official docs (WebFetch 2026-08-25); Netlify support forum (zip-deploy form-detection question, unresolved)",
       "confidence": "medium (code-grounded and tested; the one open question is a live-deploy behaviour this session cannot verify)"
+    },
+    {
+      "id": "ext.ollama-local",
+      "name": "Ollama (local)",
+      "category": "external_tool",
+      "whatItDoes": "Local model runner. Verified installed and working on the Windows checkout host (C:\\Users\\40728), with one model already pulled (gemma4:26b, 17GB) -- confirmed via `ollama list` (WQ-multi-worker audit, 2026-08-25). Zero cost, zero credential, zero external network dependency once a model is pulled.",
+      "currentImplementation": "DOCUMENTED_ONLY",
+      "status": "RESEARCHED",
+      "decision": "INTEGRATE",
+      "rationale": "Genuinely free, zero-credential local capability -- exactly the kind of self-hosted option the mandate prefers over vendor lock-in. NOT wired into lib/ai/providers or SERVICE_BINDINGS yet: doing so requires knowing whether BusinessForge's own runtime process (scripts/n8n/stage.ts / stage-server.ts) actually executes on this same host in production (only then can it reach Ollama's local HTTP API at localhost:11434) -- unconfirmed this session, and a wrong assumption here would silently produce a capability that only works when a developer happens to be running on this exact machine. Flagged as a human-input blocker (deployment topology), not a technical one.",
+      "documentarySource": "Windows-MCP PowerShell, `ollama list` output, 2026-08-25",
+      "confidence": "medium (tool existence and one model verified live; production reachability from BusinessForge's actual runtime process is unverified)"
+    },
+    {
+      "id": "ext.hermes-agent-cli",
+      "name": "Hermes Agent (CLI)",
+      "category": "external_tool",
+      "whatItDoes": "A separate, pre-existing, full-featured third-party AI agent CLI installed on the Windows checkout host (v0.20.0, `C:\\Users\\40728\\AppData\\Local\\hermes`), with its own multi-provider model/fallback configuration (`hermes fallback`), pooled credentials (`hermes auth`), scriptable one-shot mode (`hermes -z PROMPT`), and its own MCP client (`hermes mcp`). Not part of BusinessForge; appears to be the machine owner's personal tool.",
+      "currentImplementation": "DOCUMENTED_ONLY",
+      "status": "RESEARCHED",
+      "decision": "REJECT",
+      "rationale": "Deliberately not integrated and not planned for integration without the user's explicit, separate sign-off. This is a personal tool with its own pooled credentials, cron jobs, and messaging-platform integrations (WhatsApp/Slack gateways) -- wiring BusinessForge's autonomous production pipeline to consume it would spend the user's personal credential pool and give an unrelated product implicit access to a tool with a much broader blast radius than a single API key. This is exactly the class of decision the standing mandate reserves for a human (business/access-permission approval), not a call this session makes on its own initiative. No code touches this tool.",
+      "documentarySource": "Windows-MCP PowerShell, `hermes --help`, `hermes --version`, 2026-08-25 -- read-only, no config/credential commands run",
+      "confidence": "high (tool existence and capability surface verified live; integration deliberately not attempted)"
     }
   ],
   "orchestration_systems": [
@@ -1583,14 +1607,14 @@
       "id": "orch.workflow-state",
       "name": "lib/workflow/state.ts / ledger.ts / projections.ts",
       "whatItDoes": "Unified job-stage vocabulary + ledger + projections, purpose-built to replace the three coexisting stage vocabularies (main.ts STAGES, jobState.ts JobStage, stage.ts's own STAGES array).",
-      "currentImplementation": "REAL_IMPLEMENTED but ORPHANED (zero production importers, ledger.ts has zero importers even in tests)",
+      "currentImplementation": "REAL_IMPLEMENTED, no longer orphaned as of WQ-019/WQ-025 (2026-08-25): lib/workflow/stageMapping.ts (built on this file's JOB_STATES/AbstractJobState) is imported by lib/workflow/summary.ts (JobSummary.abstractStage), which is imported by scripts/n8n/stage-server.ts's GET /job handler and rendered in scripts/n8n/controlSurfacePage.ts's live control-surface page -- a real production import chain. ledger.ts/projections.ts remain unimported by anything (still accurate for those two files specifically).",
       "status": "PARTIALLY_IMPLEMENTED",
       "realFiles": [
         "lib/workflow/state.ts",
         "lib/workflow/ledger.ts",
         "lib/workflow/projections.ts"
       ],
-      "documentarySource": "MASTER_INVENTORY.json; direct code reading this session",
+      "documentarySource": "MASTER_INVENTORY.json; direct code reading, re-verified 2026-08-25 against WQ-019/WQ-025's own commits (30494aa, 2bed792)",
       "confidence": "high"
     },
     {
@@ -1649,10 +1673,10 @@
     {
       "id": "agent.lovable-agent",
       "name": "agents/lovableAgent.ts",
-      "whatItDoes": "Stub — run() throws NotImplementedError.",
-      "status": "PARTIALLY_IMPLEMENTED",
-      "documentarySource": "agents/lovableAgent.ts",
-      "confidence": "high (code-grounded)"
+      "whatItDoes": "Real: run() calls deployToNetlify (lib/deploy/netlify.ts), zips the rendered site/ dir and uploads via Netlify's Deploy API (Drop). Not a stub.",
+      "status": "REAL_IMPLEMENTED",
+      "documentarySource": "agents/lovableAgent.ts (re-read verbatim 2026-08-25 -- this entry's prior text, 'Stub -- run() throws NotImplementedError', was stale/wrong, most likely describing an earlier pre-Netlify-deploy version of the file that this session's own multi-worker audit surfaced by directly re-reading the current source)",
+      "confidence": "high (code-grounded, re-verified 2026-08-25)"
     },
     {
       "id": "agent.pools-seats",
