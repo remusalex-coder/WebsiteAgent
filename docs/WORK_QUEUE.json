@@ -563,9 +563,10 @@
         "scripts/n8n/stage-server.ts (GET /job handler, abstractStage field)",
         "scripts/n8n/controlSurfacePage.ts (ABSTRACT_STAGE_LABELS, render() wiring)",
         "test/qa/p7-control-surface-page.test.ts (new file, 4 tests)",
-        "test/qa/p7-endpoints.test.ts (+1 assertion)"
+        "test/qa/p7-endpoints.test.ts (+1 assertion)",
+        "commit 2bed792 on branch design-director-smoke (C:\\Users\\40728\\WebsiteAgent), native full suite 1515/1515 passing, tsc --noEmit exit 0"
       ],
-      "validationState": "UNVERIFIED",
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "Split from WQ-023, 2026-08-25 -- the safe, non-n8n-contract half did not actually need live n8n verification once traced through: it never touches build-workflow-json.ts's generated JSON",
       "createdAt": "2026-08-25",
