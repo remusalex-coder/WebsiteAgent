@@ -180,6 +180,14 @@ export interface CreativeTerritory {
  */
 export interface ExperienceStrategy {
   readonly motionIntensity: 'none' | 'subtle' | 'expressive' | 'immersive';
+  /**
+   * Why 'expressive'/'immersive' is earned by this business's own evidence —
+   * required whenever `motionIntensity` is one of those two, discarded
+   * (and `motionIntensity` downgraded to the restrained default) otherwise.
+   * Same gate `requires3D`/`requiresVideo` already apply (A-19's discipline
+   * extended to motion, closing MASTER_INVENTORY.json's A5).
+   */
+  readonly motionIntensityRationale: string;
   readonly navigationModel: 'inline' | 'sticky-minimal' | 'full-screen-menu' | 'morphing';
   readonly loadingModel: 'none' | 'skeleton' | 'progressive-reveal' | 'asset-aware-preloader';
   readonly typographyBehavior: 'static' | 'kinetic-headlines' | 'split-text-reveals' | 'typography-led-navigation';
@@ -364,6 +372,25 @@ export interface ForgeOptions {
   readonly maxIterations?: number | undefined;
   readonly autoOpen?: boolean | undefined;
   readonly signal?: AbortSignal | undefined;
+  /**
+   * Where the final `index.html`/`styles.css`/`experience.js` land. Defaults
+   * to `<runDir>/site` for standalone/CLI callers (`scripts/forge/run.ts`,
+   * `scripts/design-director-ab-proof.ts`), which is the shared directory
+   * `main.ts`'s deterministic `renderStage` also writes to. `main.ts`'s
+   * `'enhance'` pipeline step passes an explicit candidate directory instead,
+   * so a forge run can never partially overwrite that shared `site/` with an
+   * incomplete or losing build — see `lib/forge/orchestrator.ts`.
+   */
+  readonly siteDir?: string | undefined;
+  /**
+   * The run's own capability orchestrator/provider factory, reused instead
+   * of Forge building its own. Passing this is what makes `BF_BUDGET_TIER`
+   * actually apply to Forge's model calls, and what makes Forge's spend show
+   * up in the run's own cost report — see `orchestrator.ts`'s fallback,
+   * which is for standalone callers only and always runs under the €0
+   * `DEFAULT_POLICY`.
+   */
+  readonly routing?: ForgeRouting | undefined;
 }
 
 export interface ForgeResult {

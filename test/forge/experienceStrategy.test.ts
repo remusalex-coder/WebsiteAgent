@@ -20,6 +20,7 @@ const dossier = { businessName: 'Test Co' };
 test('a fully valid response passes through unchanged', () => {
   const raw = {
     motionIntensity: 'expressive',
+    motionIntensityRationale: 'The product configurator is the central interaction; expressive transitions carry state changes the user must track.',
     navigationModel: 'sticky-minimal',
     loadingModel: 'skeleton',
     typographyBehavior: 'kinetic-headlines',
@@ -42,6 +43,7 @@ test('a fully valid response passes through unchanged', () => {
   const result = normalizeExperienceStrategy(raw, dossier, logger);
 
   assert.equal(result.motionIntensity, 'expressive');
+  assert.equal(result.motionIntensityRationale, raw.motionIntensityRationale);
   assert.equal(result.navigationModel, 'sticky-minimal');
   assert.equal(result.performanceTier, 2);
 });
@@ -84,9 +86,38 @@ test('performanceTier is never lowered by the 3D consistency rule if the model a
   assert.equal(result.performanceTier, 4);
 });
 
-test('motionIntensity "immersive" raises performanceTier to at least 2', () => {
-  const result = normalizeExperienceStrategy({ motionIntensity: 'immersive', performanceTier: 0 }, dossier, logger);
+test('motionIntensity "expressive"/"immersive" with an empty rationale is downgraded to the restrained default — an unjustified motion claim is discarded, not trusted (A5)', () => {
+  const expressive = normalizeExperienceStrategy({ motionIntensity: 'expressive', motionIntensityRationale: '' }, dossier, logger);
+  assert.equal(expressive.motionIntensity, DEFAULT_EXPERIENCE_STRATEGY.motionIntensity);
+  assert.equal(expressive.motionIntensityRationale, '');
+
+  const immersive = normalizeExperienceStrategy({ motionIntensity: 'immersive' }, dossier, logger);
+  assert.equal(immersive.motionIntensity, DEFAULT_EXPERIENCE_STRATEGY.motionIntensity);
+  assert.equal(immersive.motionIntensityRationale, '');
+
+  const whitespaceOnly = normalizeExperienceStrategy({ motionIntensity: 'immersive', motionIntensityRationale: '   ' }, dossier, logger);
+  assert.equal(whitespaceOnly.motionIntensity, DEFAULT_EXPERIENCE_STRATEGY.motionIntensity);
+});
+
+test('motionIntensity "none"/"subtle" never require a rationale — restraint needs no justification', () => {
+  assert.equal(normalizeExperienceStrategy({ motionIntensity: 'none' }, dossier, logger).motionIntensity, 'none');
+  assert.equal(normalizeExperienceStrategy({ motionIntensity: 'subtle' }, dossier, logger).motionIntensity, 'subtle');
+});
+
+test('motionIntensity "immersive" with a real rationale is honored, and raises performanceTier to at least 2', () => {
+  const result = normalizeExperienceStrategy(
+    { motionIntensity: 'immersive', motionIntensityRationale: 'The signature interaction is a 3D product spin the user drives by scroll.', performanceTier: 0 },
+    dossier,
+    logger,
+  );
+  assert.equal(result.motionIntensity, 'immersive');
   assert.equal(result.performanceTier, 2);
+});
+
+test('an unjustified "immersive" claim does not raise performanceTier — the tier-raise rule reads the gated value, not the raw claim', () => {
+  const result = normalizeExperienceStrategy({ motionIntensity: 'immersive', performanceTier: 0 }, dossier, logger);
+  assert.equal(result.motionIntensity, 'subtle');
+  assert.equal(result.performanceTier, 0);
 });
 
 test('functionalModules: an invalid array collapses to the default; a mix of "none" and a real module keeps only the real module', () => {
@@ -121,4 +152,6 @@ test('the default strategy itself is internally consistent: "none" motion at tie
   assert.equal(DEFAULT_EXPERIENCE_STRATEGY.requiresVideo, false);
   assert.deepEqual(DEFAULT_EXPERIENCE_STRATEGY.functionalModules, ['enquiry-form']);
   assert.equal(DEFAULT_EXPERIENCE_STRATEGY.accessibilityStrategy, 'wcag-aa-floor');
+  // The default is 'subtle', which needs no rationale — consistent with the A5 gate below.
+  assert.equal(DEFAULT_EXPERIENCE_STRATEGY.motionIntensityRationale, '');
 });

@@ -25,6 +25,7 @@ import type { Logger } from '../logger.js';
  */
 export const DEFAULT_EXPERIENCE_STRATEGY: ExperienceStrategy = {
   motionIntensity: 'subtle',
+  motionIntensityRationale: '',
   navigationModel: 'inline',
   loadingModel: 'none',
   typographyBehavior: 'static',
@@ -108,6 +109,11 @@ function pickFunctionalModules(value: unknown): readonly FunctionalModuleId[] {
  * - A boolean `requires3D`/`requiresVideo` with an empty rationale is
  *   treated as false — an unjustified media requirement is exactly the
  *   "spectacle without evidence" failure mode `ANTI_AI_SLOP.md` A-19 names.
+ * - `motionIntensity: 'expressive' | 'immersive'` with an empty
+ *   `motionIntensityRationale` is downgraded to the restrained default
+ *   ('subtle') for the same reason — an enum claim is exactly as
+ *   unjustifiable as a boolean one without evidence behind it
+ *   (MASTER_INVENTORY.json A5).
  */
 export function normalizeExperienceStrategy(
   raw: unknown,
@@ -127,7 +133,12 @@ export function normalizeExperienceStrategy(
   const requiresVideoRationale = typeof r['requiresVideoRationale'] === 'string' ? r['requiresVideoRationale'].trim() : '';
   const requiresVideo = Boolean(r['requiresVideo']) && requiresVideoRationale.length > 0;
 
-  const motionIntensity = pickEnum(r['motionIntensity'], MOTION_INTENSITIES, DEFAULT_EXPERIENCE_STRATEGY.motionIntensity);
+  const motionIntensityRationaleRaw = typeof r['motionIntensityRationale'] === 'string' ? r['motionIntensityRationale'].trim() : '';
+  const claimedMotionIntensity = pickEnum(r['motionIntensity'], MOTION_INTENSITIES, DEFAULT_EXPERIENCE_STRATEGY.motionIntensity);
+  const motionIntensityNeedsRationale = claimedMotionIntensity === 'expressive' || claimedMotionIntensity === 'immersive';
+  const motionIntensityJustified = !motionIntensityNeedsRationale || motionIntensityRationaleRaw.length > 0;
+  const motionIntensity = motionIntensityJustified ? claimedMotionIntensity : DEFAULT_EXPERIENCE_STRATEGY.motionIntensity;
+  const motionIntensityRationale = motionIntensityNeedsRationale && motionIntensityJustified ? motionIntensityRationaleRaw : '';
   let performanceTier = pickTier(r['performanceTier'], DEFAULT_EXPERIENCE_STRATEGY.performanceTier);
 
   if (requires3D && performanceTier < 3) performanceTier = 3;
@@ -139,6 +150,7 @@ export function normalizeExperienceStrategy(
 
   return {
     motionIntensity,
+    motionIntensityRationale,
     navigationModel: pickEnum(r['navigationModel'], NAVIGATION_MODELS, DEFAULT_EXPERIENCE_STRATEGY.navigationModel),
     loadingModel: pickEnum(r['loadingModel'], LOADING_MODELS, DEFAULT_EXPERIENCE_STRATEGY.loadingModel),
     typographyBehavior: pickEnum(r['typographyBehavior'], TYPOGRAPHY_BEHAVIORS, DEFAULT_EXPERIENCE_STRATEGY.typographyBehavior),
@@ -163,7 +175,7 @@ export function normalizeExperienceStrategy(
 export const EXPERIENCE_STRATEGY_SCHEMA = {
   type: 'object',
   required: [
-    'motionIntensity', 'navigationModel', 'loadingModel', 'typographyBehavior',
+    'motionIntensity', 'motionIntensityRationale', 'navigationModel', 'loadingModel', 'typographyBehavior',
     'cursorBehavior', 'scrollBehavior', 'layoutGrammar', 'mediaStrategy',
     'requires3D', 'requires3DRationale', 'requiresVideo', 'requiresVideoRationale',
     'functionalModules', 'mobileBehavior', 'accessibilityStrategy',
@@ -171,6 +183,7 @@ export const EXPERIENCE_STRATEGY_SCHEMA = {
   ],
   properties: {
     motionIntensity: { type: 'string', enum: [...MOTION_INTENSITIES] },
+    motionIntensityRationale: { type: 'string' },
     navigationModel: { type: 'string', enum: [...NAVIGATION_MODELS] },
     loadingModel: { type: 'string', enum: [...LOADING_MODELS] },
     typographyBehavior: { type: 'string', enum: [...TYPOGRAPHY_BEHAVIORS] },
@@ -195,6 +208,7 @@ export const EXPERIENCE_STRATEGY_SCHEMA = {
 export const EXPERIENCE_STRATEGY_PROMPT = `EXPERIENCE STRATEGY — decide each of the following explicitly, from the closed vocabulary given, never inventing a value outside it. Each is a real decision the deterministic builder will act on, not a mood word.
 
 - motionIntensity: "none" | "subtle" | "expressive" | "immersive" — default posture is restraint; earn intensity with a reason, don't reach for it.
+- motionIntensityRationale: required whenever motionIntensity is "expressive" or "immersive" — say what evidence earns the extra motion. Left empty (or motionIntensity left below "expressive") otherwise. An "expressive"/"immersive" claim with no rationale is discarded down to "subtle", same discipline as requires3D/requiresVideo below.
 - navigationModel: "inline" | "sticky-minimal" | "full-screen-menu" | "morphing"
 - loadingModel: "none" | "skeleton" | "progressive-reveal" | "asset-aware-preloader" — a preloader must be tied to real asset loading, never a fake timed animation.
 - typographyBehavior: "static" | "kinetic-headlines" | "split-text-reveals" | "typography-led-navigation"
