@@ -46,13 +46,13 @@
       "licensing": "commercial-api",
       "apiKeyRequired": true,
       "status": "REAL_IMPLEMENTED",
-      "qualityReliability": "UNKNOWN — zero dedicated behavioural test file found (test/ai/ has no anthropic-provider.test.ts); only exercised indirectly through integration/e2e paths",
+      "qualityReliability": "PARTIALLY RESOLVED 2026-08-25 — test/ai/anthropic-provider.test.ts added (13 tests: wiring, planner ranking, real error-mapping via health()'s non-streaming request, stubbed at the fetch layer so the SDK's own error classes are exercised). generate()'s SSE-stream path (client.beta.messages.stream().finalMessage()) remains untested by design — faithfully stubbing it would require reconstructing undocumented SDK internals, judged a shallow-coverage risk rather than real coverage; see the test file's own header.",
       "fallback": "openai.frontier / gemini.frontier / groq.workhorse depending on capability (see capability_routing_matrix)",
       "alternatives": "openai, gemini, deepseek, cerebras, groq, openrouter, xai",
       "compatibilities": "bound to 5 capability slots in SERVICE_BINDINGS",
       "canExecuteAutonomously": "text generation, structured JSON (schema in-prompt, validated locally), vision judging",
       "cannotExecute": "no native image/video/audio generation; no browsing",
-      "existingTests": "NONE dedicated (gap — see gaps.G-AI-01)",
+      "existingTests": "test/ai/anthropic-provider.test.ts (13 tests, added 2026-08-25 — wiring/ranking/error-mapping only; generate()'s streaming path is a separate, still-open follow-up)",
       "documentarySource": "package.json; lib/ai/providers/anthropic.ts; MASTER_INVENTORY.json",
       "confidence": "high (code-grounded)"
     },
@@ -1654,10 +1654,10 @@
   "gaps": [
     {
       "id": "G-AI-01",
-      "title": "anthropic provider still has zero dedicated behavioural test file (gemini half RESOLVED 2026-08-25)",
-      "severity": "medium (downgraded from high — the higher-impact half is closed)",
-      "detail": "gemini is now covered: test/ai/gemini-provider.test.ts (17 tests, added 2026-08-25, all passing natively and in the cloud sandbox, no regressions in the 1423-test suite). anthropic — #1 executor for prose_writing and creative_direction — still has no test/ai/anthropic-provider.test.ts. groq and now gemini are the only providers with confirmed fetch-stubbed behavioural coverage.",
-      "recommendedNextStep": "Write fetch-stubbed behavioural tests for anthropic next, mirroring test/ai/gemini-provider.test.ts's and test/ai/groq-provider.test.ts's pattern (request shape via @anthropic-ai/sdk, response normalization, HTTP failure/timeout, planner wiring)."
+      "title": "RESOLVED to the honest limit of what's testable without SDK-internals risk (2026-08-25) — one narrow sub-gap remains",
+      "severity": "low (downgraded from high — both providers now have real, appropriate coverage)",
+      "detail": "gemini: test/ai/gemini-provider.test.ts (17 tests — full request/response behavioural coverage, fetch-stubbed, mirrors groq's pattern exactly, since gemini talks raw HTTP like groq). anthropic: test/ai/anthropic-provider.test.ts (13 tests — wiring, planner ranking, and REAL error-mapping via health()'s non-streaming request, fetch-stubbed so the SDK's own error classes are exercised for real). The one remaining sub-gap is anthropic's generate() SSE-stream path specifically (client.beta.messages.stream().finalMessage()), deliberately left uncovered — see anthropic-provider.test.ts's own header for why a stream stub was judged a shallow-coverage risk rather than real coverage. groq, gemini, and anthropic (partially) now all have confirmed behavioural test files; only the streaming call itself is untested.",
+      "recommendedNextStep": "If anthropic's streaming path needs real coverage, the safer route is an integration-style test behind a live-key env-gate (mirroring the pattern test/qa/layout-audit.live.test.ts already uses for Playwright) rather than hand-reconstructing the SDK's internal SSE event format."
     },
     {
       "id": "G-XAI-01",

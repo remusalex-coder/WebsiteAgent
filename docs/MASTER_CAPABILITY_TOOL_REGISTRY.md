@@ -35,7 +35,7 @@ Eight provider adapters are real, in-repo TypeScript files under `lib/ai/provide
 |---|---|---|---|---|
 | **gemini** | REAL_IMPLEMENTED | 12 (most-bound) | **17 tests, added 2026-08-25** (was none) | #1 executor for `reasoning` and `structured_generation`; licence class `free-tier-unverified` (O-3: commercial terms not settled) |
 | **openai** | REAL_IMPLEMENTED | 10 | helper-level only | native schema enforcement, vision, embeddings |
-| **anthropic** | REAL_IMPLEMENTED | 5 | **none dedicated** | the repo's only real AI SDK dependency; #1 for `prose_writing`/`creative_direction` |
+| **anthropic** | REAL_IMPLEMENTED | 5 | **13 tests, added 2026-08-25** (wiring/ranking/error-mapping; streaming path deliberately left uncovered, see §7) | the repo's only real AI SDK dependency; #1 for `prose_writing`/`creative_direction` |
 | **groq** | REAL_IMPLEMENTED | 4 | **real, fetch-stubbed behavioural test** | added 2026-08-24 specifically to remove Gemini as a single point of failure |
 | **cerebras** | PARTIALLY_IMPLEMENTED | 4 | wiring-level test | deliberately ranked last among paid candidates — reachability fallback, not quality fallback |
 | **openrouter** | REAL_IMPLEMENTED | 3 | probe test only | free open-weight seat, mainly used for `enum_direction` |
@@ -113,7 +113,7 @@ Playwright (`^1.49.1`) is the one other real npm dependency, driving evidence co
 
 ## 7. The ten most important gaps (ranked)
 
-1. **G-AI-01** (medium, downgraded 2026-08-25) — `anthropic`, the #1 executor for `prose_writing`/`creative_direction`, still has zero dedicated behavioural test file. `gemini`'s half of this gap is RESOLVED: `test/ai/gemini-provider.test.ts` (17 tests) now exists, mirroring `groq-provider.test.ts`'s pattern; the full suite (1423 tests) passes natively with no regressions.
+1. **G-AI-01** (low, downgraded 2026-08-25) — RESOLVED to the honest limit of what's testable without SDK-internals risk. `gemini`: `test/ai/gemini-provider.test.ts` (17 tests, full behavioural coverage, mirrors `groq-provider.test.ts`). `anthropic`: `test/ai/anthropic-provider.test.ts` (13 tests — wiring, planner ranking, and real error-mapping via `health()`'s non-streaming request, exercising the SDK's own error classes). One narrow sub-gap remains by design: anthropic's `generate()` SSE-stream path was deliberately left uncovered rather than faked with a hand-reconstructed internal event format — see that file's header. Full suite (1436 tests) passes natively with no regressions.
 2. **G-N6-LEGAL** (high, legal not technical) — rights to redistribute a business's own social-media photographs remain unresolved; blocks `image_editing`/`motion_media` from moving past their conservative defaults.
 3. **G-XAI-01** (medium) — `xai` is fully wired and tested but bound to zero capabilities; the adapter cost was paid, the capability value was never realized.
 4. **G-STAGE-01** (medium) — three job-stage vocabularies still coexist; the unification module built to fix this has zero adopters.
