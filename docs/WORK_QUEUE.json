@@ -416,9 +416,10 @@
         "lib/workflow/stageMapping.ts (new file -- JOB_STAGE_TO_ABSTRACT, UNUSED_JOB_STAGES, abstractStageOf)",
         "lib/workflow/summary.ts (JobSummary.abstractStage field, additive)",
         "test/workflow/stageMapping.test.ts (new file, 7 tests)",
-        "test/workflow/summary.test.ts (+2 tests)"
+        "test/workflow/summary.test.ts (+2 tests)",
+        "commit 30494aa on design-director-smoke (C:\\Users\\40728\\WebsiteAgent) -- native verification: npx tsc -p tsconfig.test.json --noEmit EXIT:0, npm test 1507/1507 passing (0 failures)"
       ],
-      "validationState": "UNVERIFIED",
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "WQ-006's audit, 2026-08-25 -- confirms docs/MASTER_CAPABILITY_TOOL_REGISTRY.json G-STAGE-01's own caution that state.ts must be verified as a superset before adoption; it is not one",
       "createdAt": "2026-08-25",
