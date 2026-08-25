@@ -100,13 +100,13 @@
       "licensing": "free-tier-unverified (per bindings.ts's own licence classification — O-3: commercial-use terms of the free tier are not settled)",
       "apiKeyRequired": true,
       "status": "REAL_IMPLEMENTED",
-      "qualityReliability": "UNKNOWN — zero dedicated test file (no gemini-provider.test.ts in test/ai/), despite being the #1-ranked executor for 2 of the 4 core language capabilities",
+      "qualityReliability": "RESOLVED 2026-08-25 — test/ai/gemini-provider.test.ts added (17 fetch-stubbed behavioural tests: request shape, response normalization, multi-part text, blockReason/SAFETY refusal handling, HTTP failure/timeout, planner-first-executor wiring); previously UNKNOWN with zero dedicated test file despite being the #1-ranked executor for 2 of the 4 core language capabilities",
       "fallback": "groq.workhorse (T05 addition specifically to remove Gemini single-point-of-failure) then openai/anthropic",
       "alternatives": "all 7 other providers",
       "compatibilities": "bound to 12 capability slots — the single most-bound provider in the table",
       "canExecuteAutonomously": "text, structured output (native schema), vision, market research synthesis",
       "cannotExecute": "no confirmed image/video generation via this adapter",
-      "existingTests": "NONE dedicated (gap — see gaps.G-AI-01, higher priority than anthropic given Gemini is the default-first executor for 2 core capabilities)",
+      "existingTests": "test/ai/gemini-provider.test.ts (17 tests, added 2026-08-25 — closes half of gaps.G-AI-01; anthropic remains open)",
       "documentarySource": "lib/ai/providers/gemini.ts; lib/capability/bindings.ts inline comments",
       "confidence": "high (code-grounded)"
     },
@@ -1654,10 +1654,10 @@
   "gaps": [
     {
       "id": "G-AI-01",
-      "title": "anthropic and gemini providers have zero dedicated behavioural test files",
-      "severity": "high",
-      "detail": "gemini is the #1-ranked executor for 2 of 4 core language capabilities (reasoning, structured_generation) and anthropic is #1 for prose_writing and creative_direction, yet neither has a test/ai/<name>-provider.test.ts. groq is the only provider with confirmed fetch-stubbed behavioural coverage.",
-      "recommendedNextStep": "Write fetch-stubbed behavioural tests for gemini first (highest production impact), then anthropic — mirroring test/ai/groq-provider.test.ts's pattern. (This is A4 from the standing MASTER_INVENTORY.json backlog.)"
+      "title": "anthropic provider still has zero dedicated behavioural test file (gemini half RESOLVED 2026-08-25)",
+      "severity": "medium (downgraded from high — the higher-impact half is closed)",
+      "detail": "gemini is now covered: test/ai/gemini-provider.test.ts (17 tests, added 2026-08-25, all passing natively and in the cloud sandbox, no regressions in the 1423-test suite). anthropic — #1 executor for prose_writing and creative_direction — still has no test/ai/anthropic-provider.test.ts. groq and now gemini are the only providers with confirmed fetch-stubbed behavioural coverage.",
+      "recommendedNextStep": "Write fetch-stubbed behavioural tests for anthropic next, mirroring test/ai/gemini-provider.test.ts's and test/ai/groq-provider.test.ts's pattern (request shape via @anthropic-ai/sdk, response normalization, HTTP failure/timeout, planner wiring)."
     },
     {
       "id": "G-XAI-01",
