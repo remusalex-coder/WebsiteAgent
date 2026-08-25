@@ -500,7 +500,7 @@
     },
     {
       "id": "WQ-023",
-      "description": "WQ-019's output (3), split out because it needs a different kind of verification: wire lib/workflow/stageMapping.ts's abstract-stage vocabulary into scripts/n8n/controlSurfacePage.ts (add ABSTRACT_STAGE_LABELS/ABSTRACT_STAGE_ORDER, 12 entries, alongside -- not replacing -- the existing 17-value STAGE_LABELS/STAGE_ORDER, so per-concrete-stage progress detail is not lost) and scripts/n8n/build-workflow-json.ts's generated workflow (a live n8n contract). Needs a way to verify against a real n8n instance or an equivalent fixture-based contract test before touching the generator -- unlike WQ-019's step 1/2, a mistake here risks silently breaking the live control surface or the n8n workflow JSON, which stageMapping.ts's own additive design (see its doc comment's 'why this is additive' section) deliberately avoided doing without that verification path. ADDENDUM 2026-08-25: confirmed scripts/n8n/controlSurfacePage.ts's CONTROL_SURFACE_HTML has zero existing test coverage (no test file references it or STAGE_LABELS/STAGE_ORDER) -- even the additive ABSTRACT_STAGE_LABELS/ABSTRACT_STAGE_ORDER half of this task should get a first test harness for that file (e.g. a jsdom or string-assertion test proving the generated HTML contains the expected labels/order and that the existing STAGE_LABELS/STAGE_ORDER output is byte-for-byte unchanged) before editing it, not just a typecheck. WQ-019 was closed DONE with this task as the sole, complete owner of all remaining work (both the safe controlSurfacePage.ts half and the n8n-contract-verification-gated build-workflow-json.ts half).",
+      "description": "WQ-019's output (3), remaining half: scripts/n8n/build-workflow-json.ts's generated workflow is a live n8n contract; wiring lib/workflow/stageMapping.ts's abstract-stage vocabulary into it (or anywhere it changes the generated JSON) needs a way to verify against a real n8n instance or an equivalent fixture-based contract test before touching the generator -- unlike the controlSurfacePage.ts half (now WQ-025, DONE), a mistake here risks silently breaking the live n8n workflow JSON, which stageMapping.ts's own additive design (see its doc comment's 'why this is additive' section) deliberately avoided doing without that verification path. NARROWED 2026-08-25: the controlSurfacePage.ts ABSTRACT_STAGE_LABELS half of this task's original scope was split out and completed as WQ-025 -- it did not actually need n8n verification at all, since it never touches build-workflow-json.ts's generated JSON, only the separate GET /job HTTP response and the control-surface HTML page. This task's scope is now build-workflow-json.ts alone.",
       "priority": "P3",
       "dependencies": [
         "WQ-019"
@@ -508,8 +508,8 @@
       "status": "QUEUED",
       "assignedWorker": "claude, deterministic -- needs a real or fixture-based n8n contract check before editing the generator",
       "attempts": 0,
-      "inputs": "lib/workflow/stageMapping.ts, scripts/n8n/controlSurfacePage.ts, scripts/n8n/build-workflow-json.ts",
-      "outputs": "ABSTRACT_STAGE_LABELS/ABSTRACT_STAGE_ORDER added to controlSurfacePage.ts; build-workflow-json.ts's generated workflow updated if and only if a verification path against a real/fixture n8n contract exists; tests proving the existing 17-value STAGE_LABELS/STAGE_ORDER and their consumers are byte-for-byte unchanged",
+      "inputs": "lib/workflow/stageMapping.ts, scripts/n8n/build-workflow-json.ts",
+      "outputs": "scripts/n8n/build-workflow-json.ts's generated workflow updated if and only if a verification path against a real/fixture n8n contract exists (e.g. a schema/contract test mirroring test/qa/p7-n8n.test.ts's static-structure discipline, or a real n8n instance to import the generated JSON into and confirm it parses/runs).",
       "artifacts": null,
       "validationState": "UNVERIFIED",
       "failureState": null,
@@ -544,6 +544,30 @@
       "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "docs/AUTONOMOUS_EXECUTION_MANDATE.md section on external-tool research + gap audit, 2026-08-25 -- lib/render had no real <form> capability at all before this task",
+      "createdAt": "2026-08-25",
+      "updatedAt": "2026-08-25"
+    },
+    {
+      "id": "WQ-025",
+      "description": "Split from WQ-023 (the controlSurfacePage.ts half of WQ-019's split-off output 3), completed: wire lib/workflow/stageMapping.ts's abstract-stage vocabulary into the live control surface, additively. Two real, distinct findings along the way: (1) GET /job's handler (scripts/n8n/stage-server.ts) explicitly whitelists which JobSummary fields it forwards, and WQ-019's new JobSummary.abstractStage field had never actually been added to that whitelist -- it existed in the shared read model and in GET /jobs (which forwards full summary objects) but was silently absent from the single-job poll response the control-surface page's live view actually uses. (2) scripts/n8n/controlSurfacePage.ts's CONTROL_SURFACE_HTML (served at GET / and GET /ui) had zero test coverage at all before this task, despite being a live, served page.",
+      "priority": "P2",
+      "dependencies": [
+        "WQ-019"
+      ],
+      "status": "DONE",
+      "assignedWorker": "claude, deterministic -- small additive wiring across two files, plus a first test harness for a previously-untested file",
+      "attempts": 1,
+      "inputs": "lib/workflow/stageMapping.ts, lib/workflow/summary.ts (JobSummary.abstractStage, from WQ-019), scripts/n8n/stage-server.ts, scripts/n8n/controlSurfacePage.ts",
+      "outputs": "scripts/n8n/stage-server.ts's GET /job handler now forwards abstractStage (additive field, same pattern as WQ-016's errors/phases/candidateCount/battle -- the n8n workflow's poll step ignores fields it does not read, so this is safe by established precedent). scripts/n8n/controlSurfacePage.ts gained ABSTRACT_STAGE_LABELS (12 entries, one per AbstractJobState from lib/workflow/state.ts's JOB_STATES) and now shows the abstract-stage label in parentheses alongside (never instead of) the existing concrete STAGE_LABELS text in the live job view. STAGE_LABELS/STAGE_ORDER themselves are byte-for-byte untouched. New test file test/qa/p7-control-surface-page.test.ts (4 tests, string-content assertions on CONTROL_SURFACE_HTML -- the same static-structure discipline test/qa/p7-n8n.test.ts already uses for the generated n8n workflow JSON, since this file is inline browser JS with no module loader to execute against). test/qa/p7-endpoints.test.ts's existing WQ-016 GET /job test extended with one assertion (abstractStage: 'diverge' for a job.stage of 'diverge', one of the three exact-name matches). Full suite: 1515 tests, 1507 passing, 8 known Playwright-dependent sandbox-only failures (unchanged baseline, same test names as before this task).",
+      "artifacts": [
+        "scripts/n8n/stage-server.ts (GET /job handler, abstractStage field)",
+        "scripts/n8n/controlSurfacePage.ts (ABSTRACT_STAGE_LABELS, render() wiring)",
+        "test/qa/p7-control-surface-page.test.ts (new file, 4 tests)",
+        "test/qa/p7-endpoints.test.ts (+1 assertion)"
+      ],
+      "validationState": "UNVERIFIED",
+      "failureState": null,
+      "provenance": "Split from WQ-023, 2026-08-25 -- the safe, non-n8n-contract half did not actually need live n8n verification once traced through: it never touches build-workflow-json.ts's generated JSON",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
     }

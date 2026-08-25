@@ -221,6 +221,15 @@ export function createStageServer(
             battle: summary.battle,
             errors: summary.errors,
             updatedAt: summary.updatedAt,
+            // Additive (WQ-023, part 1 of WQ-019's split-off output 3): the
+            // higher-level state lib/workflow/stageMapping.ts's
+            // abstractStageOf already computes into every JobSummary (WQ-019)
+            // was never actually reaching this response before now — GET
+            // /jobs sends full summary objects and had it already, but this
+            // handler whitelists fields and had silently dropped it. `null`
+            // for a stage stageMapping.ts has no mapping for (there is none
+            // today; every JobStage maps to something).
+            abstractStage: summary.abstractStage,
           });
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : String(error);

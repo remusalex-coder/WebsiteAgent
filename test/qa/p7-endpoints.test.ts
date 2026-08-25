@@ -11,7 +11,8 @@
  * phases, candidateCount, battle — all delegated to `lib/workflow/summary.ts`
  * rather than recomputed here), `GET /jobs` (the run list), and `GET /`/
  * `GET /ui` (the control-surface page, servable without a token since it is
- * static markup with no job data embedded).
+ * static markup with no job data embedded). And WQ-023's `abstractStage`
+ * field, additive the same way.
  */
 
 import test from 'node:test';
@@ -291,6 +292,12 @@ test('GET /job\'s additive fields (errors/phases/candidateCount/battle) come fro
       assert.deepEqual(body.phases, { implementation: 'built', browser: 'pending', qa: 'pending' });
       assert.equal(body.candidateCount, 2);
       assert.deepEqual(body.battle, { count: 2, winnerId: 'direction-A', bestQuality: 91, judgeCount: 1 });
+      // WQ-023 (part 1 of WQ-019's split-off output 3): abstractStage was
+      // computed into JobSummary by WQ-019 but this handler's whitelist
+      // silently dropped it until now — stage "diverge" maps to abstract
+      // state "diverge" (lib/workflow/stageMapping.ts, one of the three
+      // exact-name matches its own doc comment calls out).
+      assert.equal(body.abstractStage, 'diverge');
     });
   } finally {
     if (original === undefined) {

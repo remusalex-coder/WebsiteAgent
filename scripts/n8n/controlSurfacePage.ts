@@ -165,6 +165,24 @@ export const CONTROL_SURFACE_HTML = `<!doctype html>
   };
   var STAGE_ORDER = ['created','research','evidence','character','creative','experience','diverge',
     'content','asset','design','build','browser','visual-critic','distinctness-gate','hermes','delivery'];
+  // Additive (WQ-023, part 1 of WQ-019's split-off output 3): a human-facing
+  // label for GET /job's new abstractStage field (lib/workflow/state.ts's
+  // 12 AbstractJobState values, computed server-side by
+  // lib/workflow/stageMapping.ts's abstractStageOf and now forwarded by
+  // stage-server.ts). Shown alongside -- never instead of -- STAGE_LABELS
+  // above, which stays the primary, more specific progress text; this is a
+  // coarser "which phase of the pipeline" hint for a viewer who does not
+  // know the 17 concrete stage names. Kept as a plain object literal here,
+  // not imported, because this whole file is inline browser JS with no
+  // module loader (see this file's own top doc comment on "no build step,
+  // no framework, no CDN"); the 12 keys are AbstractJobState verbatim from
+  // lib/workflow/state.ts's JOB_STATES.
+  var ABSTRACT_STAGE_LABELS = {
+    created: 'Starting', evidence: 'Gathering evidence', understanding: 'Understanding the business',
+    plan: 'Planning', diverge: 'Building candidates', candidate_build: 'Building a candidate',
+    verify: 'Verifying', judge: 'Judging candidates', decide: 'Deciding next step',
+    delivered: 'Delivered', escalated: 'Escalated to a human', aborted: 'Aborted'
+  };
   var DECISION_LABELS = { running: 'In progress', deliver: 'Delivered', reconcept: 'Rebuilding (previous attempt rejected)', escalate: 'Escalated to a human' };
   var PHASE_LABELS = { pending: 'not started', built: 'built', shot: 'captured', passed: 'passed', failed: 'failed' };
 
@@ -259,7 +277,9 @@ export const CONTROL_SURFACE_HTML = `<!doctype html>
     els.jobView.style.display = 'block';
     els.viewRunId.textContent = runId;
     var terminal = summary.decision === 'deliver' || summary.decision === 'escalate';
+    var abstractLabel = summary.abstractStage ? ABSTRACT_STAGE_LABELS[summary.abstractStage] : null;
     els.stageLine.textContent = (STAGE_LABELS[summary.stage] || summary.stage) +
+      (abstractLabel ? ' (' + abstractLabel + ')' : '') +
       ' — iteration ' + summary.iteration + '/' + summary.maxIter +
       ' — ' + (DECISION_LABELS[summary.decision] || summary.decision || 'in progress');
     els.progressBar.style.width = (terminal ? 100 : progressPct(summary)) + '%';
