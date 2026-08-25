@@ -1,8 +1,19 @@
 # Roadmap
 
-_Last updated: 2026-08-06_
+_Last updated: 2026-08-06 — SUPERSEDED 2026-08-25._
 
-Goal: a Google Maps URL goes in, a deployed website comes out, unattended.
+**This file's central premise ("the loop does not close until a spec written by
+stage 5 reaches a live URL") is now false and everything below is historical.**
+The loop closed: `lovableAgent` deploys real, rendered sites to Netlify Drop
+(`lib/deploy/netlify.ts`), wired into both the classic `main.ts` pipeline and
+the production `scripts/n8n/stage.ts` pipeline (T04). Stages 1-6 below are all
+`[verified live]` — see `README.md` and `PROJECT_STATUS.md`'s agent tables,
+corrected the same day this notice was added.
+`docs/WORK_QUEUE.json` is the current source of truth for what remains; this
+file is kept for the historical record of the original milestone plan, not
+as a live task list.
+
+Goal (as originally written): a Google Maps URL goes in, a deployed website comes out, unattended.
 Stages 1–4 and the renderer are built. The loop does not close until a spec written by
 stage 5 reaches a live URL.
 

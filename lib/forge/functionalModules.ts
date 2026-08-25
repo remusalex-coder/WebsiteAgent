@@ -2,9 +2,15 @@
  * Functional modules — turning "beyond a landing page" into a concrete
  * build contract, not a slogan.
  *
- * `lib/forge` renders a static site with no backend (`lib/render`'s own
- * documented limit; deployment is a stub — see `PROJECT_STATUS.md`). That
- * is a real constraint, not an oversight to route around: a module spec
+ * `lib/forge` renders a STATIC site with no server-side backend of its own
+ * (`lib/render`'s own documented limit — the rendered `index.html`/
+ * `styles.css`/assets have no server to talk to). That is unrelated to the
+ * DEPLOY target, which is real, not a stub: `lovableAgent`/`lib/deploy/
+ * netlify.ts` publishes the rendered site to Netlify Drop (corrected
+ * 2026-08-25 — `PROJECT_STATUS.md` previously said otherwise; it did not
+ * change what this file builds, since "no server backend" was always the
+ * actual constraint, not "nothing deploys it"). That is a real constraint,
+ * not an oversight to route around: a module spec
  * here must be honestly deliverable as a static, no-backend build, or it
  * does not belong in this file. That is why every module below resolves to
  * a real mechanism with zero new infrastructure — a `mailto:` handoff with

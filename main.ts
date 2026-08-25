@@ -413,11 +413,15 @@ async function renderStage(
   design: WebsiteDesign,
   runtimePrimitives: readonly RuntimePrimitiveId[] = [],
   location: { readonly lat: number; readonly lng: number } | null = null,
+  contactForm = false,
 ): Promise<string> {
   const site = renderSite(content, {
     design,
     ...(runtimePrimitives.length > 0 ? { runtime: 'scroll-progress' as const, runtimePrimitives } : {}),
     ...(location !== null ? { location } : {}),
+    // Off by default (WQ-024) -- see `RenderOptions.contactForm`'s own doc
+    // comment for why: unverified against a live Netlify Drop deploy.
+    ...(contactForm ? { contactForm: true } : {}),
   });
   for (const warning of site.warnings) {
     run.logger.warn('renderer degraded a field', { warning });
@@ -656,7 +660,7 @@ async function executePipeline(
      * a log line.
      */
     await step('enhance', async () => {
-      await renderStage(run, content, design, resolvedRuntimePrimitives, profile.coordinates?.value ?? null);
+      await renderStage(run, content, design, resolvedRuntimePrimitives, profile.coordinates?.value ?? null, config.contactFormEnabled);
 
       if (!attemptEnhance) {
         const reason = config.experienceEngine !== 'signature' ? 'engine=template' : 'tier0 budget';
@@ -1161,6 +1165,9 @@ export async function composeStandalone(
     design,
     runtime: runtimeEngaged ? 'scroll-progress' : 'none',
     runtimePrimitives: runtimeEngaged ? resolvePrimitives(plan.experience) : [],
+    // Off by default (WQ-024) -- see `RenderOptions.contactForm`'s own doc
+    // comment for why: unverified against a live Netlify Drop deploy.
+    ...(config.contactFormEnabled ? { contactForm: true } : {}),
   });
   const targetDir = path.join(outputDir, SITE_DIR_NAME);
   const { missingAssets } = await writeRenderedSite(site, { sourceDir: outputDir, targetDir });

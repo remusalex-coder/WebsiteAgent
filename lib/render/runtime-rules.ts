@@ -330,3 +330,99 @@ const LOCATION_MAP_RULES = `
 export function locationRules(hasLocation: boolean): string {
   return hasLocation ? LOCATION_MAP_RULES : '';
 }
+
+/* -------------------------------------------------------------------- */
+/* Contact form — RenderOptions.contactForm, off by default (WQ-024)     */
+/* -------------------------------------------------------------------- */
+
+/**
+ * CSS for the real, submittable enquiry form (`lib/render/sections.ts`'s
+ * `renderContactFormBlock`), threaded through the exact same additive
+ * discipline as `locationRules` above and for the identical reason: this
+ * codebase already learned (see this file's own docstring, re: `RUNTIME_RULES`)
+ * that CSS added directly to the unconditional design-rules block
+ * (`lib/render/variants.ts`) changes `test/__snapshots__/design.bakery.styles.css`
+ * for *every* business, including ones that never opt into `RenderOptions.
+ * contactForm`. Appended only when `contactFormRules(true)` is actually
+ * called; every existing caller, and every business that leaves the
+ * default-off form disabled, gets zero new bytes. Styled with the same
+ * design tokens `.contact-block` (`lib/render/variants.ts`) uses, so it
+ * inherits whatever world/mood a given site was composed under rather than
+ * looking like a foreign, unstyled browser form dropped onto a designed page.
+ */
+const CONTACT_FORM_RULES = `
+.contact-form-block {
+  margin: var(--space-xl) 0 0;
+  max-width: 32rem;
+}
+
+.contact-form {
+  display: grid;
+  gap: var(--space-md);
+}
+
+/* The honeypot: invisible to every real visitor, sighted or not. */
+.contact-form__trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.contact-form__field {
+  display: grid;
+  gap: var(--space-3xs);
+}
+
+.contact-form__field label {
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-height);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.contact-form__field input,
+.contact-form__field textarea {
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-xs) var(--space-sm);
+  transition: border-color var(--duration-fast) var(--easing);
+}
+
+.contact-form__field input:focus,
+.contact-form__field textarea:focus {
+  outline: none;
+  border-color: var(--color-brand);
+}
+
+.contact-form__field textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.contact-form button[type="submit"] {
+  justify-self: start;
+}
+
+.contact-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.contact-form__status {
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-caption-size);
+  color: var(--color-text-muted);
+}
+`;
+
+/** `''` when the contact form is off (the default) — genuinely additive, same contract as `locationRules`. */
+export function contactFormRules(hasContactForm: boolean): string {
+  return hasContactForm ? CONTACT_FORM_RULES : '';
+}

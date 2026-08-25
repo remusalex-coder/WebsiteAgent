@@ -23,7 +23,7 @@
  * changes. That path is byte-compatible and is what an existing caller sees.
  */
 
-import { element, empty, join, paragraphs, text } from './html.js';
+import { element, empty, join, paragraphs, raw, text } from './html.js';
 import { safeHref } from './assets.js';
 import { fold } from '../content/evidence.js';
 import { LANGUAGES, lexiconFor } from '../content/language.js';
@@ -90,6 +90,10 @@ export interface SectionContext {
   readonly hero: HeroVariant | null;
   /** The whole design, for imagery and icon decisions. */
   readonly design: WebsiteDesign | null;
+  /** See `RenderOptions.location`. Only the `location`-kind section reads it. */
+  readonly location: { readonly lat: number; readonly lng: number } | null;
+  /** See `RenderOptions.contactForm`. Only a `contact`-kind section reads it. */
+  readonly contactForm: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -525,12 +529,27 @@ function renderTimeline(bullets: readonly string[], ctx: SectionContext): Html {
  * empty right-hand column.
  */
 function renderDetailList(bullets: readonly string[], ctx: SectionContext, kind: SectionKind): Html {
+  // A location OR contact section with real coordinates gets an actual map
+  // — checked *before* the empty-bullets return below, deliberately: a
+  // location section's address commonly lives in `section.body` (a single
+  // sentence), not `bullets` (see `renderSection`'s body/bullets split) —
+  // and the map must not silently vanish just because the address happens
+  // to be prose rather than a bullet list, or because bullets is empty. The
+  // coordinates are already-collected business evidence
+  // (`BusinessProfile.coordinates`), never geocoded or invented here. Falls
+  // through to the ordinary handling below (including the empty-bullets
+  // return, and `contact`'s own tel:/mailto: rendering) when no coordinates
+  // were supplied, exactly as these sections rendered before this existed.
+  if ((kind === 'location' || kind === 'contact') && ctx.location !== null) {
+    return renderLocationBlock(bullets, ctx.location, kind, ctx);
+  }
+
   if (bullets.length === 0) return empty;
 
   // A contact section is not a list of facts, it is a set of ways to reach
   // somebody. Rendering it as one makes the page's most useful line the one
   // thing on it that cannot be clicked.
-  if (kind === 'contact') return renderContactBlock(bullets, ctx);
+  if (kind === 'contact') return contactBlockWithForm(bullets, ctx);
 
   const priced = kind === 'menu';
   return element('ul', { class: `detail-list detail-list--${kind}`, role: 'list' },
@@ -548,6 +567,100 @@ function renderDetailList(bullets: readonly string[], ctx: SectionContext, kind:
       ]);
     }),
   );
+}
+
+/**
+ * The bounding-box half-width, in degrees, around the marker — roughly a
+ * neighbourhood-scale view (~1.1km at the equator, tighter at higher
+ * latitudes). Not a tuned constant, just a reasonable single default: this
+ * is a "where is the business" map, not a navigation tool.
+ */
+const OSM_EMBED_DELTA = 0.01;
+
+/** OpenStreetMap's documented, key-free embed endpoint — see APPROVED_IFRAME_ORIGINS (lib/qa/gates/technical.ts). */
+function osmEmbedSrc(loc: { readonly lat: number; readonly lng: number }): string {
+  const bbox = [
+    loc.lng - OSM_EMBED_DELTA,
+    loc.lat - OSM_EMBED_DELTA,
+    loc.lng + OSM_EMBED_DELTA,
+    loc.lat + OSM_EMBED_DELTA,
+  ].join('%2C');
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${loc.lat}%2C${loc.lng}`;
+}
+
+/** The full-site link the embed's own "View Larger Map" affordance also points at — a real fallback for a visitor who blocks iframes. */
+function osmViewHref(loc: { readonly lat: number; readonly lng: number }): string {
+  return `https://www.openstreetmap.org/?mlat=${loc.lat}&mlon=${loc.lng}#map=16/${loc.lat}/${loc.lng}`;
+}
+
+/**
+ * A location section with real coordinates: the existing plain address list,
+ * plus a real OpenStreetMap embed. The embed is `loading="lazy"` (it is
+ * never above the fold on a business site) and carries a visible text link
+ * to the full map alongside it — not a hidden fallback, a second, always-
+ * present way to reach the same destination for a visitor who blocks
+ * iframes, is on a screen reader (iframe content is not reliably announced),
+ * or simply prefers a real map application.
+ */
+/** The map alone — the iframe embed plus its real, always-visible fallback link. Shared by every section kind the map can attach to. */
+function renderMapBlock(loc: { readonly lat: number; readonly lng: number }): Html {
+  return element('div', { class: 'location-map' }, [
+    element('iframe', {
+      class: 'location-map__frame',
+      src: osmEmbedSrc(loc),
+      title: 'Map',
+      loading: 'lazy',
+      referrerpolicy: 'no-referrer-when-downgrade',
+    }, null),
+    element('a', {
+      class: 'location-map__link',
+      href: osmViewHref(loc),
+      target: '_blank',
+      rel: 'noopener',
+    }, text('View larger map')),
+  ]);
+}
+
+/**
+ * A location or contact section with real coordinates: its ordinary list
+ * (plain address rows for `location`, clickable `tel:`/`mailto:` rows for
+ * `contact` — `renderContactBlock`'s own rendering, unchanged), plus a real
+ * map appended after it.
+ *
+ * `contact` is included deliberately, not just `location`: the deterministic
+ * writer (`composeBaseline`, `agents/writerAgent.ts`) never emits a
+ * dedicated `'location'` section at all — every address it writes lands in
+ * `'contact'` alongside the phone/email. A `location`-only dispatch would
+ * make this primitive correct in isolation but practically unreachable from
+ * the real, no-live-AI production path, which is exactly the kind of gap a
+ * real generation run (not a hand-authored fixture) surfaces and a targeted
+ * unit test cannot. `location` stays supported too, for the AI writer path
+ * (`writerAgent.run`) or a hand-authored spec that does emit it as its own
+ * section, matching `fullContent`'s own fixture shape.
+ */
+function renderLocationBlock(
+  bullets: readonly string[],
+  loc: { readonly lat: number; readonly lng: number },
+  kind: SectionKind,
+  ctx: SectionContext,
+): Html {
+  const list = kind === 'contact'
+    ? (bullets.length === 0 ? empty : contactBlockWithForm(bullets, ctx))
+    : (bullets.length === 0 ? empty : element('ul', { class: 'detail-list detail-list--location', role: 'list' },
+        bullets.map((bullet) => {
+          const { label, detail } = splitItem(bullet);
+          if (detail === '') {
+            return element('li', { class: 'detail-list__row' },
+              element('span', { class: 'detail-list__label' }, text(label)));
+          }
+          return element('li', { class: 'detail-list__row detail-list__row--split' }, [
+            element('span', { class: 'detail-list__label' }, text(label)),
+            element('span', { class: 'detail-list__value' }, text(detail)),
+          ]);
+        }),
+      ));
+
+  return element('div', { class: 'location-block' }, [list, renderMapBlock(loc)]);
 }
 
 /** An email address or a telephone number the visitor can actually act on. */
@@ -613,6 +726,128 @@ function renderContactBlock(bullets: readonly string[], _ctx: SectionContext): H
       ]);
     }),
   );
+}
+
+/**
+ * The contact block plus, when `ctx.contactForm` is on (see
+ * `RenderOptions.contactForm`'s own doc comment for why this defaults off),
+ * a real submittable enquiry form appended after it.
+ *
+ * Additive, not a replacement: `renderContactBlock`'s `tel:`/`mailto:` links
+ * are untouched and rendered first — they are the guaranteed-reachable path
+ * (a visitor's own device sends the message, no intermediary to misconfigure)
+ * — so a form whose backend integration turns out not to work as expected
+ * degrades to "one fewer way to reach us," never to "no way to reach us."
+ */
+function contactBlockWithForm(bullets: readonly string[], ctx: SectionContext): Html {
+  const block = bullets.length === 0 ? empty : renderContactBlock(bullets, ctx);
+  if (!ctx.contactForm) return block;
+  return join([block, renderContactFormBlock(bullets, ctx)], '\n');
+}
+
+/**
+ * A real, static, submittable enquiry form — Netlify Forms
+ * (`data-netlify="true"`), so it works with zero JavaScript: a plain HTML
+ * `POST` is all Netlify's own build-time form scanner needs. A small inline
+ * script progressively enhances it into an in-page confirmation (no full
+ * page navigation to Netlify's generic success page, which would be a jarring
+ * exit from an otherwise branded single-page site) — matching this
+ * codebase's "no fake progress, only real states" discipline
+ * (`lib/forge/functionalModules.ts`'s own doc comment): idle, sending,
+ * handed-off, and error are all real, distinct, honestly-labelled states.
+ *
+ * Spam protection is a honeypot field (Netlify's own recommended pattern),
+ * not reCAPTCHA: reCAPTCHA pulls in a third-party (Google) script and a
+ * consent/GDPR question this renderer has no standing to answer on the
+ * business's behalf, where a honeypot needs neither and Netlify's own
+ * Akismet integration runs automatically server-side regardless.
+ *
+ * Only rendered when the business has a real phone or email somewhere in its
+ * own contact bullets — a form with no way for anyone to plausibly notice a
+ * submission (this render layer cannot itself send email; see WQ-024) would
+ * be exactly the "capability that only looks real" defect
+ * `WEBSITE_CAPABILITY_KNOWLEDGE.md`'s doctrine of absence warns against.
+ */
+function renderContactFormBlock(bullets: readonly string[], _ctx: SectionContext): Html {
+  const hasContactPoint = bullets.some((bullet) => {
+    const { label, detail } = splitItem(bullet);
+    const value = detail === '' ? label : detail;
+    return EMAIL.test(value) || PHONE.test(value);
+  });
+  if (!hasContactPoint) return empty;
+
+  const formId = 'contact-form';
+  const statusId = `${formId}-status`;
+
+  // Vanilla, dependency-free, defensive against running twice (a page with
+  // two contact sections is possible — see `renderSection`'s own fragment-id
+  // de-duplication) by scoping strictly to this one form's own id.
+  const script = `(function () {
+  var form = document.getElementById(${JSON.stringify(formId)});
+  if (!form || form.dataset.enhanced === '1') return;
+  form.dataset.enhanced = '1';
+  var status = document.getElementById(${JSON.stringify(statusId)});
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var submit = form.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = true;
+    if (status) { status.hidden = false; status.textContent = 'Sending…'; }
+    fetch(form.getAttribute('action') || '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(new FormData(form)).toString(),
+    }).then(function (response) {
+      if (!response.ok) throw new Error('status ' + response.status);
+      form.hidden = true;
+      if (status) status.textContent = 'Thanks — your message has been received.';
+    }).catch(function () {
+      if (submit) submit.disabled = false;
+      if (status) status.textContent = 'Sending failed — please use the phone or email above instead.';
+    });
+  });
+})();`;
+
+  return element('div', { class: 'contact-form-block' }, [
+    element('form', {
+      id: formId,
+      name: 'contact',
+      method: 'POST',
+      action: '/',
+      'data-netlify': 'true',
+      'netlify-honeypot': 'bot-field',
+      class: 'contact-form',
+    }, [
+      // The honeypot: invisible and unreachable to a real visitor (CSS
+      // `display: none` plus `aria-hidden`/`tabindex="-1"` so assistive tech
+      // never announces or focuses it either), present only for the bots
+      // that fill in every field they can find.
+      element('p', { class: 'contact-form__trap', 'aria-hidden': 'true' }, [
+        element('label', {}, [
+          text("Don't fill this out if you're human: "),
+          element('input', { name: 'bot-field', type: 'text', tabindex: '-1', autocomplete: 'off' }, null),
+        ]),
+      ]),
+      element('div', { class: 'contact-form__field' }, [
+        element('label', { for: `${formId}-name` }, text('Name')),
+        element('input', { id: `${formId}-name`, type: 'text', name: 'name', required: true, autocomplete: 'name' }, null),
+      ]),
+      element('div', { class: 'contact-form__field' }, [
+        element('label', { for: `${formId}-email` }, text('Email')),
+        element('input', { id: `${formId}-email`, type: 'email', name: 'email', autocomplete: 'email' }, null),
+      ]),
+      element('div', { class: 'contact-form__field' }, [
+        element('label', { for: `${formId}-phone` }, text('Phone')),
+        element('input', { id: `${formId}-phone`, type: 'tel', name: 'phone', autocomplete: 'tel' }, null),
+      ]),
+      element('div', { class: 'contact-form__field' }, [
+        element('label', { for: `${formId}-message` }, text('Message')),
+        element('textarea', { id: `${formId}-message`, name: 'message', required: true, rows: '4' }, null),
+      ]),
+      element('button', { type: 'submit', class: 'button button--primary' }, text('Send message')),
+    ]),
+    element('p', { id: statusId, class: 'contact-form__status', role: 'status', hidden: true }, null),
+    element('script', {}, raw(script)),
+  ]);
 }
 
 /** The pre-design list. Kept exactly as it was for the no-design path. */
@@ -1229,6 +1464,9 @@ export function renderSection(section: WebsiteSection, ctx: SectionContext): Htm
     isHero ? `section--hero-${heroVariant}` : `section--${plan.variant}`,
     plan.fullBleed ? 'section--bleed' : null,
     plan.momentTransition ? 'section--moment' : null,
+    // The transition *kind* follows the boolean so the CSS can pick the concrete
+    // primitive (veil | wipe | circular-handoff) without re-deriving it.
+    plan.momentTransition ? `section--moment-${plan.transition}` : null,
     // A genuine composition break, not just a bigger heading: the section the
     // narrative built to gets its own layout rules (see `designRules`), so the
     // climax reads as a different *kind* of section rather than an ordinary
@@ -1266,6 +1504,7 @@ export function renderSection(section: WebsiteSection, ctx: SectionContext): Htm
       // peak as a peak rather than treating "a gallery" as a gallery.
       ...(plan.role === null ? {} : { 'data-role': plan.role }),
       ...(plan.momentTransition ? { 'data-moment': 'true' } : {}),
+      ...(plan.momentTransition ? { 'data-transition': plan.transition } : {}),
     },
     element('div', { class: containerClass }, inner),
   );

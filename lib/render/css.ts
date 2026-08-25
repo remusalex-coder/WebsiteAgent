@@ -12,9 +12,11 @@
 
 import { designRules } from './variants.js';
 import { fontFaceRules } from './fonts.js';
+import { RUNTIME_RULES, runtimePrimitiveRules, locationRules, contactFormRules } from './runtime-rules.js';
 
 import type { Theme } from './theme.js';
 import type { WebsiteDesign } from '../design/types.js';
+import type { RuntimePrimitiveId } from '../design/experience.js';
 
 /** Wider than this and line length hurts reading more than the width helps. */
 const CONTENT_WIDTH = '72rem';
@@ -168,7 +170,23 @@ function designPreamble(design: WebsiteDesign): string {
   return `/*\n${lines.map((line) => (line === '' ? ' *' : ` * ${line}`)).join('\n')}\n */\n\n`;
 }
 
-export function renderStylesheet(theme: Theme, assetDirName = 'assets'): string {
+/**
+ * @param runtimePrimitives Named Tier-2 primitives to append (see
+ *   `RenderOptions.runtimePrimitives`). Defaults to `[]`: every existing
+ *   caller — every snapshot fixture included — gets byte-identical output,
+ *   because `runtimePrimitiveRules([])` is `''` and appending `''` changes
+ *   nothing.
+ * @param hasContactForm Whether `RenderOptions.contactForm` was supplied (see
+ *   `contactFormRules`). Defaults to `false`: every existing caller — every
+ *   snapshot fixture included — gets byte-identical output.
+ */
+export function renderStylesheet(
+  theme: Theme,
+  assetDirName = 'assets',
+  runtimePrimitives: readonly RuntimePrimitiveId[] = [],
+  hasLocation = false,
+  hasContactForm = false,
+): string {
   const { colors, fonts } = theme;
 
   // Ahead of everything, including the preamble comment: a face declared after
@@ -188,7 +206,8 @@ export function renderStylesheet(theme: Theme, assetDirName = 'assets'): string 
       + `/* Design tokens — from WebsiteDesign                                   */\n`
       + `/* ------------------------------------------------------------------ */\n\n`
       + `:root {\n${designTokens(theme.design)}\n}\n`
-      + designRules(theme.design);
+      + designRules(theme.design)
+      + RUNTIME_RULES;
 
   const preamble = theme.design === null ? '' : designPreamble(theme.design);
 
@@ -880,5 +899,5 @@ a:hover {
     color: #000;
   }
 }
-${tokens}`;
+${tokens}${runtimePrimitiveRules(runtimePrimitives)}${locationRules(hasLocation)}${contactFormRules(hasContactForm)}`;
 }

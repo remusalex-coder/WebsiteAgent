@@ -305,6 +305,19 @@ export interface AppConfig {
   readonly forgeBattleMode: boolean;
   /** `FORGE_BATTLE_CANDIDATES`. Only meaningful when `forgeBattleMode` is on. Minimum 2 — a "battle" of one is not a battle. */
   readonly forgeBattleCandidateCount: number;
+  /**
+   * `CONTACT_FORM_ENABLED`. Opt-in, default off. Threads `RenderOptions.
+   * contactForm` through to the classic pipeline's `renderSite` call
+   * (`composeStandalone`), adding a real, static, submittable Netlify Forms
+   * enquiry form to every generated site's contact section. Off by default
+   * because whether Netlify's form-detection post-processing reliably fires
+   * on the zip/API "Drop" deploy this project uses (as opposed to a
+   * git-connected build) could not be confirmed against official docs and
+   * has no live `NETLIFY_DEPLOY_TOKEN` in this environment to verify
+   * end-to-end — see `WORK_QUEUE.json` WQ-024. Flip this on only after that
+   * verification (or an equivalent live test) has actually run.
+   */
+  readonly contactFormEnabled: boolean;
 }
 
 /** Applied wherever the environment leaves a value unset. */
@@ -381,6 +394,7 @@ export const DEFAULTS = {
   allowCerebrasSpend: false,
   forgeBattleMode: false,
   forgeBattleCandidateCount: 2,
+  contactFormEnabled: false,
 } as const;
 
 /**
@@ -772,5 +786,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     allowCerebrasSpend: bool(env, 'BF_ALLOW_CEREBRAS_SPEND', DEFAULTS.allowCerebrasSpend),
     forgeBattleMode: bool(env, 'FORGE_BATTLE_MODE', DEFAULTS.forgeBattleMode),
     forgeBattleCandidateCount: int(env, 'FORGE_BATTLE_CANDIDATES', DEFAULTS.forgeBattleCandidateCount, 2),
+    contactFormEnabled: bool(env, 'CONTACT_FORM_ENABLED', DEFAULTS.contactFormEnabled),
   };
 }

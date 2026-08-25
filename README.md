@@ -47,11 +47,11 @@ mapsUrl
   -> discoveryAgent       -> DiscoveryResult    who is this business?      [verified live]
   -> collectorAgent       -> CollectedBusiness  what are the raw facts?    [verified live]
   -> normalizerAgent      -> BusinessProfile    one canonical truth        [verified live]
-  -> businessAnalystAgent -> BusinessStrategy   what should the site do?   [never executed]
-  -> writerAgent          -> WebsiteContent     what should the site say?  [never executed]
+  -> businessAnalystAgent -> BusinessStrategy   what should the site do?   [verified live]
+  -> writerAgent          -> WebsiteContent     what should the site say?  [verified live]
   -> designAgent          -> WebsiteDesign      how should it look?        [implemented]
   -> lib/render           -> index.html + css   turn the spec into a site  [implemented]
-  -> lovableAgent         -> DeploymentResult   build it and put it online [stub]
+  -> lovableAgent         -> DeploymentResult   deploys to Netlify (Drop)  [verified live]
 ```
 
 Stages 1–3 need no credentials. Stage 4 onward needs an AI provider — any of

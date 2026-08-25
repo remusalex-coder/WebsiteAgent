@@ -11,6 +11,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { renderSite } from '../../lib/render/index.js';
+import { composeDesign } from '../../lib/design/index.js';
+import { profileFixture } from '../fixtures/business.js';
 import { emptyContent, fullContent, minimalContent } from '../fixtures/content.js';
 
 import type { WebsiteContent, WebsiteSection } from '../../lib/types.js';
@@ -428,5 +430,302 @@ describe('determinism', () => {
     const page = html(fullContent);
     assert.ok(!/\b20\d\d-\d\d-\d\dT/.test(page));
     assert.ok(!/generated on/i.test(page));
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* siteUrl — canonical link, sitemap.xml, robots.txt                   */
+/* ------------------------------------------------------------------ */
+
+describe('siteUrl', () => {
+  it('absent (the default): no canonical link, no sitemap.xml, no robots.txt — byte-identical to no options at all', () => {
+    const withNoOptions = renderSite(fullContent);
+    const withEmptyOptions = renderSite(fullContent, {});
+    assert.deepEqual(withNoOptions, withEmptyOptions);
+    assert.ok(!html(fullContent).includes('rel="canonical"'));
+    assert.deepEqual(
+      withNoOptions.files.map((f) => f.path),
+      ['index.html', 'styles.css'],
+    );
+  });
+
+  it('present: emits a canonical link with the exact origin', () => {
+    const site = renderSite(fullContent, { siteUrl: 'https://example.com' });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(page.includes('<link rel="canonical" href="https://example.com">'));
+  });
+
+  it('present: emits sitemap.xml and robots.txt together, cross-referencing each other', () => {
+    const site = renderSite(fullContent, { siteUrl: 'https://example.com' });
+    const sitemap = site.files.find((f) => f.path === 'sitemap.xml');
+    const robots = site.files.find((f) => f.path === 'robots.txt');
+    assert.ok(sitemap, 'sitemap.xml must be emitted');
+    assert.ok(robots, 'robots.txt must be emitted');
+    assert.ok(sitemap!.contents.includes('<loc>https://example.com/</loc>'));
+    assert.ok(sitemap!.contents.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
+    assert.ok(robots!.contents.includes('Sitemap: https://example.com/sitemap.xml'));
+    assert.ok(robots!.contents.includes('Allow: /'));
+  });
+
+  it('a trailing slash on siteUrl is normalised away, so the emitted URLs never double up', () => {
+    const site = renderSite(fullContent, { siteUrl: 'https://example.com/' });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(page.includes('href="https://example.com"'));
+    const sitemap = site.files.find((f) => f.path === 'sitemap.xml')?.contents ?? '';
+    assert.ok(sitemap.includes('<loc>https://example.com/</loc>'));
+    assert.ok(!sitemap.includes('https://example.com//'));
+  });
+
+  it('a path/query on siteUrl is dropped — siteUrl is an origin, not a page URL', () => {
+    const site = renderSite(fullContent, { siteUrl: 'https://example.com/some/path?x=1' });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(page.includes('href="https://example.com"'));
+    assert.ok(!page.includes('/some/path'));
+  });
+
+  it('a relative or malformed siteUrl is dropped — never invented, never half-applied', () => {
+    for (const bad of ['not-a-url', '/relative/path', '', '   ']) {
+      const site = renderSite(fullContent, { siteUrl: bad });
+      assert.ok(!site.files.some((f) => f.path === 'sitemap.xml'), `"${bad}" must not produce a sitemap`);
+      assert.ok(!site.files.some((f) => f.path === 'robots.txt'), `"${bad}" must not produce robots.txt`);
+      const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+      assert.ok(!page.includes('rel="canonical"'), `"${bad}" must not produce a canonical link`);
+    }
+  });
+
+  it('a non-http(s) scheme is rejected', () => {
+    const site = renderSite(fullContent, { siteUrl: 'ftp://example.com' });
+    assert.ok(!site.files.some((f) => f.path === 'sitemap.xml'));
+  });
+
+  it('never invents a URL from the Maps listing — siteUrl is opt-in only, unrelated to DiscoveryInput.canonicalUrl', () => {
+    // Structural proof, not a runtime one: renderSite's WebsiteContent
+    // parameter carries no canonicalUrl field at all (that lives on the
+    // discovery artifact, a different stage entirely) — there is nothing
+    // for the renderer to have silently reached for.
+    const site = renderSite(fullContent);
+    assert.ok(!site.files.some((f) => f.path === 'sitemap.xml'));
+  });
+
+  it('is deterministic', () => {
+    const a = renderSite(fullContent, { siteUrl: 'https://example.com' });
+    const b = renderSite(fullContent, { siteUrl: 'https://example.com' });
+    assert.deepEqual(a, b);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* location — real OpenStreetMap embed on the location section         */
+/* ------------------------------------------------------------------ */
+
+describe('location', () => {
+  const LISBON = { lat: 38.7223, lng: -9.1393 };
+  // The map is wired through the design-driven render path
+  // (`plan.frame`/`VARIANTS`, `lib/render/sections.ts`'s `renderDetailList`)
+  // — the path every real production render actually uses
+  // (`main.ts`'s `executePipeline` always calls `composeDesign` before
+  // `renderSite`; `design` is only ever `null` in a debug/legacy render).
+  // A real `design`, not a fake one, so this proves the actual production
+  // shape rather than a path production never exercises.
+  const design = composeDesign({ profile: profileFixture(), content: fullContent });
+
+  it('absent (the default): the location section renders exactly as it always has — plain address, no map, no iframe', () => {
+    const withNoOptions = renderSite(fullContent, { design });
+    const withEmptyLocation = renderSite(fullContent, { design, location: undefined });
+    assert.deepEqual(withNoOptions, withEmptyLocation);
+    const page = withNoOptions.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(!page.includes('<iframe'));
+    assert.ok(!page.includes('location-map'));
+  });
+
+  it('present: renders a real OpenStreetMap iframe with the exact coordinates, plus a fallback link', () => {
+    const site = renderSite(fullContent, { design, location: LISBON });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(page.includes('<iframe'));
+    assert.ok(page.includes('src="https://www.openstreetmap.org/export/embed.html?bbox='));
+    assert.ok(page.includes('marker=38.7223%2C-9.1393'));
+    assert.ok(page.includes('loading="lazy"'));
+    assert.ok(page.includes('title="Map"'), 'the iframe must carry an accessible title');
+    assert.ok(page.includes('href="https://www.openstreetmap.org/?mlat=38.7223&amp;mlon=-9.1393'), 'a real, always-present fallback link, not a hidden one');
+    assert.ok(page.includes('rel="noopener"'), 'the fallback link must not trip the external-links-noopener security check');
+  });
+
+  it('the address text still renders alongside the map — the map is additive, not a replacement', () => {
+    const site = renderSite(fullContent, { design, location: LISBON });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    // fullContent's own location section carries its address in `body`, not
+    // `bullets` — exactly the shape that first exposed the ordering bug in
+    // renderDetailList (the map must not depend on bullets being non-empty).
+    const locationSection = fullContent.sections.find((s) => s.kind === 'location');
+    assert.ok(locationSection);
+    assert.ok(page.includes(locationSection!.body), 'the section body (address) must still appear');
+  });
+
+  it('only the map-relevant styles are added to styles.css when location is supplied — genuinely additive, same contract as runtimePrimitives', () => {
+    const withoutLocation = renderSite(fullContent, { design });
+    const withLocation = renderSite(fullContent, { design, location: LISBON });
+    const cssWithout = withoutLocation.files.find((f) => f.path === 'styles.css')?.contents ?? '';
+    const cssWith = withLocation.files.find((f) => f.path === 'styles.css')?.contents ?? '';
+    assert.ok(!cssWithout.includes('.location-map'));
+    assert.ok(cssWith.includes('.location-map'));
+    assert.ok(cssWith.startsWith(cssWithout), 'the base stylesheet must be an exact, unmodified prefix — nothing existing shifted');
+  });
+
+  it('an invalid location (out-of-range coordinates) is dropped — never invented, never renders at (NaN, NaN)', () => {
+    for (const bad of [{ lat: 999, lng: 0 }, { lat: 0, lng: -999 }, { lat: NaN, lng: 0 }]) {
+      const site = renderSite(fullContent, { design, location: bad });
+      const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+      assert.ok(!page.includes('<iframe'), `${JSON.stringify(bad)} must not produce a map`);
+    }
+  });
+
+  it('a business with no location section in its content is unaffected even when location is supplied', () => {
+    const minimalDesign = composeDesign({ profile: profileFixture(), content: minimalContent });
+    const site = renderSite(minimalContent, { design: minimalDesign, location: LISBON });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(!page.includes('<iframe'), 'no location section exists to attach a map to');
+  });
+
+  it('a "contact" section (with real coordinates) also gets the map, and keeps its tel:/mailto: links — the deterministic writer never emits a dedicated "location" kind at all', () => {
+    // composeBaseline (agents/writerAgent.ts) always folds the address into
+    // "contact", never a separate "location" section — found by running the
+    // real deterministic pipeline over a real business fixture; a
+    // location-only dispatch left the map unreachable from every business
+    // this pipeline generates without a live Director/AI writer call.
+    const content: WebsiteContent = {
+      ...minimalContent,
+      sections: [
+        ...minimalContent.sections,
+        {
+          kind: 'contact', heading: 'Contact', subheading: null, body: '',
+          bullets: ['+351 21 000 0000', 'ola@example.test'], images: [], callToAction: null,
+        },
+      ],
+    };
+    const contactDesign = composeDesign({ profile: profileFixture(), content });
+    const site = renderSite(content, { design: contactDesign, location: LISBON });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(page.includes('<iframe'), 'the contact section must get a real map when coordinates are supplied');
+    assert.ok(page.includes('src="https://www.openstreetmap.org/export/embed.html?bbox='));
+    assert.ok(page.includes('href="tel:+351210000000"'), 'the phone must still render as a real tel: link');
+    assert.ok(page.includes('href="mailto:ola@example.test"'), 'the email must still render as a real mailto: link');
+  });
+
+  it('without coordinates, a "contact" section is completely unaffected — tel: rendering is untouched, no map', () => {
+    const content: WebsiteContent = {
+      ...minimalContent,
+      sections: [
+        ...minimalContent.sections,
+        {
+          kind: 'contact', heading: 'Contact', subheading: null, body: '',
+          bullets: ['+351 21 000 0000'], images: [], callToAction: null,
+        },
+      ],
+    };
+    const contactDesign = composeDesign({ profile: profileFixture(), content });
+    const site = renderSite(content, { design: contactDesign }); // no location
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(!page.includes('<iframe'));
+    assert.ok(page.includes('href="tel:+351210000000"'));
+  });
+
+  it('contactForm defaults to off: a "contact" section renders no <form> when the option is not supplied', () => {
+    const content: WebsiteContent = {
+      ...minimalContent,
+      sections: [
+        ...minimalContent.sections,
+        {
+          kind: 'contact', heading: 'Contact', subheading: null, body: '',
+          bullets: ['+351 21 000 0000', 'ola@example.test'], images: [], callToAction: null,
+        },
+      ],
+    };
+    const contactDesign = composeDesign({ profile: profileFixture(), content });
+    const site = renderSite(content, { design: contactDesign, location: LISBON });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(!page.includes('<form'), 'contactForm is off by default (WQ-024 -- unverified against a live Netlify Drop deploy)');
+    assert.ok(page.includes('href="tel:+351210000000"'), 'the guaranteed-reachable tel: link is untouched regardless');
+  });
+
+  it('contactForm: true adds a real, static, submittable Netlify Forms enquiry form alongside (not instead of) the tel:/mailto: links', () => {
+    const content: WebsiteContent = {
+      ...minimalContent,
+      sections: [
+        ...minimalContent.sections,
+        {
+          kind: 'contact', heading: 'Contact', subheading: null, body: '',
+          bullets: ['+351 21 000 0000', 'ola@example.test'], images: [], callToAction: null,
+        },
+      ],
+    };
+    const contactDesign = composeDesign({ profile: profileFixture(), content });
+    const site = renderSite(content, { design: contactDesign, location: LISBON, contactForm: true });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+
+    // The form itself: static, POST, Netlify-detectable with zero JS.
+    assert.ok(page.includes('<form'));
+    assert.ok(page.includes('data-netlify="true"'));
+    assert.ok(page.includes('method="POST"'));
+    assert.ok(page.includes('name="contact"'));
+    // Spam protection: honeypot, not reCAPTCHA (no third-party script/consent question).
+    assert.ok(page.includes('netlify-honeypot="bot-field"'));
+    assert.ok(page.includes('name="bot-field"'));
+    assert.ok(!page.includes('recaptcha'));
+    // Real fields, all labelled.
+    for (const field of ['name', 'email', 'phone', 'message']) {
+      assert.ok(page.includes(`name="${field}"`), `missing the ${field} field`);
+    }
+    assert.ok(page.includes('<label'));
+    // Progressive enhancement script present, and the existing links untouched.
+    assert.ok(page.includes('<script>'));
+    assert.ok(page.includes('href="tel:+351210000000"'));
+    assert.ok(page.includes('href="mailto:ola@example.test"'));
+  });
+
+  it('contactForm: true renders nothing extra when the business has no phone or email to plausibly notice a submission with', () => {
+    const content: WebsiteContent = {
+      ...minimalContent,
+      sections: [
+        ...minimalContent.sections,
+        {
+          kind: 'contact', heading: 'Contact', subheading: null, body: '',
+          bullets: ['Ask at the counter'], images: [], callToAction: null,
+        },
+      ],
+    };
+    const contactDesign = composeDesign({ profile: profileFixture(), content });
+    const site = renderSite(content, { design: contactDesign, contactForm: true });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(!page.includes('<form'), 'a form with nobody able to notice a submission would be a capability that only looks real');
+  });
+
+  it('contactForm: true on a "contact" section WITH coordinates (the real production path, via renderLocationBlock) still gets the form', () => {
+    const content: WebsiteContent = {
+      ...minimalContent,
+      sections: [
+        ...minimalContent.sections,
+        {
+          kind: 'contact', heading: 'Contact', subheading: null, body: '',
+          bullets: ['+351 21 000 0000'], images: [], callToAction: null,
+        },
+      ],
+    };
+    const contactDesign = composeDesign({ profile: profileFixture(), content });
+    const site = renderSite(content, { design: contactDesign, location: LISBON, contactForm: true });
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(page.includes('<iframe'), 'the map path must not swallow the form');
+    assert.ok(page.includes('<form'), 'the form must render on the with-coordinates path too, not only the no-location fallback');
+  });
+
+  it('the legacy no-design render path is deliberately, explicitly unaffected — "unchanged" per its own doc comment', () => {
+    const site = renderSite(fullContent, { location: LISBON }); // no `design` at all
+    const page = site.files.find((f) => f.path === 'index.html')?.contents ?? '';
+    assert.ok(!page.includes('<iframe'), 'the legacy pre-layout renderer never reads RenderOptions.location, by design');
+  });
+
+  it('is deterministic', () => {
+    const a = renderSite(fullContent, { design, location: LISBON });
+    const b = renderSite(fullContent, { design, location: LISBON });
+    assert.deepEqual(a, b);
   });
 });

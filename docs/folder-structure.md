@@ -1,6 +1,6 @@
 # Folder structure
 
-_Last updated: 2026-08-06._
+_Last updated: 2026-08-06; agent status column corrected 2026-08-25 (writerAgent/lovableAgent were both already real, not stubs -- see docs/WORK_QUEUE.json WQ-012 and MASTER_INVENTORY.json)._
 
 ```
 main.ts                          orchestration, CLI, run lifecycle, artifacts
@@ -10,8 +10,8 @@ agents/                          one file per stage; pure transforms
   collectorAgent.ts              identity  → CollectedBusiness
   normalizerAgent.ts             both      → BusinessProfile
   businessAnalystAgent.ts        profile   → BusinessStrategy
-  writerAgent.ts                 + strategy→ WebsiteContent          [stub]
-  lovableAgent.ts                content   → DeploymentResult        [stub]
+  writerAgent.ts                 + strategy→ WebsiteContent          [verified live]
+  lovableAgent.ts                content   → DeploymentResult        [verified live -- deploys to Netlify Drop]
 
 lib/
   browser.ts                     headless browser, driver-agnostic

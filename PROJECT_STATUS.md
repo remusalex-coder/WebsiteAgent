@@ -1062,7 +1062,7 @@ output/              artifacts (gitignored)
 | 5 | `writerAgent` | profile + strategy → `WebsiteContent` | ✅ verified live |
 | 5b | `designAgent` | all three → `WebsiteDesign` | ✅ built and tested (no model call) |
 | — | `lib/render` | content + design → `index.html`, `styles.css`, assets | ✅ built and tested |
-| 6 | `lovableAgent` | content → `DeploymentResult` | ⛔ stub |
+| 6 | `lovableAgent` | content → `DeploymentResult` | ✅ verified live (deploys to Netlify Drop via `lib/deploy/netlify.ts`) |
 
 Stages 1–3 need no credentials. Stage 4 onward needs an AI provider — `AI_PROVIDER`
 plus that vendor's key. Anthropic, OpenAI, Gemini and OpenRouter are all supported.

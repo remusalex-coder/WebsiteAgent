@@ -18,6 +18,8 @@
 import { renderDocument } from './document.js';
 import { renderSection } from './sections.js';
 import { renderStylesheet } from './css.js';
+import { runtimeSourceFor } from '../runtime/scroll-progress.js';
+import { runtimePrimitiveAssetFiles } from './runtimeAssets.js';
 import { resolveTheme, themeFromDesign } from './theme.js';
 import { createAssetPlan } from './assets.js';
 import { fontAssets } from './fonts.js';
@@ -67,6 +69,46 @@ export function assignIds(sections: readonly WebsiteSection[]): readonly string[
     taken.add(id);
     return id;
   });
+}
+
+/** Escapes the handful of characters that are meaningful inside XML text content. */
+function xmlEscape(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * `sitemap.xml` and `robots.txt`, when a real deployed base URL is known
+ * (`RenderOptions.siteUrl`) — `[]` otherwise, which is every call before
+ * this option existed. One `<url>` entry: this renderer produces a single
+ * page (in-page anchor navigation, `assignIds` above), not a multi-file
+ * site, so a real sitemap for it genuinely has one location.
+ */
+function seoFiles(siteUrl: string | null): readonly RenderedFile[] {
+  if (siteUrl === null) return [];
+
+  const root = xmlEscape(`${siteUrl}/`);
+  const sitemap = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    '  <url>',
+    `    <loc>${root}</loc>`,
+    '  </url>',
+    '</urlset>',
+    '',
+  ].join('\n');
+
+  const robots = [
+    'User-agent: *',
+    'Allow: /',
+    '',
+    `Sitemap: ${siteUrl}/sitemap.xml`,
+    '',
+  ].join('\n');
+
+  return [
+    { path: 'sitemap.xml', contents: sitemap },
+    { path: 'robots.txt', contents: robots },
+  ];
 }
 
 /**
@@ -232,6 +274,8 @@ export function renderSite(content: WebsiteContent, options: RenderOptions = {})
       plan: plans.get(index) ?? null,
       hero: plan?.hero ?? null,
       design: design ?? null,
+      location: resolved.location,
+      contactForm: resolved.contactForm,
     });
   });
 
@@ -247,12 +291,37 @@ export function renderSite(content: WebsiteContent, options: RenderOptions = {})
     assets,
     themeColor: theme.colors.primary,
     design: design ?? null,
+    runtime: resolved.runtime,
     warn,
   });
 
   const files: readonly RenderedFile[] = [
     { path: resolved.htmlFileName, contents: html },
-    { path: resolved.cssFileName, contents: renderStylesheet(theme, resolved.assetDirName) },
+    {
+      path: resolved.cssFileName,
+      contents: renderStylesheet(
+        theme,
+        resolved.assetDirName,
+        resolved.runtimePrimitives,
+        resolved.location !== null,
+        resolved.contactForm,
+      ),
+    },
+    ...(resolved.runtime === 'scroll-progress'
+      ? [
+          { path: 'runtime.js', contents: runtimeSourceFor(resolved.runtimePrimitives) } as RenderedFile,
+          // Sibling files a selected primitive needs beyond the inline
+          // runtime.js/styles.css strings (e.g. three-js-hero-object's
+          // vendored ES module — see lib/render/runtimeAssets.ts). Empty,
+          // and therefore zero new files, for every existing caller that
+          // never selects such a primitive.
+          ...runtimePrimitiveAssetFiles(resolved.runtimePrimitives),
+        ]
+      : []),
+    // Only when a real deployed base URL is known (RenderOptions.siteUrl) —
+    // both files together, or neither: a robots.txt pointing at a sitemap
+    // that does not exist (or vice versa) is worse than shipping neither.
+    ...seoFiles(resolved.siteUrl),
   ];
 
   return {

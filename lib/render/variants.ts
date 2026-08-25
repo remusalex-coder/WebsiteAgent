@@ -3202,22 +3202,30 @@ a {
 /* --- R2: a genuine veil/whiteout at the signature moment ----------------- */
 /* Bakery's whiteout covered the one polarity flip two grounds could not
  * legibly cross. The base .section--moment wash is scroll-timeline only
- * (a no-op where unsupported). This adds a load-time keyframe veil that
- * works everywhere reduced-motion allows, so the peak is unmistakably a
- * rhythm break, not a styled card. */
+ * (a no-op where unsupported). This adds a kind-aware transition that works
+ * everywhere reduced-motion allows, so the peak is unmistakably a rhythm
+ * break, not a styled card — and the *kind* of break is chosen by character
+ * (see ExperienceTransition), so two businesses with a moment differ in how
+ * the peak is hit.
+ *   [data-transition="veil"]  -> full-bleed whiteout that peaks then clears
+ *   [data-transition="wipe"]  -> directional clip-path reveal of the moment
+ */
 @keyframes forge-veil {
   0% { opacity: 0.85; backdrop-filter: blur(0px); }
   60% { opacity: 0.35; backdrop-filter: blur(6px); }
   100% { opacity: 0; backdrop-filter: blur(0px); }
 }
+@keyframes forge-wipe {
+  0% { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
 @media (prefers-reduced-motion: no-preference) {
-  .section--signature-composition,
-  .section--moment {
+  .section--moment[class*="section--moment-"] {
     position: relative;
     overflow: clip;
   }
-  .section--signature-composition::before,
-  .section--moment::before {
+  /* Veil: a whiteout wash that peaks as the moment arrives. */
+  .section--moment[data-transition="veil"]::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -3225,6 +3233,10 @@ a {
     pointer-events: none;
     z-index: 2;
     animation: forge-veil 900ms var(--easing) both;
+  }
+  /* Wipe: the whole moment is revealed by a directional clip-path sweep. */
+  .section--moment[data-transition="wipe"] {
+    animation: forge-wipe 700ms var(--easing) both;
   }
 }
 

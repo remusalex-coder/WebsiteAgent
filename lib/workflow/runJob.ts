@@ -464,6 +464,9 @@ export async function reconceptBuild(args: {
     design,
     runtime,
     ...(runtimePrimitives.length > 0 ? { runtimePrimitives } : {}),
+    // Off by default (WQ-024) -- see `RenderOptions.contactForm`'s own doc
+    // comment for why: unverified against a live Netlify Drop deploy.
+    ...(config.contactFormEnabled ? { contactForm: true } : {}),
   });
   const targetDir = path.join(outputDir, SITE_DIR_NAME);
   await writeRenderedSite(site, { sourceDir: outputDir, targetDir });
