@@ -538,9 +538,10 @@
         "lib/workflow/runJob.ts (reconceptBuild wiring)",
         "main.ts (renderStage param + call site, composeStandalone wiring)",
         "test/render/site.test.ts (+4 tests)",
-        "docs/MASTER_CAPABILITY_TOOL_REGISTRY.json (ext.netlify-forms entry, G-CONTACT-01 gap)"
+        "docs/MASTER_CAPABILITY_TOOL_REGISTRY.json (ext.netlify-forms entry, G-CONTACT-01 gap)",
+        "commit 9c3118f on branch design-director-smoke (C:\\Users\\40728\\WebsiteAgent), native full suite 1511/1511 passing, tsc --noEmit exit 0"
       ],
-      "validationState": "UNVERIFIED",
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "docs/AUTONOMOUS_EXECUTION_MANDATE.md section on external-tool research + gap audit, 2026-08-25 -- lib/render had no real <form> capability at all before this task",
       "createdAt": "2026-08-25",
