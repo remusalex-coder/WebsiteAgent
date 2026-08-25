@@ -13,17 +13,17 @@
     "inputs": "what this task reads",
     "outputs": "what this task is expected to produce",
     "artifacts": "files/commits actually produced, once DONE",
-    "validationState": "UNVERIFIED | TYPECHECKED | TESTED_LOCAL | TESTED_NATIVE | LIVE_VERIFIED — never claim more than what actually ran",
+    "validationState": "UNVERIFIED | TYPECHECKED | TESTED_LOCAL | TESTED_NATIVE | LIVE_VERIFIED \u2014 never claim more than what actually ran",
     "failureState": "null, or a short machine-readable reason when status is FAILED/BLOCKED_HUMAN",
     "provenance": "which session/finding surfaced this task",
-    "costUnits": "rough estimate in €cents or 'free' — see lib/capability's cost model; omitted when genuinely unknown",
+    "costUnits": "rough estimate in \u20accents or 'free' \u2014 see lib/capability's cost model; omitted when genuinely unknown",
     "createdAt": "ISO date",
     "updatedAt": "ISO date"
   },
   "tasks": [
     {
       "id": "WQ-001",
-      "description": "MASTER CAPABILITY & TOOL REGISTRY — build docs/MASTER_CAPABILITY_TOOL_REGISTRY.json + .md",
+      "description": "MASTER CAPABILITY & TOOL REGISTRY \u2014 build docs/MASTER_CAPABILITY_TOOL_REGISTRY.json + .md",
       "priority": "P1",
       "dependencies": [],
       "status": "DONE",
@@ -35,7 +35,7 @@
       "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "explicit user task, this session",
-      "costUnits": "free (no model calls — extraction + prose synthesis)",
+      "costUnits": "free (no model calls \u2014 extraction + prose synthesis)",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
     },
@@ -43,7 +43,9 @@
       "id": "WQ-002",
       "description": "Close gap G-AI-01: gemini provider fetch-stubbed behavioural test coverage",
       "priority": "P1",
-      "dependencies": ["WQ-001"],
+      "dependencies": [
+        "WQ-001"
+      ],
       "status": "DONE",
       "assignedWorker": "claude (deterministic test authoring, no model spend)",
       "attempts": 1,
@@ -61,7 +63,9 @@
       "id": "WQ-003",
       "description": "Close gap G-AI-01 (anthropic half): wiring/ranking/error-mapping coverage, honestly scoped around the SSE-stream limit",
       "priority": "P1",
-      "dependencies": ["WQ-001"],
+      "dependencies": [
+        "WQ-001"
+      ],
       "status": "DONE",
       "assignedWorker": "claude (deterministic test authoring, no model spend)",
       "attempts": 1,
@@ -77,19 +81,19 @@
     },
     {
       "id": "WQ-003b",
-      "description": "anthropic generate()'s SSE-stream path (client.beta.messages.stream().finalMessage()) remains untested by design — needs a live-key-gated integration test, not a hand-reconstructed SDK-internals stub",
+      "description": "anthropic generate()'s SSE-stream path (client.beta.messages.stream().finalMessage()) remains untested by design \u2014 needs a live-key-gated integration test, not a hand-reconstructed SDK-internals stub",
       "priority": "P2",
       "dependencies": [],
       "status": "QUEUED",
-      "assignedWorker": "claude, IF a live ANTHROPIC_API_KEY is available for a gated integration test (mirroring test/qa/layout-audit.live.test.ts's pattern) — otherwise stays queued indefinitely, not a blocker",
+      "assignedWorker": "claude, IF a live ANTHROPIC_API_KEY is available for a gated integration test (mirroring test/qa/layout-audit.live.test.ts's pattern) \u2014 otherwise stays queued indefinitely, not a blocker",
       "attempts": 0,
-      "inputs": "a live ANTHROPIC_API_KEY (human-provided credential — not something to invent or assume)",
+      "inputs": "a live ANTHROPIC_API_KEY (human-provided credential \u2014 not something to invent or assume)",
       "outputs": "a new live-gated test file, skipped when the key is absent",
       "artifacts": null,
       "validationState": "UNVERIFIED",
       "failureState": null,
       "provenance": "test/ai/anthropic-provider.test.ts's own header, this session",
-      "costUnits": "a few €cents per CI run if ever enabled live",
+      "costUnits": "a few \u20accents per CI run if ever enabled live",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
     },
@@ -113,11 +117,11 @@
     },
     {
       "id": "WQ-005",
-      "description": "gap G-XAI-01: xai provider is fully wired and tested but bound to zero capabilities in SERVICE_BINDINGS — either bind it into a real chain with evidenced rationale, or mark DEPRECATED",
+      "description": "gap G-XAI-01: xai provider is fully wired and tested but bound to zero capabilities in SERVICE_BINDINGS \u2014 either bind it into a real chain with evidenced rationale, or mark DEPRECATED",
       "priority": "P2",
       "dependencies": [],
       "status": "QUEUED",
-      "assignedWorker": "claude to investigate + decide; no model spend to research, a few €cents if a live xai smoke-test is added",
+      "assignedWorker": "claude to investigate + decide; no model spend to research, a few \u20accents if a live xai smoke-test is added",
       "attempts": 0,
       "inputs": "lib/ai/providers/xai.ts, lib/capability/bindings.ts, any research on Grok's current pricing/capability fit",
       "outputs": "either a new xai ServiceBinding entry with rationale + test, or a DEPRECATED marker with rationale",
@@ -134,7 +138,7 @@
       "priority": "P2",
       "dependencies": [],
       "status": "QUEUED",
-      "assignedWorker": "claude — audit first (is state.ts a strict superset?), then migrate only if genuinely safe",
+      "assignedWorker": "claude \u2014 audit first (is state.ts a strict superset?), then migrate only if genuinely safe",
       "attempts": 0,
       "inputs": "main.ts, lib/workflow/jobState.ts, scripts/n8n/stage.ts, lib/workflow/state.ts",
       "outputs": "either a migration plan + implementation, or a documented decision to leave the three vocabularies as-is with a clear rationale",
@@ -147,7 +151,7 @@
     },
     {
       "id": "WQ-007",
-      "description": "gap G-BATTLE-01: lib/forge/battle.ts (multi-candidate Design Battle) is fully implemented but unreachable from the production entrypoint — decide deliberately whether it becomes the production default",
+      "description": "gap G-BATTLE-01: lib/forge/battle.ts (multi-candidate Design Battle) is fully implemented but unreachable from the production entrypoint \u2014 decide deliberately whether it becomes the production default",
       "priority": "P2",
       "dependencies": [],
       "status": "QUEUED",
@@ -164,7 +168,7 @@
     },
     {
       "id": "WQ-008",
-      "description": "gap G-MCP-01: MCP is a fully-designed ServiceKind with zero populated bindings — low priority until a real MCP-served capability need arises",
+      "description": "gap G-MCP-01: MCP is a fully-designed ServiceKind with zero populated bindings \u2014 low priority until a real MCP-served capability need arises",
       "priority": "P3",
       "dependencies": [],
       "status": "QUEUED",
@@ -181,7 +185,7 @@
     },
     {
       "id": "WQ-009",
-      "description": "A5: Forge's motionIntensity is not rationale-gated like requires3D — add a rationale-presence check for 'expressive'/'immersive' selections",
+      "description": "A5: Forge's motionIntensity is not rationale-gated like requires3D \u2014 add a rationale-presence check for 'expressive'/'immersive' selections",
       "priority": "P2",
       "dependencies": [],
       "status": "QUEUED",
@@ -198,7 +202,7 @@
     },
     {
       "id": "WQ-010",
-      "description": "A11: clarify Bright Data's actual scope — named in stage.ts but no dedicated client module distinct from placesApi.ts",
+      "description": "A11: clarify Bright Data's actual scope \u2014 named in stage.ts but no dedicated client module distinct from placesApi.ts",
       "priority": "P3",
       "dependencies": [],
       "status": "QUEUED",
@@ -215,9 +219,11 @@
     },
     {
       "id": "WQ-011",
-      "description": "A10: config.lovable dead config parsing (zero live readers) — cosmetic cleanup, low priority",
+      "description": "A10: config.lovable dead config parsing (zero live readers) \u2014 cosmetic cleanup, low priority",
       "priority": "P3",
-      "dependencies": ["WQ-012"],
+      "dependencies": [
+        "WQ-012"
+      ],
       "status": "QUEUED",
       "assignedWorker": "claude, deterministic",
       "attempts": 0,
@@ -232,7 +238,7 @@
     },
     {
       "id": "WQ-012",
-      "description": "External-tool decision REJECT already made for Lovable (agents/lovableAgent.ts's run() throws NotImplementedError) — formally deprecate or delete the stub rather than leaving a REJECT decision undocumented in code",
+      "description": "External-tool decision REJECT already made for Lovable (agents/lovableAgent.ts's run() throws NotImplementedError) \u2014 formally deprecate or delete the stub rather than leaving a REJECT decision undocumented in code",
       "priority": "P3",
       "dependencies": [],
       "status": "QUEUED",
@@ -249,7 +255,7 @@
     },
     {
       "id": "WQ-013",
-      "description": "gap G-N6-LEGAL: rights to redistribute a business's own social-media photographs — blocks image_editing/motion_media from moving past conservative deterministic-floor defaults",
+      "description": "gap G-N6-LEGAL: rights to redistribute a business's own social-media photographs \u2014 blocks image_editing/motion_media from moving past conservative deterministic-floor defaults",
       "priority": "P0 (blocks product quality on this capability, but genuinely human-only)",
       "dependencies": [],
       "status": "BLOCKED_HUMAN",
@@ -266,16 +272,18 @@
     },
     {
       "id": "WQ-014",
-      "description": "Observability control surface (mandate section 16): a human-readable board showing current job/stage/workers/queue/QA/deploy status, becoming part of BusinessForge rather than staying dependent on ad-hoc reports",
+      "description": "Observability control surface (mandate section 16): a human-readable board showing current job/stage/workers/queue/QA/deploy status, becoming part of BusinessForge rather than staying dependent on ad-hoc reports. First real increment shipped 2026-08-25: lib/workflow/summary.ts (pure read model over job.json/candidates/index.json) + scripts/status.ts (npm run status CLI). The WQ-006 dependency recorded at creation time turned out not to block this: the surface displays job.stage verbatim from whichever vocabulary wrote it, rather than requiring the three coexisting stage vocabularies to be unified first \u2014 WQ-006 remains open for that unification and for making the displayed stage name itself canonical, but is no longer a precondition for this task.",
       "priority": "P1",
-      "dependencies": ["WQ-006"],
-      "status": "QUEUED",
-      "assignedWorker": "claude — likely builds on lib/capability/orchestrator.ts's existing board() (plans every capability at zero cost) plus the job/stage ledger already in scripts/n8n/stage.ts, rendered as a real page/CLI view rather than invented from scratch",
-      "attempts": 0,
+      "dependencies": [],
+      "status": "DONE",
+      "assignedWorker": "claude \u2014 likely builds on lib/capability/orchestrator.ts's existing board() (plans every capability at zero cost) plus the job/stage ledger already in scripts/n8n/stage.ts, rendered as a real page/CLI view rather than invented from scratch",
+      "attempts": 1,
       "inputs": "lib/capability/orchestrator.ts board(), lib/workflow/jobState.ts, docs/WORK_QUEUE.json (this file)",
-      "outputs": "a real, running control surface (exact shape — CLI, local web page, or both — decided at implementation time based on what's already in scripts/)",
-      "artifacts": null,
-      "validationState": "UNVERIFIED",
+      "outputs": "lib/workflow/summary.ts (summarizeJob/summarizeWorkers/summarizeBattle/discoverJobIds/summarizeRun/summarizeAllRuns), scripts/status.ts (npm run status [-- --runId=<id>] [-- --json]), test/workflow/summary.test.ts (12 tests: worker tallies, recentFailures windowing, battle extraction incl. malformed-shape tolerance, real temp-dir I/O)",
+      "artifacts": [
+        "commit e21421a on the Windows checkout (C:\\Users\\40728\\WebsiteAgent): WQ-014: control-surface read model + status CLI"
+      ],
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "MASTER AUTONOMOUS EXECUTION MANDATE section 16, this session",
       "createdAt": "2026-08-25",
@@ -295,6 +303,23 @@
       "validationState": "UNVERIFIED",
       "failureState": null,
       "provenance": "MASTER_CAPABILITY_TOOL_REGISTRY ext.n8n (status: UNKNOWN)",
+      "createdAt": "2026-08-25",
+      "updatedAt": "2026-08-25"
+    },
+    {
+      "id": "WQ-016",
+      "description": "Richer control-surface presentation building on lib/workflow/summary.ts's read model: a live/streaming view (tail job.json changes during an actual run rather than a point-in-time snapshot) and/or a small web page, and/or exposing the same summary via scripts/n8n/stage-server.ts's existing token-authenticated HTTP surface so a remote caller (e.g. n8n, or a future BusinessForge UI) can poll job status without shelling into the box. Not required for WQ-014's own completion \u2014 the CLI snapshot is already a real, non-decorative view of the real orchestrator's persisted state.",
+      "priority": "P2",
+      "dependencies": [],
+      "status": "QUEUED",
+      "assignedWorker": "claude \u2014 likely extends scripts/status.ts with a --watch/poll mode first (cheapest real improvement), then decides on a web/HTTP surface only if a real caller needs one",
+      "attempts": 0,
+      "inputs": "lib/workflow/summary.ts, scripts/status.ts, scripts/n8n/stage-server.ts",
+      "outputs": "TBD at implementation time \u2014 decide the minimal real extension, not a speculative platform",
+      "artifacts": null,
+      "validationState": "UNVERIFIED",
+      "failureState": null,
+      "provenance": "Follow-on surfaced while closing WQ-014, this session",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
     }
