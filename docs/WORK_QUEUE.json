@@ -444,9 +444,10 @@
         "lib/runtime/scroll-progress.ts, lib/render/runtimeAssets.ts (dispatch tables)",
         "test/design/experienceRegistry.test.ts (+5 tests), test/render/runtimePrimitives.integration.test.ts (+4 tests)",
         "docs/MASTER_CAPABILITY_TOOL_REGISTRY.json (runtime_primitives entry)",
-        "docs/IMPLEMENTATION_GAP.md P2-2 (partially resolved), WORK_QUEUE.json WQ-022 (follow-up)"
+        "docs/IMPLEMENTATION_GAP.md P2-2 (partially resolved), WORK_QUEUE.json WQ-022 (follow-up)",
+        "commit bc8f813 on branch design-director-smoke (C:\\Users\\40728\\WebsiteAgent)"
       ],
-      "validationState": "UNVERIFIED",
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "docs/IMPLEMENTATION_GAP.md P2-2, queued 2026-08-25 -- sized as its own dedicated pass rather than appended to this checkpoint (real, generated-site-facing feature work, comparable in scope to the original Lenis/GSAP integrations, not a quick fix)",
       "createdAt": "2026-08-25",
