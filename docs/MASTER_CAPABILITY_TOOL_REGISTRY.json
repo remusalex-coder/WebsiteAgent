@@ -1664,7 +1664,7 @@
       "title": "xai provider is fully wired but bound to zero capabilities",
       "severity": "medium",
       "detail": "lib/ai/providers/xai.ts and test/ai/xai-provider.test.ts exist; SERVICE_BINDINGS has 0 of 41 model bindings referencing xai. The adapter cost was paid but the capability value was never realized.",
-      "recommendedNextStep": "Either bind xai into at least one capability's chain (e.g. as an additional reasoning/creative_direction fallback) with a real evidenced rationale, or explicitly mark it DEPRECATED if there is a reason it was excluded that this pass did not surface."
+      "recommendedNextStep": "RESOLVED 2026-08-25 (docs/WORK_QUEUE.json WQ-005): bound to exactly one capability, structured_generation (order 3, lib/capability/bindings.ts) -- not the reasoning/creative_direction fallback this entry originally suggested. This deliberately revisits a prior recorded 'KEEP unbound' decision (docs/CONSOLIDATION_MAP.md, PROVIDER_POOL_FINAL.md, BUSINESSFORGE_MASTER_INVENTORY.md, REALITY_MAP.md, MASTER_INVENTORY.md, all updated) that used an exclusive-property test and never checked xai's native json_schema/strict enforcement against the already-bound Anthropic seat specifically: xai is cheaper on both input and output (200/600 vs 276/1380 cents-per-million) with a stronger schema guarantee (native vs instructed). Gated behind the same paid-service policy check every commercial vendor sits behind."
     },
     {
       "id": "G-STAGE-01",

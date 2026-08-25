@@ -34,7 +34,7 @@ Its 9 stages stay as the direct/local invocation path (useful for fast iteration
 
 **Anthropic, Gemini, OpenAI, OpenRouter, DeepSeek, Cerebras → KEEP, unchanged roles.**
 
-**xAI (Grok) → KEEP the adapter, KEEP zero bindings.** Do not wire capabilities to it without a measured reason — matches the research corpus's own verdict and today's tested state.
+**xAI (Grok) → BOUND 2026-08-25 (`WORK_QUEUE.json` WQ-005), narrowly.** Revisits this entry's own prior verdict, deliberately: the exclusive-property test above ("no property exclusive to Grok") never examined xai against one specific already-bound vendor on one specific capability. `structured_generation` needed a re-check because xai's native `json_schema, strict: true` enforcement is cheaper on both input and output than the already-bound Anthropic seat (200/600 vs 276/1380 cents-per-million) and stronger (native vs Anthropic's instructed-mode schema). Bound at order 3 in that one capability only — the same fallback-depth reasoning already used for Cerebras and Groq's second `reasoning` seat elsewhere in `lib/capability/bindings.ts`, not a blanket "wire it everywhere." Gated behind the same paid-policy check every commercial vendor sits behind.
 
 **Groq → ADD.** See Implementation Gap.
 

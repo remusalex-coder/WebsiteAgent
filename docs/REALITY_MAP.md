@@ -37,7 +37,7 @@ This map derives its statuses from `docs/MASTER_INVENTORY.md`'s evidence column 
 |---|---|---|
 | `lib/capability/{orchestrator,plan,bindings,execute,invokers,models,registry,budget}.ts` | **REAL/IMPLEMENTED** | Live cross-vendor failover proven (`npm run capability-proof`), 37+ capabilities, gate policy enforced, `unpriced-blocked` gating correct after this session's Cerebras fix. |
 | Anthropic, Gemini, OpenAI, OpenRouter, DeepSeek, Cerebras adapters | **REAL/IMPLEMENTED** | All capability-bound and exercised by tests; Gemini is the only one confirmed *live*-called in a proof run — the rest are real but not independently re-verified against a live endpoint this pass. |
-| xAI (Grok) adapter | **REAL, zero capability bindings by design** | Not PARTIAL — the empty binding set is an explicit, tested decision, not an unfinished one. |
+| xAI (Grok) adapter | **REAL, one capability binding (`structured_generation`)** | Bound 2026-08-25 (`WORK_QUEUE.json` WQ-005) — narrow and deliberate, not the "zero bindings by design" state this row previously recorded; that prior decision used an exclusive-property test that never checked xai against the already-bound Anthropic seat on this one capability. |
 | Groq | **PLANNED** | Rated highest free-tier find in research; no adapter code. |
 | Mistral, Qwen, Kimi, GLM, Llama/HF | **RESEARCH ONLY** | Reachable via OpenRouter if ever needed; no dedicated adapter, none planned. |
 

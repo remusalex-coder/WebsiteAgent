@@ -70,6 +70,7 @@ const OPENROUTER_KEY = 'OPENROUTER_API_KEY';
 const DEEPSEEK_KEY = 'DEEPSEEK_API_KEY';
 const CEREBRAS_KEY = 'CEREBRAS_API_KEY';
 const GROQ_KEY = 'GROQ_API_KEY';
+const XAI_KEY = 'XAI_API_KEY';
 
 /** Shorthand for in-repo code with a real dependency. */
 function tool(
@@ -176,15 +177,27 @@ export const SERVICE_BINDINGS: Readonly<Record<CapabilityId, readonly ServiceBin
     // schema-in-prompt, and free — so it ranks with the native-schema group above, ahead of the
     // instructed-mode vendors below.
     model('structured_generation', 'groq', 'workhorse', 2, 'Native schema enforcement (strict json_schema) — free tier', GROQ_KEY),
-    model('structured_generation', 'anthropic', 'workhorse', 3, 'Schema supplied in-prompt, validated locally', ANTHROPIC_KEY),
-    model('structured_generation', 'openrouter', 'workhorse', 4, 'Schema supplied in-prompt', OPENROUTER_KEY),
-    model('structured_generation', 'deepseek', 'workhorse', 5, 'Schema supplied in-prompt, validated locally — cheapest paid seat', DEEPSEEK_KEY),
+    // WQ-005 (gap G-XAI-01): xai carries the same native `json_schema, strict: true`
+    // enforcement as the three seats above it (lib/ai/providers/xai.ts reuses OpenAI's
+    // toStrictSchema for exactly that documented reason), so it belongs in the native-schema
+    // group, not the instructed-mode one below — this is the concrete capability the adapter's
+    // cost was paid for but never used (the gap that got it built and then left unbound).
+    // Ranked after the free-tier native seats: grok-4.6 has no free allowance at all
+    // (centsPerMillionInput/Output 200/600, lib/capability/models.ts, OBSERVED
+    // bf_research/05_provider_matrix.md 2026-08-19). Ranked ahead of Anthropic specifically —
+    // not a hardcoded preference but the same OBSERVED numbers: Anthropic's workhorse seat is
+    // 276/1380 (both axes pricier than xai's 200/600) and only 'instructed', not native, schema
+    // enforcement. Text-only (no vision modelClass exists for xai), so this is its one real fit.
+    model('structured_generation', 'xai', 'workhorse', 3, 'Native schema enforcement — no free tier, cheaper than Anthropic on both axes', XAI_KEY),
+    model('structured_generation', 'anthropic', 'workhorse', 4, 'Schema supplied in-prompt, validated locally', ANTHROPIC_KEY),
+    model('structured_generation', 'openrouter', 'workhorse', 5, 'Schema supplied in-prompt', OPENROUTER_KEY),
+    model('structured_generation', 'deepseek', 'workhorse', 6, 'Schema supplied in-prompt, validated locally — cheapest paid seat', DEEPSEEK_KEY),
     // Speed-focused, not cost- or quality-focused: Cerebras's own catalog leaves per-model
     // pricing and structured-output support unpublished (bf_research flags it "not
     // deep-dived"). Placed last among paid candidates on purpose, pending a live call that
     // actually confirms schema compliance under instructed mode.
-    model('structured_generation', 'cerebras', 'workhorse', 6, 'Unverified pricing/schema compliance — last resort', CEREBRAS_KEY),
-    floor('structured_generation', 'reject-directive', 7, 'Discard the response and keep the deterministic value'),
+    model('structured_generation', 'cerebras', 'workhorse', 7, 'Unverified pricing/schema compliance — last resort', CEREBRAS_KEY),
+    floor('structured_generation', 'reject-directive', 8, 'Discard the response and keep the deterministic value'),
   ],
 
   prose_writing: [
