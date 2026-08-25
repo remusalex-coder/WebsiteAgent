@@ -469,9 +469,10 @@
         "test/render/runtimePrimitives.integration.test.ts (+4 tests)",
         "test/design/experienceRegistry.test.ts (+5 tests)",
         "docs/MASTER_CAPABILITY_TOOL_REGISTRY.json (runtime.menu-overlay entry)",
-        "docs/IMPLEMENTATION_GAP.md P2-2 (fully resolved)"
+        "docs/IMPLEMENTATION_GAP.md P2-2 (fully resolved)",
+        "commit d5038bc on branch design-director-smoke (C:\\Users\\40728\\WebsiteAgent), native full suite 1490/1490 passing"
       ],
-      "validationState": "UNVERIFIED",
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "docs/IMPLEMENTATION_GAP.md P2-2, split from WQ-021 2026-08-25 -- deliberately scoped separately since it touches already-shipped code, unlike WQ-021's purely additive new primitive",
       "createdAt": "2026-08-25",
