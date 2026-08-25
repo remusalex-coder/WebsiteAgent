@@ -100,7 +100,7 @@ Strictly prioritized. P0 = blocks the factory end-to-end. P1 = needed for a real
 - **Files:** `n8n/factory-v1.json` (deleted), `scripts/n8n/build-factory-workflow.ts` (deleted), `test/factory/stage-router.test.ts`, `test/factory/url-intake.test.ts`, `n8n/README.md`.
 - **Acceptance criteria:** met — grep confirms zero remaining references anywhere in `lib`/`scripts`/`test`; the two dependent tests were found and handled rather than the premise silently overridden; the full test suite (1474 tests) passes with the expected -2 count from the removed tests.
 
-### P2-2. Add CSS scroll-driven animations / View Transitions API to the runtime primitive registry
+### P2-2. Add CSS scroll-driven animations / View Transitions API to the runtime primitive registry — queued 2026-08-25 as `WORK_QUEUE.json` `WQ-021`
 - **Gap:** evaluated only; would reduce reliance on vendored Lenis/GSAP for simple cases.
 - **Files:** `lib/design/experienceRegistry.ts`, new `lib/runtime/scrollDriven.ts` adapter.
 - **Estimated complexity:** medium.
