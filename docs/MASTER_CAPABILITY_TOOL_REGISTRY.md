@@ -95,8 +95,8 @@ Playwright (`^1.49.1`) is the one other real npm dependency, driving evidence co
 | GitHub Copilot | documented-only | KEEP | dev-tool, not a runtime capability |
 | Claude / Cowork | real (as operator) | KEEP | operates this repo, not bound at runtime |
 | Antigravity | documented-only | INTEGRATE | named patterns worth mapping to live code (gap G-ANTIGRAVITY-01) |
-| n8n | unknown/partial | KEEP | real, load-bearing code under that name; naming itself unverified |
-| Dify | unknown (no repo evidence) | REJECT | no trace found across 14 priority sources |
+| n8n | REAL_IMPLEMENTED (code); live-instance status UNKNOWN | KEEP | generates real, importable n8n workflow JSON against a real n8n instance's API/CLI; `n8n/README.md`'s operational runbook (Docker container, node-typeVersion verification, activation curl) evidences it was built and run against a real n8n deployment, not just named after one (WQ-015, 2026-08-25) |
+| Dify | REJECTED (confirmed, whole-word re-verified) | REJECT | zero real references repo-wide; a plain `dify` search false-positives on "Modify"/"identify"/"codify" — whole-word search + 4 independent prior audits agree (WQ-015, 2026-08-25) |
 | Notion | unknown (no repo evidence) | REJECT | docs/knowledge/ already serves this role locally |
 | MCP servers (generic) | planned | INTEGRATE | seam already exists in the type system, zero bindings populated yet |
 | Higgsfield | researched | INTEGRATE | blocked on legal N-6, pricing discrepancy unresolved (gap) |

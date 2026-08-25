@@ -3,7 +3,7 @@
   "generated": "2026-08-25",
   "sourceRepository": "BusinessForge / WebsiteAgent",
   "methodology": {
-    "priorityGroundTruth": "Capability descriptors, tiers, gates, terminals, and the full executor/fallback chain for all 37 CAPABILITY_IDS were extracted PROGRAMMATICALLY by importing lib/capability/registry.ts and lib/capability/bindings.ts and dumping their real runtime data structures (not hand-transcribed from documentation) — see routing_matrix.",
+    "priorityGroundTruth": "Capability descriptors, tiers, gates, terminals, and the full executor/fallback chain for all 37 CAPABILITY_IDS were extracted PROGRAMMATICALLY by importing lib/capability/registry.ts and lib/capability/bindings.ts and dumping their real runtime data structures (not hand-transcribed from documentation) \u2014 see routing_matrix.",
     "secondaryResearch": "6 parallel research agents read all 14 priority sources named in the task (docs/MASTER_INVENTORY.json, BUSINESSFORGE_2.0_* corpus, ADRs, docs/knowledge/, research/, docs/antigravity/, and cross-checked against real code in lib/capability, lib/ai, lib/forge, lib/design, lib/workflow, scripts).",
     "externalVerification": "3 WebSearch queries (Netlify pricing, Cloudflare Pages pricing, GSAP licensing) supplement internal research; GSAP licensing is well-corroborated (3 independent external sources agree), hosting pricing is title/URL-level only and flagged as a gap rather than asserted as verified.",
     "noInventedInventory": "Every entry in ai_providers, routing_matrix, runtime_primitives, and runtime_libraries traces to a real file path read this session or a prior session's file:line citation; every entry in external_tools carries an explicit confidence level distinguishing code-grounded facts from research-corpus claims from genuine UNKNOWNs."
@@ -46,13 +46,13 @@
       "licensing": "commercial-api",
       "apiKeyRequired": true,
       "status": "REAL_IMPLEMENTED",
-      "qualityReliability": "PARTIALLY RESOLVED 2026-08-25 — test/ai/anthropic-provider.test.ts added (13 tests: wiring, planner ranking, real error-mapping via health()'s non-streaming request, stubbed at the fetch layer so the SDK's own error classes are exercised). generate()'s SSE-stream path (client.beta.messages.stream().finalMessage()) remains untested by design — faithfully stubbing it would require reconstructing undocumented SDK internals, judged a shallow-coverage risk rather than real coverage; see the test file's own header.",
+      "qualityReliability": "PARTIALLY RESOLVED 2026-08-25 \u2014 test/ai/anthropic-provider.test.ts added (13 tests: wiring, planner ranking, real error-mapping via health()'s non-streaming request, stubbed at the fetch layer so the SDK's own error classes are exercised). generate()'s SSE-stream path (client.beta.messages.stream().finalMessage()) remains untested by design \u2014 faithfully stubbing it would require reconstructing undocumented SDK internals, judged a shallow-coverage risk rather than real coverage; see the test file's own header.",
       "fallback": "openai.frontier / gemini.frontier / groq.workhorse depending on capability (see capability_routing_matrix)",
       "alternatives": "openai, gemini, deepseek, cerebras, groq, openrouter, xai",
       "compatibilities": "bound to 5 capability slots in SERVICE_BINDINGS",
       "canExecuteAutonomously": "text generation, structured JSON (schema in-prompt, validated locally), vision judging",
       "cannotExecute": "no native image/video/audio generation; no browsing",
-      "existingTests": "test/ai/anthropic-provider.test.ts (13 tests, added 2026-08-25 — wiring/ranking/error-mapping only; generate()'s streaming path is a separate, still-open follow-up)",
+      "existingTests": "test/ai/anthropic-provider.test.ts (13 tests, added 2026-08-25 \u2014 wiring/ranking/error-mapping only; generate()'s streaming path is a separate, still-open follow-up)",
       "documentarySource": "package.json; lib/ai/providers/anthropic.ts; MASTER_INVENTORY.json",
       "confidence": "high (code-grounded)"
     },
@@ -73,8 +73,8 @@
       "licensing": "commercial-api",
       "apiKeyRequired": true,
       "status": "REAL_IMPLEMENTED",
-      "qualityReliability": "PARTIAL — test/ai/openai-reasoning-tokens.test.ts and openai-strict-schema.test.ts exist but exercise pure helpers/parsing, not a full fetch-stubbed request/response cycle",
-      "fallback": "varies by capability — often anthropic or gemini",
+      "qualityReliability": "PARTIAL \u2014 test/ai/openai-reasoning-tokens.test.ts and openai-strict-schema.test.ts exist but exercise pure helpers/parsing, not a full fetch-stubbed request/response cycle",
+      "fallback": "varies by capability \u2014 often anthropic or gemini",
       "alternatives": "anthropic, gemini, deepseek, cerebras, groq, openrouter, xai",
       "compatibilities": "bound to 10 capability slots",
       "canExecuteAutonomously": "text, native-schema structured output, vision, embeddings",
@@ -97,16 +97,16 @@
       "modelVersion": "frontier/workhorse/vision/enum classes",
       "localOrExternal": "external",
       "cost": "free tier (rate-limited) + paid tiers",
-      "licensing": "free-tier-unverified (per bindings.ts's own licence classification — O-3: commercial-use terms of the free tier are not settled)",
+      "licensing": "free-tier-unverified (per bindings.ts's own licence classification \u2014 O-3: commercial-use terms of the free tier are not settled)",
       "apiKeyRequired": true,
       "status": "REAL_IMPLEMENTED",
-      "qualityReliability": "RESOLVED 2026-08-25 — test/ai/gemini-provider.test.ts added (17 fetch-stubbed behavioural tests: request shape, response normalization, multi-part text, blockReason/SAFETY refusal handling, HTTP failure/timeout, planner-first-executor wiring); previously UNKNOWN with zero dedicated test file despite being the #1-ranked executor for 2 of the 4 core language capabilities",
+      "qualityReliability": "RESOLVED 2026-08-25 \u2014 test/ai/gemini-provider.test.ts added (17 fetch-stubbed behavioural tests: request shape, response normalization, multi-part text, blockReason/SAFETY refusal handling, HTTP failure/timeout, planner-first-executor wiring); previously UNKNOWN with zero dedicated test file despite being the #1-ranked executor for 2 of the 4 core language capabilities",
       "fallback": "groq.workhorse (T05 addition specifically to remove Gemini single-point-of-failure) then openai/anthropic",
       "alternatives": "all 7 other providers",
-      "compatibilities": "bound to 12 capability slots — the single most-bound provider in the table",
+      "compatibilities": "bound to 12 capability slots \u2014 the single most-bound provider in the table",
       "canExecuteAutonomously": "text, structured output (native schema), vision, market research synthesis",
       "cannotExecute": "no confirmed image/video generation via this adapter",
-      "existingTests": "test/ai/gemini-provider.test.ts (17 tests, added 2026-08-25 — closes half of gaps.G-AI-01; anthropic remains open)",
+      "existingTests": "test/ai/gemini-provider.test.ts (17 tests, added 2026-08-25 \u2014 closes half of gaps.G-AI-01; anthropic remains open)",
       "documentarySource": "lib/ai/providers/gemini.ts; lib/capability/bindings.ts inline comments",
       "confidence": "high (code-grounded)"
     },
@@ -128,7 +128,7 @@
       "licensing": "free-tier-unverified",
       "apiKeyRequired": true,
       "status": "REAL_IMPLEMENTED",
-      "qualityReliability": "BEST-EVIDENCED of the 8 — only provider with a real fetch-stubbed behavioural test file (per prior-session finding, reconfirmed: test/ai/groq-provider.test.ts exists)",
+      "qualityReliability": "BEST-EVIDENCED of the 8 \u2014 only provider with a real fetch-stubbed behavioural test file (per prior-session finding, reconfirmed: test/ai/groq-provider.test.ts exists)",
       "fallback": "openai.frontier / cerebras.workhorse",
       "alternatives": "all others",
       "compatibilities": "bound to 4 capability slots",
@@ -143,7 +143,7 @@
       "category": "external_ai",
       "provider": "deepseek",
       "capabilityOffered": "reasoning, structured_generation, creative_direction (Design Battle divergent seat)",
-      "whatItDoes": "DeepSeek V4 — bindings.ts calls it out by name as the cheapest paid reasoning seat ($0.22/$0.66 per million, OBSERVED) and the Design Battle's deliberately-divergent third territory generator.",
+      "whatItDoes": "DeepSeek V4 \u2014 bindings.ts calls it out by name as the cheapest paid reasoning seat ($0.22/$0.66 per million, OBSERVED) and the Design Battle's deliberately-divergent third territory generator.",
       "currentImplementation": "REAL_IMPLEMENTED",
       "realFiles": [
         "lib/ai/providers/deepseek.ts",
@@ -156,7 +156,7 @@
       "licensing": "commercial-api",
       "apiKeyRequired": true,
       "status": "REAL_IMPLEMENTED",
-      "qualityReliability": "PARTIAL — has a dedicated test file but self-documented in prior session's finding as wiring-level, not confirmed live-tested end-to-end",
+      "qualityReliability": "PARTIAL \u2014 has a dedicated test file but self-documented in prior session's finding as wiring-level, not confirmed live-tested end-to-end",
       "fallback": "cerebras.workhorse",
       "alternatives": "all others",
       "compatibilities": "bound to 3 capability slots",
@@ -170,7 +170,7 @@
       "id": "provider.cerebras",
       "category": "external_ai",
       "provider": "cerebras",
-      "capabilityOffered": "reasoning, structured_generation, creative_direction — always ranked LAST among paid candidates, explicitly as the fallback-of-last-resort",
+      "capabilityOffered": "reasoning, structured_generation, creative_direction \u2014 always ranked LAST among paid candidates, explicitly as the fallback-of-last-resort",
       "whatItDoes": "gpt-oss-120b at high inference speed; bindings.ts documents it as 'the only vendor verified reachable from this environment when higher-rank seats are quota-blocked or network-unreachable'.",
       "currentImplementation": "REAL_IMPLEMENTED",
       "realFiles": [
@@ -184,8 +184,8 @@
       "licensing": "commercial-api",
       "apiKeyRequired": true,
       "status": "PARTIALLY_IMPLEMENTED",
-      "qualityReliability": "positioned as reachability-fallback, not quality-fallback — bindings.ts is explicit that its per-model pricing and structured-output schema compliance are 'not deep-dived'",
-      "fallback": "compose-baseline (deterministic floor) — nothing paid ranks below it",
+      "qualityReliability": "positioned as reachability-fallback, not quality-fallback \u2014 bindings.ts is explicit that its per-model pricing and structured-output schema compliance are 'not deep-dived'",
+      "fallback": "compose-baseline (deterministic floor) \u2014 nothing paid ranks below it",
       "alternatives": "all others",
       "compatibilities": "bound to 4 capability slots",
       "canExecuteAutonomously": "text generation at high speed",
@@ -212,7 +212,7 @@
       "licensing": "commercial-api",
       "apiKeyRequired": true,
       "status": "REAL_IMPLEMENTED",
-      "qualityReliability": "PARTIAL — probe test exists (checks free-tier reachability) but full request/response behaviour not covered by a dedicated behavioural suite",
+      "qualityReliability": "PARTIAL \u2014 probe test exists (checks free-tier reachability) but full request/response behaviour not covered by a dedicated behavioural suite",
       "fallback": "deepseek.workhorse / cerebras.workhorse",
       "alternatives": "all others",
       "compatibilities": "bound to 3 capability slots",
@@ -226,29 +226,29 @@
       "id": "provider.xai",
       "category": "external_ai",
       "provider": "xai",
-      "capabilityOffered": "NONE currently — registered as an adapter but bound to zero capabilities",
-      "whatItDoes": "Grok models — adapter exists and has a dedicated test file, but SERVICE_BINDINGS contains zero entries with provider:'xai' (mechanically confirmed: 0 of 41 model bindings across all 37 capabilities reference xai).",
+      "capabilityOffered": "NONE currently \u2014 registered as an adapter but bound to zero capabilities",
+      "whatItDoes": "Grok models \u2014 adapter exists and has a dedicated test file, but SERVICE_BINDINGS contains zero entries with provider:'xai' (mechanically confirmed: 0 of 41 model bindings across all 37 capabilities reference xai).",
       "currentImplementation": "PARTIALLY_IMPLEMENTED",
       "realFiles": [
         "lib/ai/providers/xai.ts",
         "test/ai/xai-provider.test.ts"
       ],
       "realFunction": "XaiProvider (exists, unbound)",
-      "modelVersion": "unknown — no modelClass ever resolved against it in production routing",
+      "modelVersion": "unknown \u2014 no modelClass ever resolved against it in production routing",
       "localOrExternal": "external",
       "cost": "unknown, never priced into a plan",
       "licensing": "commercial-api",
       "apiKeyRequired": true,
       "status": "PARTIALLY_IMPLEMENTED",
       "qualityReliability": "adapter-level only; never selected by planCapability for any real capability",
-      "fallback": "n/a — not in any chain",
+      "fallback": "n/a \u2014 not in any chain",
       "alternatives": "n/a",
       "compatibilities": "bound to 0 capability slots (mechanically verified, 2026-08-25)",
       "canExecuteAutonomously": "nothing in production today",
       "cannotExecute": "cannot be reached by the planner until bindings.ts adds it to a capability's chain",
       "existingTests": "test/ai/xai-provider.test.ts (adapter-level, no production caller)",
       "documentarySource": "lib/ai/providers/xai.ts; lib/capability/bindings.ts (absence confirmed by omission)",
-      "confidence": "high (code-grounded — absence is a mechanical fact, not an inference)"
+      "confidence": "high (code-grounded \u2014 absence is a mechanical fact, not an inference)"
     }
   ],
   "routing_matrix": [
@@ -1111,7 +1111,7 @@
       "id": "runtime.pinned-cinematic-hero",
       "category": "runtime_primitive",
       "capabilityOffered": "pinned cinematic hero",
-      "whatItDoes": "'pinned-cinematic-hero' — bundled unconditionally, NOT gated by the RUNTIME_PRIMITIVE_BUDGET=2 ladder like the 14 above.",
+      "whatItDoes": "'pinned-cinematic-hero' \u2014 bundled unconditionally, NOT gated by the RUNTIME_PRIMITIVE_BUDGET=2 ladder like the 14 above.",
       "currentImplementation": "REAL_IMPLEMENTED",
       "realFiles": [
         "lib/design/experienceRegistry.ts"
@@ -1128,7 +1128,7 @@
       "id": "runtime.world-crossing",
       "category": "runtime_primitive",
       "capabilityOffered": "world crossing",
-      "whatItDoes": "'world-crossing' — bundled unconditionally, NOT gated by the RUNTIME_PRIMITIVE_BUDGET=2 ladder like the 14 above.",
+      "whatItDoes": "'world-crossing' \u2014 bundled unconditionally, NOT gated by the RUNTIME_PRIMITIVE_BUDGET=2 ladder like the 14 above.",
       "currentImplementation": "REAL_IMPLEMENTED",
       "realFiles": [
         "lib/design/experienceRegistry.ts"
@@ -1145,7 +1145,7 @@
       "id": "runtime.screenshot-to-code-pattern",
       "category": "runtime_primitive",
       "capabilityOffered": "screenshot to code pattern",
-      "whatItDoes": "'screenshot-to-code-pattern' — present in the registry as researched, not wired into any live experience tier.",
+      "whatItDoes": "'screenshot-to-code-pattern' \u2014 present in the registry as researched, not wired into any live experience tier.",
       "currentImplementation": "RESEARCHED",
       "realFiles": [
         "lib/design/experienceRegistry.ts"
@@ -1162,7 +1162,7 @@
       "id": "runtime.awwwards-teardown-corpus",
       "category": "runtime_primitive",
       "capabilityOffered": "awwwards teardown corpus",
-      "whatItDoes": "'awwwards-teardown-corpus' — present in the registry as researched, not wired into any live experience tier.",
+      "whatItDoes": "'awwwards-teardown-corpus' \u2014 present in the registry as researched, not wired into any live experience tier.",
       "currentImplementation": "RESEARCHED",
       "realFiles": [
         "lib/design/experienceRegistry.ts"
@@ -1179,7 +1179,7 @@
       "id": "runtime.higgsfield-media",
       "category": "runtime_primitive",
       "capabilityOffered": "higgsfield media",
-      "whatItDoes": "'higgsfield-media' — present in the registry as researched, not wired into any live experience tier.",
+      "whatItDoes": "'higgsfield-media' \u2014 present in the registry as researched, not wired into any live experience tier.",
       "currentImplementation": "RESEARCHED",
       "realFiles": [
         "lib/design/experienceRegistry.ts"
@@ -1196,7 +1196,7 @@
       "id": "runtime.midjourney-image-gen",
       "category": "runtime_primitive",
       "capabilityOffered": "image generation (unsafe entry)",
-      "whatItDoes": "Present in experienceRegistry.ts but flagged unsafe — Midjourney has no first-party API; any binding would be an unofficial/ToS-risk integration.",
+      "whatItDoes": "Present in experienceRegistry.ts but flagged unsafe \u2014 Midjourney has no first-party API; any binding would be an unofficial/ToS-risk integration.",
       "currentImplementation": "REJECTED",
       "realFiles": [
         "lib/design/experienceRegistry.ts"
@@ -1224,10 +1224,10 @@
       "modelVersion": "gsap@3.15.0 (vendored snapshot)",
       "localOrExternal": "local (vendored)",
       "cost": "free",
-      "licensing": "GSAP 'Standard No Charge License' — 100% free including commercial use since Webflow's 2025 acquisition (confirmed via WebSearch 2026-08-25: Webflow's own blog 'Webflow makes GSAP 100% free', GSAP's own gsap.com/community/standard-license/, CSS-Tricks coverage — NOT technically MIT/OSI despite being commonly described that way, per the vendored file's own header comment)",
+      "licensing": "GSAP 'Standard No Charge License' \u2014 100% free including commercial use since Webflow's 2025 acquisition (confirmed via WebSearch 2026-08-25: Webflow's own blog 'Webflow makes GSAP 100% free', GSAP's own gsap.com/community/standard-license/, CSS-Tricks coverage \u2014 NOT technically MIT/OSI despite being commonly described that way, per the vendored file's own header comment)",
       "apiKeyRequired": false,
       "status": "REAL_IMPLEMENTED",
-      "fallback": "n/a — vendored, no network dependency at runtime",
+      "fallback": "n/a \u2014 vendored, no network dependency at runtime",
       "existingTests": "exercised indirectly via runtime-primitive tests",
       "documentarySource": "lib/runtime/vendor/gsapSource.ts header comment; WebSearch 2026-08-25",
       "confidence": "high"
@@ -1296,7 +1296,7 @@
       "currentImplementation": "DOCUMENTED_ONLY",
       "status": "DOCUMENTED_ONLY",
       "decision": "KEEP",
-      "rationale": "Human-facing dev tool, not a runtime capability the router calls. No code integration exists or is needed — it assists whoever edits this repo, orthogonal to BusinessForge's own capability router.",
+      "rationale": "Human-facing dev tool, not a runtime capability the router calls. No code integration exists or is needed \u2014 it assists whoever edits this repo, orthogonal to BusinessForge's own capability router.",
       "documentarySource": "task specification (external list)",
       "confidence": "low (no repo evidence either way)"
     },
@@ -1304,7 +1304,7 @@
       "id": "ext.claude-cowork",
       "name": "Claude / Cowork",
       "category": "external_tool",
-      "whatItDoes": "This session itself — the executing agent.",
+      "whatItDoes": "This session itself \u2014 the executing agent.",
       "currentImplementation": "REAL_IMPLEMENTED (as the operator, not as a bound capability)",
       "status": "REAL_IMPLEMENTED",
       "decision": "KEEP",
@@ -1317,10 +1317,10 @@
       "name": "Antigravity",
       "category": "external_tool",
       "whatItDoes": "External AI coding tool used in earlier sessions (Aug 16-18 2026); source of a forensic corpus (docs/antigravity/, 6 files) naming reusable primitives: Factual Firewall, 3 Creative Territories divergence, Restraint Contract, Two-Pass Builder, Anti-AI-Generic Gate, Multi-Modal Vision QA Critic, bounded repair loop, Playwright Settle & Snap protocol.",
-      "currentImplementation": "DOCUMENTED_ONLY — the corpus is an archive, not runtime-integrated",
+      "currentImplementation": "DOCUMENTED_ONLY \u2014 the corpus is an archive, not runtime-integrated",
       "status": "DOCUMENTED_ONLY",
       "decision": "INTEGRATE",
-      "rationale": "Not the tool itself (not a live dependency) but several of its NAMED PATTERNS are worth adopting as design/QA doctrine — several already partially match live code (e.g. the bounded repair loop resembles Hermes's maxIter bound; the Anti-AI-Generic Gate resembles anti-ai-gate.ts). Recommend a FAZA 6+ follow-up that maps each named Antigravity pattern to its nearest existing BusinessForge mechanism and marks true gaps (see gaps.G-ANTIGRAVITY-01).",
+      "rationale": "Not the tool itself (not a live dependency) but several of its NAMED PATTERNS are worth adopting as design/QA doctrine \u2014 several already partially match live code (e.g. the bounded repair loop resembles Hermes's maxIter bound; the Anti-AI-Generic Gate resembles anti-ai-gate.ts). Recommend a FAZA 6+ follow-up that maps each named Antigravity pattern to its nearest existing BusinessForge mechanism and marks true gaps (see gaps.G-ANTIGRAVITY-01).",
       "documentarySource": "docs/antigravity/*.md",
       "confidence": "medium"
     },
@@ -1328,32 +1328,32 @@
       "id": "ext.n8n",
       "name": "n8n",
       "category": "external_tool",
-      "whatItDoes": "Workflow automation platform; scripts/n8n/stage.ts and stage-server.ts are the production classic-pipeline entrypoints named after it, but are they actually driven BY an n8n workflow engine, or is n8n just the naming convention for the stage-based job runner?",
-      "currentImplementation": "PARTIALLY_IMPLEMENTED / UNKNOWN — scripts/n8n/*.ts are real, in-repo TypeScript; whether an actual n8n instance orchestrates them (vs. the name being a legacy label) is UNKNOWN from this pass and should be verified against docs/root-corpus n8n docs before FAZA 6 implementation decisions build on it",
-      "status": "UNKNOWN",
+      "whatItDoes": "Workflow automation platform. scripts/n8n/build-factory-workflow.ts and build-workflow-json.ts generate real, importable n8n workflow JSON (n8n/factory-v1.json, n8n/businessforge-workflow.json) targeting a real n8n instance's actual API/CLI (docker exec n8n import:workflow, the REST activate endpoint, the webhook trigger URL). n8n/README.md documents a concrete, n8n-specific engineering constraint that shaped the design: n8n 2.x's NodesConfig excludes n8n-nodes-base.executeCommand by default, so the workflow uses first-class HTTP Request nodes against scripts/n8n/stage-server.ts (0.0.0.0:7717, token-authenticated) instead of running commands inside n8n itself; the README also documents troubleshooting node typeVersion mismatches by inspecting the installed n8n-nodes-base package inside a running `docker exec n8n ...` container.",
+      "currentImplementation": "REAL_IMPLEMENTED (code level) \u2014 the generators, the stage-server HTTP API, and n8n/README.md's operational runbook (Docker container name, node typeVersion pinning verified against an actually-installed n8n instance, curl commands for activation and the live webhook) are strong, specific evidence this was built against and exercised on a real n8n deployment, not invented from n8n's public docs alone. Whether an n8n instance is *currently* running in this project's production environment right now is a deployment fact this repo pass cannot verify (no live network access to any n8n host) \u2014 recorded as UNKNOWN at that layer only, distinct from the code-level finding.",
+      "status": "REAL_IMPLEMENTED",
       "decision": "KEEP",
-      "rationale": "scripts/n8n/stage-server.ts is the confirmed production server (committed this session as part of the git-tracking-gap fix); whatever 'n8n' denotes here, the code is real and load-bearing. Do not touch pending the naming clarification.",
+      "rationale": "'n8n' is not a legacy naming convention \u2014 scripts/n8n/*.ts genuinely targets a real n8n instance, and the design (HTTP-only, no Execute Command nodes) is a direct, documented response to a real n8n 2.x security default. scripts/n8n/stage-server.ts remains the confirmed production entrypoint. WQ-015 resolved 2026-08-25: see n8n/README.md, scripts/n8n/build-workflow-json.ts, scripts/n8n/build-factory-workflow.ts.",
       "documentarySource": "scripts/n8n/stage.ts, scripts/n8n/stage-server.ts; docs/root-corpus n8n research",
-      "confidence": "medium"
+      "confidence": "high"
     },
     {
       "id": "ext.dify",
       "name": "Dify",
       "category": "external_tool",
       "whatItDoes": "LLM app-building platform, named in the task's external-tools list.",
-      "currentImplementation": "UNKNOWN — no repo references found in this pass",
-      "status": "UNKNOWN",
+      "currentImplementation": "UNKNOWN / not integrated \u2014 confirmed 2026-08-25 with a whole-word search (grep -w, avoiding the 'Modify'/'identify'/'codify'/'qualify' substring false-positives a plain case-insensitive `dify` search returns) across the full repo: zero real references in code, config, or docs. Independently corroborated by four other pre-existing documents that reached the same conclusion from separate audits: docs/CONSOLIDATION_MAP.md ('Dify -> REJECT for now'), docs/IMPLEMENTATION_GAP.md, docs/REALITY_MAP.md, docs/BUSINESSFORGE_MASTER_INVENTORY.md.",
+      "status": "REJECTED",
       "decision": "REJECT",
-      "rationale": "No evidence of any Dify integration, reference, or plan anywhere in the priority sources read this session. Recommend REJECT-for-now (not BLOCK — revisit if a future need names it specifically) rather than speculative INTEGRATE.",
+      "rationale": "No evidence of any Dify integration, reference, or plan anywhere in the repository, confirmed by two independent passes (this session's 14-source audit, and a whole-word re-verification for WQ-015). REJECT-for-now stands, not BLOCK \u2014 revisit only if a future need names it specifically.",
       "documentarySource": "absence across all 14 priority sources",
-      "confidence": "medium (absence is not exhaustively proven, but no agent surfaced it)"
+      "confidence": "high"
     },
     {
       "id": "ext.notion",
       "name": "Notion",
       "category": "external_tool",
       "whatItDoes": "Docs/knowledge-base platform, named in the task's external-tools list.",
-      "currentImplementation": "UNKNOWN — no repo references found",
+      "currentImplementation": "UNKNOWN \u2014 no repo references found",
       "status": "UNKNOWN",
       "decision": "REJECT",
       "rationale": "No evidence of Notion integration in the codebase; the repo's own docs/knowledge/ corpus already serves the equivalent role locally and in git. REJECT speculative integration.",
@@ -1365,10 +1365,10 @@
       "name": "MCP servers (generic)",
       "category": "external_tool",
       "whatItDoes": "Capability layer declares 'mcp' as a first-class ServiceKind (lib/capability/types.ts), meaning the architecture already anticipates MCP-served capabilities.",
-      "currentImplementation": "DOCUMENTED_ONLY / PLANNED — the ServiceKind exists in the type system; grep found no ServiceBinding in bindings.ts with kind:'mcp' actually populated (all 37 capabilities' bindings are model/skill/tool/deterministic only)",
+      "currentImplementation": "DOCUMENTED_ONLY / PLANNED \u2014 the ServiceKind exists in the type system; grep found no ServiceBinding in bindings.ts with kind:'mcp' actually populated (all 37 capabilities' bindings are model/skill/tool/deterministic only)",
       "status": "PLANNED",
       "decision": "INTEGRATE",
-      "rationale": "The seam is already correctly designed (ServiceKind.mcp, serviceRef() maps it to CapabilityKind.mcp for telemetry) — this is exactly the kind of seam FAZA 6/8 should recognize as ALREADY THERE, not something to invent. No MCP servers are bound yet; that is a real, honestly-marked gap (see gaps.G-MCP-01), not a missing architecture decision.",
+      "rationale": "The seam is already correctly designed (ServiceKind.mcp, serviceRef() maps it to CapabilityKind.mcp for telemetry) \u2014 this is exactly the kind of seam FAZA 6/8 should recognize as ALREADY THERE, not something to invent. No MCP servers are bound yet; that is a real, honestly-marked gap (see gaps.G-MCP-01), not a missing architecture decision.",
       "documentarySource": "lib/capability/types.ts (ServiceKind), lib/capability/bindings.ts (zero mcp-kind bindings, mechanically confirmed)",
       "confidence": "high (code-grounded)"
     },
@@ -1380,7 +1380,7 @@
       "currentImplementation": "RESEARCHED",
       "status": "RESEARCHED",
       "decision": "INTEGRATE",
-      "rationale": "Repeatedly flagged in research (asset-stack + auxiliary-arsenal) as a strong candidate for motion_media once N-6 (rights to redistribute a business's own social-media photographs — the sole remaining legal blocker) resolves. A pricing discrepancy exists between the two source documents and was not resolved this session — flagged as gap G-HIGGSFIELD-01.",
+      "rationale": "Repeatedly flagged in research (asset-stack + auxiliary-arsenal) as a strong candidate for motion_media once N-6 (rights to redistribute a business's own social-media photographs \u2014 the sole remaining legal blocker) resolves. A pricing discrepancy exists between the two source documents and was not resolved this session \u2014 flagged as gap G-HIGGSFIELD-01.",
       "documentarySource": "research/asset-stack, research/auxiliary-arsenal, lib/design/experienceRegistry.ts",
       "confidence": "medium"
     },
@@ -1416,7 +1416,7 @@
       "currentImplementation": "RESEARCHED",
       "status": "RESEARCHED",
       "decision": "REJECT",
-      "rationale": "Free tier non-commercial-use only; no bound capability exists for music generation in the current capability vocabulary (37 CAPABILITY_IDS have no 'music' entry) — would require a new capability id before any provider decision is even relevant.",
+      "rationale": "Free tier non-commercial-use only; no bound capability exists for music generation in the current capability vocabulary (37 CAPABILITY_IDS have no 'music' entry) \u2014 would require a new capability id before any provider decision is even relevant.",
       "documentarySource": "research/",
       "confidence": "medium"
     },
@@ -1428,7 +1428,7 @@
       "currentImplementation": "RESEARCHED",
       "status": "RESEARCHED",
       "decision": "REJECT",
-      "rationale": "Repeatedly rejected across multiple research documents as the wrong tool for a static-HTML deployment target — output_security is already served by lib/qa/gates/technical.ts's five shipped deterministic checks, which are the right shape for this artifact type.",
+      "rationale": "Repeatedly rejected across multiple research documents as the wrong tool for a static-HTML deployment target \u2014 output_security is already served by lib/qa/gates/technical.ts's five shipped deterministic checks, which are the right shape for this artifact type.",
       "documentarySource": "research/; lib/qa/gates/technical.ts",
       "confidence": "medium"
     },
@@ -1440,7 +1440,7 @@
       "currentImplementation": "PARTIALLY_IMPLEMENTED",
       "status": "PARTIALLY_IMPLEMENTED",
       "decision": "REJECT",
-      "rationale": "agents/lovableAgent.ts's run() throws NotImplementedError — confirmed independently by multiple research sources this session as a real, documented gap, and multiple docs recommend REJECT rather than completing it (the classic pipeline + Forge reasoning modules already cover the ground Lovable would).",
+      "rationale": "agents/lovableAgent.ts's run() throws NotImplementedError \u2014 confirmed independently by multiple research sources this session as a real, documented gap, and multiple docs recommend REJECT rather than completing it (the classic pipeline + Forge reasoning modules already cover the ground Lovable would).",
       "documentarySource": "agents/lovableAgent.ts; multiple research docs (cross-confirmed)",
       "confidence": "high (code-grounded: the throw is real)"
     },
@@ -1452,7 +1452,7 @@
       "currentImplementation": "DOCUMENTED_ONLY",
       "status": "DOCUMENTED_ONLY",
       "decision": "REJECT",
-      "rationale": "Repeatedly flagged in research as workshop/dev-tooling-only — not a fit for the runtime capability router, whose job is producing customer websites under the F-08 no-model-authored-output invariant, not writing this repository's own code.",
+      "rationale": "Repeatedly flagged in research as workshop/dev-tooling-only \u2014 not a fit for the runtime capability router, whose job is producing customer websites under the F-08 no-model-authored-output invariant, not writing this repository's own code.",
       "documentarySource": "research/",
       "confidence": "medium"
     },
@@ -1476,7 +1476,7 @@
       "currentImplementation": "DOCUMENTED_ONLY",
       "status": "DOCUMENTED_ONLY",
       "decision": "INTEGRATE",
-      "rationale": "No in-repo adapter exists yet (only lib/deploy/netlify.ts is real); prior research recommended it as a KEEP/INTEGRATE-worthy hosting alternative for redundancy on the 'hosting' capability's currently single-vendor skill binding. WebSearch confirms an active, competitive free tier as of 2026-08-25 but this pass did not extract exact current limits into a routing-ready number — flagged as gap G-HOSTING-01.",
+      "rationale": "No in-repo adapter exists yet (only lib/deploy/netlify.ts is real); prior research recommended it as a KEEP/INTEGRATE-worthy hosting alternative for redundancy on the 'hosting' capability's currently single-vendor skill binding. WebSearch confirms an active, competitive free tier as of 2026-08-25 but this pass did not extract exact current limits into a routing-ready number \u2014 flagged as gap G-HOSTING-01.",
       "documentarySource": "prior research (asset-stack/auxiliary-arsenal); WebSearch 2026-08-25 (title/URL level only)",
       "confidence": "low-medium (not code-grounded; external pricing not deeply verified this pass)"
     }
@@ -1512,7 +1512,7 @@
         "lib/factory/capabilities.ts"
       ],
       "realFunction": "routeCapability(...)",
-      "drivesProduction": "scripts/n8n/stage.ts — the CANONICAL pipeline per ADR 0008/DECISION_GATE.md",
+      "drivesProduction": "scripts/n8n/stage.ts \u2014 the CANONICAL pipeline per ADR 0008/DECISION_GATE.md",
       "existingTests": "test/ai/router.test.ts",
       "documentarySource": "lib/ai/router.ts; ADR 0008",
       "confidence": "high"
@@ -1535,15 +1535,15 @@
     {
       "id": "orch.runner-pool",
       "name": "lib/workflow/runner.ts (runPool / SerializedWriter)",
-      "whatItDoes": "Bounded-concurrency task pool + a mutex (SerializedWriter) guaranteeing no interleaved ledger writes across parallel candidate builds. Fully implemented, well-documented (Freeze N-05, P3-6, F-12) — and currently UNUSED: scripts/n8n/stage.ts's 'diverge' stage builds K candidates sequentially, not via runPool.",
-      "currentImplementation": "REAL_IMPLEMENTED but ORPHANED (zero production importers)",
-      "status": "PARTIALLY_IMPLEMENTED",
+      "whatItDoes": "Bounded-concurrency task pool + a mutex (SerializedWriter) guaranteeing no interleaved ledger writes across parallel candidate builds. Fully implemented, well-documented (Freeze N-05, P3-6, F-12), and now WIRED IN: scripts/n8n/stage.ts's 'diverge' stage builds its K candidates in parallel through runPool, each direction isolated in a symlinked shadow directory, with createSerializedWriter guarding recordCandidate's shared index (G-RUNNER-01, resolved 2026-08-25, commit 019367f).",
+      "currentImplementation": "REAL_IMPLEMENTED and IN PRODUCTION USE (scripts/n8n/stage.ts's diverge stage)",
+      "status": "REAL_IMPLEMENTED",
       "realFiles": [
         "lib/workflow/runner.ts"
       ],
       "realFunction": "runPool, createSerializedWriter, runCandidates",
-      "risk": "lib/workflow/candidates.ts's recordCandidate has no in-process mutex protecting its read-modify-write index update; naively parallelizing diverge WITHOUT wiring SerializedWriter around it would introduce a real candidate-loss race — documented this session as the concrete blocker for A3.",
-      "documentarySource": "lib/workflow/runner.ts; lib/workflow/candidates.ts; MASTER_INVENTORY.json A3",
+      "risk": "Resolved. recordCandidate's index read-modify-write is now serialized via createSerializedWriter, and the deeper shared-outputDir race (reconceptBuild reading/writing relative to outputDir) is closed by the shadow-directory isolation pattern \u2014 see gaps.G-RUNNER-01 for full detail.",
+      "documentarySource": "lib/workflow/runner.ts; lib/workflow/candidates.ts; scripts/n8n/stage.ts's diverge case; MASTER_INVENTORY.json A3; MASTER_CAPABILITY_TOOL_REGISTRY.json gaps.G-RUNNER-01",
       "confidence": "high (code-grounded, read in full this session)"
     },
     {
@@ -1603,7 +1603,7 @@
     {
       "id": "agent.collector-agent",
       "name": "agents/collectorAgent.ts",
-      "whatItDoes": "Playwright-driven evidence collector — the real executor behind evidence_collection's primary binding.",
+      "whatItDoes": "Playwright-driven evidence collector \u2014 the real executor behind evidence_collection's primary binding.",
       "status": "REAL_IMPLEMENTED",
       "documentarySource": "agents/collectorAgent.ts; lib/capability/bindings.ts",
       "confidence": "high"
@@ -1611,7 +1611,7 @@
     {
       "id": "agent.lovable-agent",
       "name": "agents/lovableAgent.ts",
-      "whatItDoes": "Stub — run() throws NotImplementedError.",
+      "whatItDoes": "Stub \u2014 run() throws NotImplementedError.",
       "status": "PARTIALLY_IMPLEMENTED",
       "documentarySource": "agents/lovableAgent.ts",
       "confidence": "high (code-grounded)"
@@ -1627,7 +1627,7 @@
     {
       "id": "mcp.service-kind",
       "name": "MCP as a ServiceKind (architecture seam)",
-      "whatItDoes": "The type system already has kind:'mcp' as one of five ServiceKind values, with serviceRef() mapping it to the platform's telemetry namespace — but SERVICE_BINDINGS has zero populated mcp-kind entries across all 37 capabilities.",
+      "whatItDoes": "The type system already has kind:'mcp' as one of five ServiceKind values, with serviceRef() mapping it to the platform's telemetry namespace \u2014 but SERVICE_BINDINGS has zero populated mcp-kind entries across all 37 capabilities.",
       "status": "PLANNED",
       "documentarySource": "lib/capability/types.ts; lib/capability/bindings.ts (absence mechanically confirmed)",
       "confidence": "high (code-grounded)"
@@ -1638,14 +1638,14 @@
       "id": "dup.two-capability-routers",
       "summary": "lib/capability/plan.ts's planCapability (cost-aware) and lib/ai/router.ts's routeCapability (availability/latency-only) are two independent capability-routing implementations, split along the Forge-vs-classic pipeline boundary.",
       "resolution": "ADR 0008 already resolves the ARCHITECTURAL fork this duplication sits on: classic pipeline is canonical, Forge REASONING modules are adopted into it. This registry recommends the ROUTER duplication itself (not yet explicitly addressed by an ADR) follow the same logic: lib/ai/router.ts stays canonical for the classic pipeline's stage-level provider selection; lib/capability/plan.ts's richer cost-aware planCapability/orchestrator should be treated as the model for any FUTURE unification, given it strictly dominates routeCapability on the ranking dimensions.",
-      "action": "DOCUMENT, do not merge without a dedicated task — merging live routers is exactly the kind of unjustified architecture change the MASTER RULE prohibits without justification beyond this registry entry.",
+      "action": "DOCUMENT, do not merge without a dedicated task \u2014 merging live routers is exactly the kind of unjustified architecture change the MASTER RULE prohibits without justification beyond this registry entry.",
       "status": "DOCUMENTED_ONLY (this entry)",
       "confidence": "high"
     },
     {
       "id": "dup.three-stage-vocabularies",
       "summary": "main.ts's STAGES, lib/workflow/jobState.ts's JobStage, and scripts/n8n/stage.ts's own STAGES array are three separate stage-name vocabularies still coexisting in production, despite lib/workflow/state.ts being built specifically to unify them.",
-      "resolution": "state.ts has zero production importers — it was built but never adopted.",
+      "resolution": "state.ts has zero production importers \u2014 it was built but never adopted.",
       "action": "DOCUMENT as a real gap (see gaps.G-STAGE-01); do not force-adopt state.ts without verifying it actually covers every stage name the three live vocabularies use.",
       "status": "DOCUMENTED_ONLY",
       "confidence": "high"
@@ -1654,9 +1654,9 @@
   "gaps": [
     {
       "id": "G-AI-01",
-      "title": "RESOLVED to the honest limit of what's testable without SDK-internals risk (2026-08-25) — one narrow sub-gap remains",
-      "severity": "low (downgraded from high — both providers now have real, appropriate coverage)",
-      "detail": "gemini: test/ai/gemini-provider.test.ts (17 tests — full request/response behavioural coverage, fetch-stubbed, mirrors groq's pattern exactly, since gemini talks raw HTTP like groq). anthropic: test/ai/anthropic-provider.test.ts (13 tests — wiring, planner ranking, and REAL error-mapping via health()'s non-streaming request, fetch-stubbed so the SDK's own error classes are exercised for real). The one remaining sub-gap is anthropic's generate() SSE-stream path specifically (client.beta.messages.stream().finalMessage()), deliberately left uncovered — see anthropic-provider.test.ts's own header for why a stream stub was judged a shallow-coverage risk rather than real coverage. groq, gemini, and anthropic (partially) now all have confirmed behavioural test files; only the streaming call itself is untested.",
+      "title": "RESOLVED to the honest limit of what's testable without SDK-internals risk (2026-08-25) \u2014 one narrow sub-gap remains",
+      "severity": "low (downgraded from high \u2014 both providers now have real, appropriate coverage)",
+      "detail": "gemini: test/ai/gemini-provider.test.ts (17 tests \u2014 full request/response behavioural coverage, fetch-stubbed, mirrors groq's pattern exactly, since gemini talks raw HTTP like groq). anthropic: test/ai/anthropic-provider.test.ts (13 tests \u2014 wiring, planner ranking, and REAL error-mapping via health()'s non-streaming request, fetch-stubbed so the SDK's own error classes are exercised for real). The one remaining sub-gap is anthropic's generate() SSE-stream path specifically (client.beta.messages.stream().finalMessage()), deliberately left uncovered \u2014 see anthropic-provider.test.ts's own header for why a stream stub was judged a shallow-coverage risk rather than real coverage. groq, gemini, and anthropic (partially) now all have confirmed behavioural test files; only the streaming call itself is untested.",
       "recommendedNextStep": "If anthropic's streaming path needs real coverage, the safer route is an integration-style test behind a live-key env-gate (mirroring the pattern test/qa/layout-audit.live.test.ts already uses for Playwright) rather than hand-reconstructing the SDK's internal SSE event format."
     },
     {
@@ -1675,17 +1675,17 @@
     },
     {
       "id": "G-RUNNER-01",
-      "title": "RESOLVED 2026-08-25 — diverge's K=3 candidate battle now builds in parallel through runPool/SerializedWriter",
+      "title": "RESOLVED 2026-08-25 \u2014 diverge's K=3 candidate battle now builds in parallel through runPool/SerializedWriter",
       "severity": "resolved (was medium)",
-      "detail": "The real blocker was deeper than the recordCandidate index race alone: reconceptBuild and recordCandidate both read/write a SHARED outputDir, so naive parallelization would have interleaved concurrent builds' writes to the same 5b-design.json/site/. Fixed with a shadow-directory isolation pattern (each direction builds into a symlinked copy of outputDir; only the cheap candidate-id-assignment + index-append is serialized) plus a new sourceDir option on recordCandidate. Also fixed a real ordering bug the change surfaced: runPool's results array is completion order, not task order (its docstring was wrong and is now corrected) — stage.ts now matches results back to directions by id. New regression tests prove the race is real without serialization and gone with it. Verified natively on Windows (including fs.symlink) and in the cloud sandbox: 1439/1439 native, 0 regressions.",
-      "recommendedNextStep": "None — closed. See docs/MASTER_INVENTORY.json's A3 entry and commit 019367f for full detail."
+      "detail": "The real blocker was deeper than the recordCandidate index race alone: reconceptBuild and recordCandidate both read/write a SHARED outputDir, so naive parallelization would have interleaved concurrent builds' writes to the same 5b-design.json/site/. Fixed with a shadow-directory isolation pattern (each direction builds into a symlinked copy of outputDir; only the cheap candidate-id-assignment + index-append is serialized) plus a new sourceDir option on recordCandidate. Also fixed a real ordering bug the change surfaced: runPool's results array is completion order, not task order (its docstring was wrong and is now corrected) \u2014 stage.ts now matches results back to directions by id. New regression tests prove the race is real without serialization and gone with it. Verified natively on Windows (including fs.symlink) and in the cloud sandbox: 1439/1439 native, 0 regressions.",
+      "recommendedNextStep": "None \u2014 closed. See docs/MASTER_INVENTORY.json's A3 entry and commit 019367f for full detail."
     },
     {
       "id": "G-MCP-01",
       "title": "MCP is a fully-designed ServiceKind with zero populated bindings",
       "severity": "low-medium",
       "detail": "The architecture already anticipates MCP-served capabilities (ServiceKind.mcp, serviceRef() mapping) but no capability in SERVICE_BINDINGS actually uses kind:'mcp'.",
-      "recommendedNextStep": "When a real MCP-served capability need arises, bind it through the existing seam rather than inventing a new one — the seam is FAZA 6/8-complete already."
+      "recommendedNextStep": "When a real MCP-served capability need arises, bind it through the existing seam rather than inventing a new one \u2014 the seam is FAZA 6/8-complete already."
     },
     {
       "id": "G-ANTIGRAVITY-01",
@@ -1710,7 +1710,7 @@
     },
     {
       "id": "G-N6-LEGAL",
-      "title": "N-6 — rights to redistribute a business's own social-media photographs (open, unresolved)",
+      "title": "N-6 \u2014 rights to redistribute a business's own social-media photographs (open, unresolved)",
       "severity": "high (legal, not technical)",
       "detail": "Flagged repeatedly across multiple prior research documents as the single most legally-gated (not technically-gated) item in the whole registry; blocks image_editing and motion_media from moving past their current conservative deterministic-floor-preferred bindings.",
       "recommendedNextStep": "Requires a legal/policy decision outside this session's technical execution scope; document prominently rather than resolve unilaterally."
@@ -1720,13 +1720,13 @@
       "title": "lib/forge/battle.ts (multi-candidate Design Battle) is fully implemented but unreachable from the production entrypoint",
       "severity": "medium",
       "detail": "orchestrator.ts / main.ts runs a single build, not the battle. Only test/forge/battle.test.ts exercises it (and is one of the 4 known sandbox-only Playwright failures).",
-      "recommendedNextStep": "Decide deliberately whether Design Battle is meant to become the production default (multi-candidate) or stays test-only scaffolding — currently ambiguous from the code alone."
+      "recommendedNextStep": "Decide deliberately whether Design Battle is meant to become the production default (multi-candidate) or stays test-only scaffolding \u2014 currently ambiguous from the code alone."
     }
   ],
   "machine_contract": {
-    "faza8_finding": "The resolveCapability(\"...\")-style seam the task asks FAZA 8 to define ALREADY EXISTS in production, fully built, for the Forge pipeline: lib/capability/orchestrator.ts's createCapabilityOrchestrator().plan(capabilityId, overrides) — literally documented in the module's own header comment as 'const plan = orchestrator.plan(\"craft_judging\", { excludeProviders: [\"gemini\"] })'. This IS the machine contract.",
+    "faza8_finding": "The resolveCapability(\"...\")-style seam the task asks FAZA 8 to define ALREADY EXISTS in production, fully built, for the Forge pipeline: lib/capability/orchestrator.ts's createCapabilityOrchestrator().plan(capabilityId, overrides) \u2014 literally documented in the module's own header comment as 'const plan = orchestrator.plan(\"craft_judging\", { excludeProviders: [\"gemini\"] })'. This IS the machine contract.",
     "signature": "plan(capability: CapabilityId, overrides?: PlanOverrides): CapabilityPlan",
-    "closedVocabulary": "CapabilityId — a closed union of 37 string literals (lib/capability/types.ts's CAPABILITY_IDS), covering exactly the categories the task named: reasoning/structured_generation/prose_writing/creative_direction/enum_direction/adversarial_critique (language); evidence_collection/evidence_research/market_research/evidence_extraction/pii_detection (evidence); vision_description/craft_judging/distinctness_judging/visual_defect_detection/image_nondepictive/image_editing/vector_generation/motion_media/audio_speech/three_d_generation (vision and media); semantic_index/design_memory (semantic); qa_measurement/visual_regression/accessibility/performance/output_security/structured_data_validation (measurement); runtime_tier/build_artifact/hosting/discoverability/observability/cost_ledger/rate_governor/human_approval (delivery and operations).",
+    "closedVocabulary": "CapabilityId \u2014 a closed union of 37 string literals (lib/capability/types.ts's CAPABILITY_IDS), covering exactly the categories the task named: reasoning/structured_generation/prose_writing/creative_direction/enum_direction/adversarial_critique (language); evidence_collection/evidence_research/market_research/evidence_extraction/pii_detection (evidence); vision_description/craft_judging/distinctness_judging/visual_defect_detection/image_nondepictive/image_editing/vector_generation/motion_media/audio_speech/three_d_generation (vision and media); semantic_index/design_memory (semantic); qa_measurement/visual_regression/accessibility/performance/output_security/structured_data_validation (measurement); runtime_tier/build_artifact/hosting/discoverability/observability/cost_ledger/rate_governor/human_approval (delivery and operations).",
     "returnShape": "CapabilityPlan { capability, descriptor, chain: PlanStep[] (ordered, executable), excluded: Exclusion[] (every dropped candidate + typed reason), plannable: boolean, estimatedCents, hasTerminal }",
     "alreadySatisfies": [
       "'best available executor' -> chain[0]",
@@ -1735,18 +1735,18 @@
       "'a reviewer if the result must be verified' -> isJudgement() capabilities (craft_judging, distinctness_judging, adversarial_critique, etc.) already route through the same seam as a distinct capability id, callable after the primary result",
       "'a repair agent if QA fails' -> Hermes's decide() + the gate chain (registryGate/verdict/decide.ts) already implement escalate/continue/deliver on top of this seam"
     ],
-    "notYetConnected": "The classic pipeline (scripts/n8n/stage.ts, the CANONICAL path per ADR 0008) still calls lib/ai/router.ts's routeCapability, not orchestrator.plan. Per the task's own FAZA 8 instruction ('do not connect the router yet if that would require large architectural changes'), this registry does NOT wire orchestrator.plan into the classic pipeline this session — that would be exactly the kind of large architectural change the MASTER RULE prohibits without dedicated justification. It is documented here as the correct FUTURE seam.",
-    "recommendation": "Any future code that wants to write resolveCapability(\"image-generation\") etc. should be a thin, explicitly-named wrapper over lib/capability/orchestrator.ts's existing plan()/execute() pair — NOT a third parallel implementation. This is the single most important instruction this registry can leave for the next agent (human or AI) that touches capability routing."
+    "notYetConnected": "The classic pipeline (scripts/n8n/stage.ts, the CANONICAL path per ADR 0008) still calls lib/ai/router.ts's routeCapability, not orchestrator.plan. Per the task's own FAZA 8 instruction ('do not connect the router yet if that would require large architectural changes'), this registry does NOT wire orchestrator.plan into the classic pipeline this session \u2014 that would be exactly the kind of large architectural change the MASTER RULE prohibits without dedicated justification. It is documented here as the correct FUTURE seam.",
+    "recommendation": "Any future code that wants to write resolveCapability(\"image-generation\") etc. should be a thin, explicitly-named wrapper over lib/capability/orchestrator.ts's existing plan()/execute() pair \u2014 NOT a third parallel implementation. This is the single most important instruction this registry can leave for the next agent (human or AI) that touches capability routing."
   },
   "architecture_seam_notes": {
     "faza6_summary": "Per the task's explicit instruction ('do not invent the pipeline if the repo already has a different one'), FAZA 6 maps where new capabilities would enter the REAL existing seam rather than proposing a new one.",
     "realPipelineEntryPoints": [
-      "New AI-provider capability -> add a ServiceBinding row in lib/capability/bindings.ts (Forge path) and/or a routeCapability entry in lib/ai/router.ts + lib/factory/capabilities.ts (classic path) — see dup.two-capability-routers for which path a given change belongs on.",
+      "New AI-provider capability -> add a ServiceBinding row in lib/capability/bindings.ts (Forge path) and/or a routeCapability entry in lib/ai/router.ts + lib/factory/capabilities.ts (classic path) \u2014 see dup.two-capability-routers for which path a given change belongs on.",
       "New runtime primitive -> lib/design/experienceRegistry.ts, subject to RUNTIME_PRIMITIVE_BUDGET=2 gating via experience.ts's tier ladder.",
       "New QA gate -> lib/qa/gates/*.ts, combined through lib/qa/verdict.ts's combineVerdicts and lib/forge/decide.ts's shouldShipEnhancedSite.",
-      "New MCP-served capability -> lib/capability/bindings.ts, using the already-existing kind:'mcp' ServiceKind (currently zero populated — see gaps.G-MCP-01).",
+      "New MCP-served capability -> lib/capability/bindings.ts, using the already-existing kind:'mcp' ServiceKind (currently zero populated \u2014 see gaps.G-MCP-01).",
       "New job stage -> scripts/n8n/stage.ts's STAGES array is the live one; lib/workflow/state.ts is the intended-but-unadopted unification target (see gaps.G-STAGE-01)."
     ],
-    "explicitlyNotDone": "No new mega-agent, no architecture rewrite, no forced dependency on every tool found, and nothing was removed for looking old — per the task's explicit NU constraints."
+    "explicitlyNotDone": "No new mega-agent, no architecture rewrite, no forced dependency on every tool found, and nothing was removed for looking old \u2014 per the task's explicit NU constraints."
   }
 }
