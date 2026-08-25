@@ -208,15 +208,6 @@ export interface DirectorConfig {
   readonly maxPageChars: number;
 }
 
-export interface LovableConfig {
-  readonly apiKey: string;
-  readonly baseUrl: string;
-  /** Reuse an existing project instead of creating one per run. */
-  readonly projectId: string | null;
-  /** How long to wait for a build to reach `live` before giving up. */
-  readonly deployTimeoutMs: number;
-}
-
 /**
  * The deploy target that replaced the Lovable stub.
  *
@@ -281,8 +272,14 @@ export interface AppConfig {
   readonly writer: WriterConfig;
   readonly director: DirectorConfig;
   readonly vision: VisionConfig;
-  readonly lovable: LovableConfig;
-  /** Deploy target that replaced the Lovable stub (Netlify Drop API). */
+  /**
+   * Deploy target that replaced the Lovable stub (Netlify Drop API).
+   * `config.lovable`/`LovableConfig` (and the `LOVABLE_*` env vars other than
+   * `LOVABLE_API_KEY`, which the `lovable` platform-skill placeholder in
+   * `lib/platform/skills/builtin/web.ts` still names) were removed 2026-08-25
+   * (WQ-011/A10): zero live readers remained once `agents/lovableAgent.ts`
+   * became a real Netlify deploy rather than a Lovable stub.
+   */
   readonly netlify: NetlifyConfig;
   readonly experienceEngine: 'signature' | 'template';
   /** `BF_BUDGET_TIER`. Governs whether — and how much — a run may spend. */
@@ -365,10 +362,6 @@ export const DEFAULTS = {
     apiKey: '',
     baseUrl: null,
     model: '',
-  },
-  lovable: {
-    baseUrl: 'https://api.lovable.dev',
-    deployTimeoutMs: 300_000,
   },
   netlify: {
     deployTimeoutMs: 300_000,
@@ -754,12 +747,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       apiKey: str(env, 'VISION_API_KEY', ''),
       baseUrl: optional(env, 'VISION_BASE_URL'),
       model: str(env, 'VISION_MODEL', defaultModelFor(providerName)),
-    },
-    lovable: {
-      apiKey: str(env, 'LOVABLE_API_KEY', ''),
-      baseUrl: str(env, 'LOVABLE_BASE_URL', DEFAULTS.lovable.baseUrl),
-      projectId: optional(env, 'LOVABLE_PROJECT_ID'),
-      deployTimeoutMs: int(env, 'LOVABLE_DEPLOY_TIMEOUT_MS', DEFAULTS.lovable.deployTimeoutMs),
     },
     netlify: {
       apiKey: str(env, 'NETLIFY_DEPLOY_TOKEN', ''),

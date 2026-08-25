@@ -57,8 +57,11 @@ export const WEB_SKILLS: readonly AnySkill[] = definePlaceholders('web', [
     id: 'lovable',
     name: 'Lovable',
     description:
-      'Creates and builds a Lovable project from a site spec, then polls it to live or failed.',
+      'Creates and builds a Lovable project from a site spec, then polls it to live or failed. ' +
+      'Superseded: stage 6 (`agents/lovableAgent.ts`) is real, but deploys to Netlify Drop ' +
+      '(`lib/deploy/netlify.ts`), not Lovable — the rendered site ships verbatim, no second ' +
+      'build/render step. Kept here as a REJECTed placeholder, not an active gap.',
     requiredCredentials: ['LOVABLE_API_KEY'],
-    blockedOn: 'stage 6 is still a stub; the API client does not exist yet',
+    blockedOn: 'REJECTED (MASTER_CAPABILITY_TOOL_REGISTRY.json ext.lovable, 2026-08-25/WQ-012) — not planned; the deploy stage this once named is done, by a different real tool',
   },
 ]);
