@@ -314,18 +314,37 @@
     },
     {
       "id": "WQ-016",
-      "description": "Richer control-surface presentation building on lib/workflow/summary.ts's read model: a live/streaming view (tail job.json changes during an actual run rather than a point-in-time snapshot) and/or a small web page, and/or exposing the same summary via scripts/n8n/stage-server.ts's existing token-authenticated HTTP surface so a remote caller (e.g. n8n, or a future BusinessForge UI) can poll job status without shelling into the box. Not required for WQ-014's own completion \u2014 the CLI snapshot is already a real, non-decorative view of the real orchestrator's persisted state.",
+      "description": "Richer control-surface presentation building on lib/workflow/summary.ts's read model. Resolved 2026-08-25 per explicit user re-prioritization: scripts/n8n/stage-server.ts's GET /job was refactored to delegate to summarizeRun (one read model, not a duplicate hand-rolled projection) while preserving its existing tested/n8n-facing field contract exactly, and extended additively with errors/phases/candidateCount/battle; a new GET /jobs lists every discoverable run (newest first); a new self-contained control-surface HTML+JS page (scripts/n8n/controlSurfacePage.ts) is served at GET / and GET /ui (public, static markup only -- no job data embedded, so no token is needed to load the shell) letting a human enter a business URL/brief, start a real job via the existing POST /job, and watch live stage/progress/phases/workers/provider fallback/design battle/distinctness gate/errors/final result without knowing internal terminology. lib/workflow/summary.ts also hardened (defensive against a partial/hand-written job.json missing providerLog/errors) and extended with gate/budgetCents. scripts/status.ts's CLI output extended to match.",
       "priority": "P2",
       "dependencies": [],
-      "status": "QUEUED",
+      "status": "DONE",
       "assignedWorker": "claude \u2014 likely extends scripts/status.ts with a --watch/poll mode first (cheapest real improvement), then decides on a web/HTTP surface only if a real caller needs one",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "lib/workflow/summary.ts, scripts/status.ts, scripts/n8n/stage-server.ts",
-      "outputs": "TBD at implementation time \u2014 decide the minimal real extension, not a speculative platform",
+      "outputs": "lib/workflow/summary.ts (gate/budgetCents fields, defensive hardening), scripts/n8n/stage-server.ts (GET /job refactored onto summarizeRun, new GET /jobs, GET //ui serve the page), scripts/n8n/controlSurfacePage.ts (new), scripts/status.ts (gate/budget line), n8n/README.md updated, test/workflow/summary.test.ts (+5 tests), test/qa/p7-endpoints.test.ts (+5 tests)",
+      "artifacts": [
+        "commit c49ee74 on the Windows checkout"
+      ],
+      "validationState": "LIVE_VERIFIED",
+      "failureState": null,
+      "provenance": "Follow-on surfaced while closing WQ-014, this session",
+      "createdAt": "2026-08-25",
+      "updatedAt": "2026-08-25"
+    },
+    {
+      "id": "WQ-017",
+      "description": "Content-safety gate for Forge's generated HTML/CSS/JS (docs/IMPLEMENTATION_GAP.md P2-4, filed during T08/P1-4's file-write-containment proof but never queued). Forge's model output is a whole freeform HTML/CSS/JS document, not data slotted into templates, so the deterministic renderer's field-level guards (safeHref, safeImageUrl, escapeText, escapeAttribute in lib/render/*) don't apply and nothing in lib/forge/ fills the equivalent role. anti-ai-gate.ts checks content for genericity/restraint-contract violations, not for javascript: URLs, inline on*= event-handler attributes, or unauthorized external <script src> domains. Lower priority than the file-write-path concern (the model can't escape the site directory) but a real gap if a vendor's output ever included such a pattern -- accidentally or from a prompt-injection-adjacent path (e.g. scraped web copy quoted back into the HTML-generation prompt in research.ts).",
+      "priority": "P1",
+      "dependencies": [],
+      "status": "QUEUED",
+      "assignedWorker": "claude, deterministic \u2014 a content-scan gate following anti-ai-gate.ts's existing flags.push({code,severity,message}) pattern",
+      "attempts": 0,
+      "inputs": "lib/forge/anti-ai-gate.ts, lib/forge/antiPatternSignals.ts, lib/forge/motion.ts (the CDN allowlist), docs/IMPLEMENTATION_GAP.md P2-4",
+      "outputs": "a new check flags javascript:-scheme hrefs, inline on*= event-handler attributes, and <script src> outside an explicit allowlist; wired into auditAntiAIGeneric so it gates delivery like the existing checks; a test proving each pattern is actually caught",
       "artifacts": null,
       "validationState": "UNVERIFIED",
       "failureState": null,
-      "provenance": "Follow-on surfaced while closing WQ-014, this session",
+      "provenance": "docs/IMPLEMENTATION_GAP.md P2-4, surfaced this session by reading MASTER_EXECUTION_PLAN.md's T10 'next task' pointer (a real, previously-filed security gap never queued in WORK_QUEUE.json)",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
     }

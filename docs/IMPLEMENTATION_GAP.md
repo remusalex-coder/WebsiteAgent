@@ -106,13 +106,13 @@ Strictly prioritized. P0 = blocks the factory end-to-end. P1 = needed for a real
 - **Estimated complexity:** medium.
 - **Acceptance criteria:** at least one new registry entry with `status:'exists'`, a real adapter, and a test proving it resolves like the existing primitives.
 
-### P2-3. Read `lib/workflow/runner.ts` against `stage.ts`'s hand-written loop and decide wire-in vs. delete
+### P2-3. Read `lib/workflow/runner.ts` against `stage.ts`'s hand-written loop and decide wire-in vs. delete — RESOLVED 2026-08-25
 - **Gap:** deferred in the Consolidation Map pending this exact comparison.
-- **Files:** `lib/workflow/runner.ts`, `scripts/n8n/stage.ts`.
-- **Estimated complexity:** small (a read + a decision), then whatever the decision requires.
-- **Acceptance criteria:** a written decision (in an ADR or an update to `docs/CONSOLIDATION_MAP.md`) with the reasoning, followed by either wiring or deletion — never left ambiguous a second time.
+- **Resolution:** wired in, not deleted. `scripts/n8n/stage.ts`'s `diverge` case now builds its K candidate directions in parallel through `runPool`/`createSerializedWriter`, each direction isolated in a symlinked shadow directory so concurrent builds cannot interleave writes to the shared run root. See `MASTER_INVENTORY.json` A3 and `WORK_QUEUE.json` WQ-004/gap `G-RUNNER-01` for the full writeup; commit `019367f`.
+- **Files:** `lib/workflow/runner.ts`, `scripts/n8n/stage.ts` — both changed.
+- **Acceptance criteria:** met — wired, with regression tests proving the underlying race was real and is now gone (`test/workflow/candidates.test.ts`), verified natively including `fs.symlink` on Windows.
 
-### P2-4. Content-safety gate for Forge's generated HTML/CSS/JS
+### P2-4. Content-safety gate for Forge's generated HTML/CSS/JS — queued 2026-08-25 as `WORK_QUEUE.json` `WQ-017`
 - **Gap:** found while auditing P1-4/T08 (file-write containment for Forge's writing modules — that task's actual scope, and DONE). Forge's model output is a whole freeform HTML/CSS/JS document, not data slotted into templates, so the deterministic renderer's field-level guards (`safeHref`, `safeImageUrl`, `escapeText`, `escapeAttribute` in `lib/render/*`) don't apply to it and nothing in `lib/forge/` fills the equivalent role. `anti-ai-gate.ts` checks content for genericity/restraint-contract violations, not for `javascript:` URLs, inline event-handler attributes (`onerror=`, etc.), or unauthorized external `<script src>` domains.
 - **Why:** lower priority than P1-4's write-path concern (the model can't escape the site directory, per P1-4's proof) but a real gap if a vendor's output ever included such a pattern — accidentally or from a prompt-injection-adjacent path (e.g. scraped web copy quoted back into the HTML-generation prompt in `research.ts`).
 - **Files:** likely a new check inside `lib/forge/anti-ai-gate.ts` (alongside `checkAntiPatternSignals`), or a new sibling module.
