@@ -181,12 +181,14 @@
       "description": "gap G-MCP-01: MCP is a fully-designed ServiceKind with zero populated bindings — low priority until a real MCP-served capability need arises",
       "priority": "P3",
       "dependencies": [],
-      "status": "QUEUED",
+      "status": "DONE",
       "assignedWorker": "claude, only once a concrete capability need names an MCP server worth binding",
       "attempts": 0,
       "inputs": "lib/capability/types.ts ServiceKind, lib/capability/bindings.ts",
-      "outputs": "a real ServiceBinding with kind:'mcp', once justified",
-      "artifacts": null,
+      "outputs": "SUPERSEDED by WQ-028 (2026-08-25), which is the same gap (G-MCP-01) tracked a second time -- WQ-028 did the actual evaluation (agents/collectorAgent.ts vs. a hosted scraping MCP server) and reached a documented REJECT decision. Closing this duplicate rather than leaving two open tasks pointing at one gap. Re-open (or file a fresh task) only if a genuinely new, specific MCP-served capability need is identified -- not a re-run of WQ-028's evaluation.",
+      "artifacts": [
+        "superseded by WQ-028"
+      ],
       "validationState": "UNVERIFIED",
       "failureState": null,
       "provenance": "MASTER_CAPABILITY_TOOL_REGISTRY gap G-MCP-01",
