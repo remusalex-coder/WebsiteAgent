@@ -76,7 +76,7 @@ Its 9 stages stay as the direct/local invocation path (useful for fast iteration
 
 **n8n `businessforge-workflow.json` → KEEP as the control surface.** It must stay a thin caller of the job-level API (create job / advance stage / read status) and must not grow orchestration or business logic of its own — that stays in `stage.ts` and the agents/lib layers underneath it. This is a constraint on future n8n changes, not a code change today.
 
-**n8n `factory-v1.json` → REMOVE**, once a grep confirms nothing external still calls `bf-factory`/`/stage/:name` (P2 — confirm-then-delete, not delete-blind).
+**n8n `factory-v1.json` → REMOVED 2026-08-25** (`WORK_QUEUE.json` WQ-020). Grep confirmed zero repo-internal runtime callers beyond `build-factory-workflow.ts` itself and two tests that asserted its generated node shape (`test/factory/stage-router.test.ts`, `test/factory/url-intake.test.ts`) — those two node-shape assertions were removed with it; the unrelated tests in both files (real `/stage/router` execution, `fallbackBrief`/`synthesizeResearch` propagation) stayed. `/stage/:name` itself is real and stays — still documented for manual curl debugging in `stage-server.ts`'s own docstring, independent of any n8n workflow.
 
 **Dify → REJECT for now.** Zero mentions in repo or docs; no justification exists to integrate it. If a future business reason appears, it needs a fresh evaluation, not a default yes because it was once on a research list.
 

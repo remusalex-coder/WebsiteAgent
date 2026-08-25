@@ -40,7 +40,10 @@ Linux container.
 ## Job-level endpoints
 
 The stage server exposes two job-level endpoints (plus `/health` and the
-legacy `/stage/:name` used by the CLI and Factory V1):
+legacy `/stage/:name` — real, still used for manual per-stage debugging via
+curl, per the module docstring; the older Factory V1 n8n workflow that also
+called it, `n8n/factory-v1.json`, was removed 2026-08-25, `WORK_QUEUE.json`
+WQ-020, superseded by `businessforge-workflow.json` below):
 
 - `POST /job?runId=<id>&order=<order>&maxIter=<n>` — runs the whole job to a
   terminal decision, returns `{ runId, status: "complete", decision, ... }`.

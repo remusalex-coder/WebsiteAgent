@@ -117,7 +117,7 @@ This map derives its statuses from `docs/MASTER_INVENTORY.md`'s evidence column 
 | System | Status | Why |
 |---|---|---|
 | n8n `businessforge-workflow.json` (Control Surface, `bf-order`) | **REAL/IMPLEMENTED** | Canonical per README. |
-| n8n `factory-v1.json` (Factory V1, `bf-factory`) | **DUPLICATE / DEPRECATED** | Superseded; README itself calls its `/stage/:name` path legacy. |
+| n8n `factory-v1.json` (Factory V1, `bf-factory`) | **REMOVED 2026-08-25** (`WORK_QUEUE.json` WQ-020) | Was superseded by `businessforge-workflow.json`; confirmed zero dependents beyond two tests asserting its shape (removed with it) and deleted. `/stage/:name` itself stays — real, manual-debugging use, independent of the removed workflow. |
 | Dify | **PLANNED (unevaluated)** | Zero mentions anywhere in repo or docs corpus; not classifiable further without a fresh decision. |
 | Notion | **DEPRECATED as source of truth (by this document set's decision)** | Zero code integration; docs named it intended-canonical, but this inventory formally demotes it — see Consolidation Map. |
 | GitHub Copilot | **REJECTED / ABANDONED** | One abandoned branch, `[FROM DOCS]`, not independently re-verified this pass. |

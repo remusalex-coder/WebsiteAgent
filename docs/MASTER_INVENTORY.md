@@ -168,7 +168,7 @@ See §27-29 below and `docs/BUSINESSFORGE_MASTER_INVENTORY.md` §7 for the long 
 | Name | Status | Decision |
 |---|---|---|
 | `n8n/businessforge-workflow.json` (Control Surface, `bf-order`) | **REAL/USED** | KEEP — canonical |
-| `n8n/factory-v1.json` (Factory V1, `bf-factory`) | **REAL but DUPLICATE/legacy** | **REMOVE** once confirmed nothing depends on the `/stage/:name` CLI path it backs (P2 — confirm first, don't delete blind) |
+| `n8n/factory-v1.json` (Factory V1, `bf-factory`) | **REMOVED 2026-08-25** (`WORK_QUEUE.json` WQ-020) | Confirmed zero dependents beyond two tests asserting its generated shape (removed with it); `/stage/:name` itself kept — real, manual-debugging use |
 
 ## 27. Dify
 

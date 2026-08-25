@@ -401,6 +401,27 @@
       "provenance": "WQ-006's audit, 2026-08-25 -- confirms docs/MASTER_CAPABILITY_TOOL_REGISTRY.json G-STAGE-01's own caution that state.ts must be verified as a superset before adoption; it is not one",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
+    },
+    {
+      "id": "WQ-020",
+      "description": "docs/IMPLEMENTATION_GAP.md P2-1: remove n8n/factory-v1.json (legacy n8n workflow, superseded by businessforge-workflow.json) after confirming no dependents.",
+      "priority": "P2",
+      "dependencies": [],
+      "status": "DONE",
+      "assignedWorker": "claude, deterministic",
+      "attempts": 1,
+      "inputs": "n8n/factory-v1.json, scripts/n8n/build-factory-workflow.ts, test/factory/stage-router.test.ts, test/factory/url-intake.test.ts, n8n/README.md",
+      "outputs": "n8n/factory-v1.json and scripts/n8n/build-factory-workflow.ts deleted. Grep for bf-factory/build-factory-workflow found zero repo-internal runtime callers (the only HTTP-URL reference to /stage/:name outside stage-server.ts's own route handler was the generator's own output-string template, not a runtime request), but DID find two tests importing buildFactoryWorkflow directly and asserting its generated node shape -- a real dependent the original P2-1 acceptance criteria's grep did not anticipate. Removed exactly those two shape-assertion tests (kept the rest of both test files, which cover unrelated, still-real functionality: /stage/router execution, fallbackBrief/synthesizeResearch url propagation). /stage/:name itself was NOT removed -- it is real, documented infrastructure (manual curl debugging per stage-server.ts's own docstring), independent of Factory V1. n8n/README.md and five other docs updated to drop stale factory-v1.json references; one adjacent stale claim found and fixed in passing (BUSINESSFORGE_MASTER_INVENTORY.md said lib/workflow/state.ts is imported by hermes.ts -- false, reconfirmed via grep, corrected).",
+      "artifacts": [
+        "n8n/factory-v1.json (deleted), scripts/n8n/build-factory-workflow.ts (deleted)",
+        "test/factory/stage-router.test.ts, test/factory/url-intake.test.ts (2 tests removed, rest kept)",
+        "n8n/README.md, docs/CONSOLIDATION_MAP.md, docs/BUSINESSFORGE_MASTER_INVENTORY.md, docs/REALITY_MAP.md, docs/MASTER_INVENTORY.md, docs/IMPLEMENTATION_GAP.md P2-1"
+      ],
+      "validationState": "UNVERIFIED",
+      "failureState": null,
+      "provenance": "docs/IMPLEMENTATION_GAP.md P2-1, queued and closed in the same pass 2026-08-25",
+      "createdAt": "2026-08-25",
+      "updatedAt": "2026-08-25"
     }
   ]
 }

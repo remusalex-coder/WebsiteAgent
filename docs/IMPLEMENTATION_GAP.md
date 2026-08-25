@@ -94,11 +94,11 @@ Strictly prioritized. P0 = blocks the factory end-to-end. P1 = needed for a real
 
 ## P2 — quality/scaling
 
-### P2-1. Remove `n8n/factory-v1.json` after confirming no dependents
+### P2-1. Remove `n8n/factory-v1.json` after confirming no dependents — RESOLVED 2026-08-25
 - **Gap:** legacy `/stage/:name` path, superseded by `businessforge-workflow.json`.
-- **Files:** grep for `bf-factory`/`/stage/:name` callers first; delete `n8n/factory-v1.json` and `scripts/n8n/build-factory-workflow.ts` if none found.
-- **Estimated complexity:** trivial once confirmed.
-- **Acceptance criteria:** grep confirms zero external callers; file removed; n8n README updated to drop the reference.
+- **Resolution:** grep found zero repo-internal runtime callers (`/stage/:name` itself has exactly one real caller, `build-factory-workflow.ts`'s own generated JSON string, not a runtime request) — but did find two tests importing `buildFactoryWorkflow` directly and asserting its generated node shape (`test/factory/stage-router.test.ts`, `test/factory/url-intake.test.ts`), which the original acceptance criteria's grep didn't anticipate. Removed `n8n/factory-v1.json` and `scripts/n8n/build-factory-workflow.ts`, and removed exactly those two shape-assertion tests along with the now-unused import — the other tests in both files (real `/stage/router` execution, `fallbackBrief`/`synthesizeResearch` propagation) are unrelated to Factory V1 and were kept. `/stage/:name` itself is real, documented infrastructure (manual curl debugging, per `stage-server.ts`'s own docstring) and was NOT removed. `n8n/README.md` and five other docs (`CONSOLIDATION_MAP.md`, `BUSINESSFORGE_MASTER_INVENTORY.md` ×4 mentions, `REALITY_MAP.md`, `MASTER_INVENTORY.md`) updated. See `WORK_QUEUE.json` WQ-020.
+- **Files:** `n8n/factory-v1.json` (deleted), `scripts/n8n/build-factory-workflow.ts` (deleted), `test/factory/stage-router.test.ts`, `test/factory/url-intake.test.ts`, `n8n/README.md`.
+- **Acceptance criteria:** met — grep confirms zero remaining references anywhere in `lib`/`scripts`/`test`; the two dependent tests were found and handled rather than the premise silently overridden; the full test suite (1474 tests) passes with the expected -2 count from the removed tests.
 
 ### P2-2. Add CSS scroll-driven animations / View Transitions API to the runtime primitive registry
 - **Gap:** evaluated only; would reduce reliance on vendored Lenis/GSAP for simple cases.
