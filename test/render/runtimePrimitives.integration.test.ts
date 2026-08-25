@@ -401,4 +401,44 @@ describe('Tier-2 runtime primitives reach the rendered artifact', () => {
       assert.ok(js.includes('startThreeHero'));
     });
   });
+
+  describe('css-scroll-driven-reveal — WQ-021 / IMPLEMENTATION_GAP.md P2-2 (native animation-timeline: view(), zero JS)', () => {
+    it('reaches styles.css when declared, scoped under @supports and the base data-runtime attribute', () => {
+      const declared = resolvePrimitives(architecture({ mode: 'showcase' }), ['css-scroll-driven-reveal']);
+      assert.deepEqual(declared, ['css-scroll-driven-reveal']);
+
+      const site = renderSite(fullContent, { runtime: 'scroll-progress', runtimePrimitives: declared });
+      const css = cssOf(site.files);
+      assert.ok(css.includes('@supports (animation-timeline: view())'));
+      assert.ok(css.includes('animation-timeline: view()'));
+      assert.ok(css.includes('[data-runtime="scroll-progress"] .section:not(.section--hero)'));
+    });
+
+    it('contributes zero bytes to runtime.js — a genuinely JS-free primitive, unlike every other opt-in one', () => {
+      const declared = resolvePrimitives(architecture({ mode: 'showcase' }), ['css-scroll-driven-reveal']);
+      const withPrimitive = renderSite(fullContent, { runtime: 'scroll-progress', runtimePrimitives: declared });
+      const withoutPrimitive = renderSite(fullContent, { runtime: 'scroll-progress', runtimePrimitives: [] });
+
+      const jsWith = withPrimitive.files.find((f) => f.path === 'runtime.js')?.contents ?? '';
+      const jsWithout = withoutPrimitive.files.find((f) => f.path === 'runtime.js')?.contents ?? '';
+      assert.equal(jsWith, jsWithout, 'runtime.js must be byte-identical with or without this primitive declared');
+    });
+
+    it('is inert without engaging the base runtime, exactly like every other Tier-2 primitive', () => {
+      const site = renderSite(minimalContent, { runtime: 'none', runtimePrimitives: ['css-scroll-driven-reveal'] });
+      assert.ok(!cssOf(site.files).includes('animation-timeline'));
+      assert.deepEqual(site.files.map((f) => f.path), ['index.html', 'styles.css'], 'no runtime.js when runtime is none, regardless of primitives');
+    });
+
+    it('can be declared alongside a JS-driven primitive within budget, and both reach the artifact independently', () => {
+      const declared = resolvePrimitives(architecture({ mode: 'showcase' }), ['css-scroll-driven-reveal', 'magnetic-cursor']);
+      assert.deepEqual(declared, ['css-scroll-driven-reveal', 'magnetic-cursor']);
+
+      const site = renderSite(fullContent, { runtime: 'scroll-progress', runtimePrimitives: declared });
+      const css = cssOf(site.files);
+      const js = site.files.find((f) => f.path === 'runtime.js')?.contents ?? '';
+      assert.ok(css.includes('animation-timeline: view()'), 'css-scroll-driven-reveal still reaches styles.css');
+      assert.ok(js.includes('startMagneticCursor'), 'magnetic-cursor still reaches runtime.js');
+    });
+  });
 });

@@ -184,6 +184,49 @@ export const EXPERIENCE_REGISTRY: Readonly<Record<string, PrimitiveDescriptor>> 
     externalIntegration: null,
   },
 
+  // WQ-021 / docs/IMPLEMENTATION_GAP.md P2-2: the native-CSS alternative to
+  // scroll-reveal's JS-computed --forge-vis. `sourceType: 'internal'` because
+  // there is no package to vendor — `animation-timeline: view()` is a
+  // platform primitive; the "external integration" here is the browser
+  // itself, not a library. Support verified live: caniuse.com,
+  // OBSERVED 2026-08-25, 85.43% global (Chrome 115+, Firefox 157+,
+  // Safari 26.0+) — real, current majority support, not "researched only".
+  'css-scroll-driven-reveal': {
+    id: 'css-scroll-driven-reveal',
+    category: 'reveal',
+    sourceType: 'internal',
+    license: 'internal',
+    capabilities: ['per-section fade/rise on scroll, driven by the native animation-timeline: view() compositor timeline — zero JS'],
+    requirements: [
+      'prefers-reduced-motion:no-preference',
+      'data-runtime:scroll-progress',
+      '@supports (animation-timeline: view()) — a browser without support renders the unmodified static floor, never a broken animation',
+    ],
+    performanceCost: 'none',
+    accessibilityRisk: 'low',
+    mobileSupport: 'full',
+    deterministic: true,
+    configurable: false,
+    integrationMode: 'runtime-primitive',
+    configurationSchema: null,
+    evidence: [
+      'lib/render/runtime-rules.ts (CSS_SCROLL_DRIVEN_REVEAL_RULES)',
+      'lib/runtime/scroll-progress.ts (RUNTIME_PRIMITIVE_SOURCES — empty string, no JS)',
+      'caniuse.com/mdn-css_properties_animation-timeline_scroll (OBSERVED 2026-08-25, 85.43% global support)',
+      'webkit.org/blog/17101 (Safari scroll-driven animations, Safari 26 — OBSERVED 2026-08-25)',
+      'developer.mozilla.org/en-US/docs/Web/CSS/CSS_scroll-driven_animations',
+      'test/design/experienceRegistry.test.ts, test/render/runtimePrimitives.integration.test.ts (css-scroll-driven-reveal cases)',
+      'docs/IMPLEMENTATION_GAP.md P2-2, WORK_QUEUE.json WQ-021',
+    ],
+    status: 'exists',
+    // Explicit, not "no enhancement": a browser this old is old enough that
+    // the JS-driven scroll-reveal is the more defensible choice if Forge
+    // ever needs a guaranteed-everywhere reveal rather than a
+    // progressively-enhanced one.
+    fallback: 'scroll-reveal',
+    externalIntegration: null,
+  },
+
   'text-reveal': {
     id: 'text-reveal',
     category: 'text',

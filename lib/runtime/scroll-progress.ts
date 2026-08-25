@@ -210,7 +210,10 @@ startMagneticCursor();
 /**
  * Extra JS a `RuntimePrimitiveId` needs beyond the base `RUNTIME_SOURCE`.
  * `scroll-reveal`/`text-reveal` are CSS-only (empty string — the base
- * runtime's `--forge-vis` already covers them); `magnetic-cursor` and
+ * runtime's `--forge-vis` already covers them); `css-scroll-driven-reveal`
+ * is CSS-only for a different reason — it needs no JS signal at all, not
+ * even `--forge-vis`, since the native `animation-timeline: view()`
+ * compositor timeline drives it directly. `magnetic-cursor` and
  * `lenis-smooth-scroll` are the primitives with a JS half of their own — the
  * latter's fragment is the vendored external library plus its init glue
  * (`lib/runtime/lenis.ts`'s `LENIS_RUNTIME_SOURCE`), not hand-written here,
@@ -223,6 +226,9 @@ startMagneticCursor();
 const RUNTIME_PRIMITIVE_SOURCES: Readonly<Record<RuntimePrimitiveId, string>> = {
   'scroll-reveal': '',
   'text-reveal': '',
+  // WQ-021: driven entirely by native `animation-timeline: view()` — no JS
+  // of any kind, not even the base runtime's --forge-vis computation.
+  'css-scroll-driven-reveal': '',
   'magnetic-cursor': MAGNETIC_CURSOR_SOURCE,
   'lenis-smooth-scroll': LENIS_RUNTIME_SOURCE,
   'gsap-scrolltrigger': GSAP_RUNTIME_SOURCE,

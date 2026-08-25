@@ -65,7 +65,7 @@ test('executablePrimitiveIds lists exactly the exists, runtime-primitive rows (i
   const ids = executablePrimitiveIds();
   assert.deepEqual(
     [...ids].sort(),
-    ['animated-counter', 'bento-card-tilt', 'cursor-reactive-webgl', 'gsap-scrolltrigger', 'horizontal-scroll', 'image-hover-reveal', 'lenis-smooth-scroll', 'magnetic-cursor', 'marquee', 'menu-overlay', 'scroll-reveal', 'sticky-text-pin', 'text-reveal', 'three-js-hero-object'],
+    ['animated-counter', 'bento-card-tilt', 'css-scroll-driven-reveal', 'cursor-reactive-webgl', 'gsap-scrolltrigger', 'horizontal-scroll', 'image-hover-reveal', 'lenis-smooth-scroll', 'magnetic-cursor', 'marquee', 'menu-overlay', 'scroll-reveal', 'sticky-text-pin', 'text-reveal', 'three-js-hero-object'],
   );
 });
 
@@ -289,6 +289,49 @@ test('deriveRuntimePrimitives never auto-selects any external primitive — all 
       assert.ok(!declared.includes('lenis-smooth-scroll' as never), `${mode}/${transition} must not auto-derive Lenis`);
       assert.ok(!declared.includes('gsap-scrolltrigger' as never), `${mode}/${transition} must not auto-derive GSAP ScrollTrigger`);
       assert.ok(!declared.includes('three-js-hero-object' as never), `${mode}/${transition} must not auto-derive the Three.js hero object`);
+    }
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* CSS scroll-driven reveal — WQ-021 / IMPLEMENTATION_GAP.md P2-2       */
+/* ------------------------------------------------------------------ */
+
+test('the css-scroll-driven-reveal registry entry is valid: internal, exists, a real runtime-primitive integration', () => {
+  const entry = EXPERIENCE_REGISTRY['css-scroll-driven-reveal'];
+  assert.ok(entry);
+  assert.equal(entry!.sourceType, 'internal');
+  assert.equal(entry!.status, 'exists');
+  assert.equal(entry!.integrationMode, 'runtime-primitive');
+  assert.equal(entry!.license, 'internal');
+});
+
+test('the css-scroll-driven-reveal entry carries no externalIntegration contract and no package/version — a platform primitive, not a vendored one', () => {
+  const entry = EXPERIENCE_REGISTRY['css-scroll-driven-reveal'];
+  assert.ok(entry);
+  assert.equal(entry!.externalIntegration, null);
+  assert.equal(entry!.package, undefined);
+  assert.equal(entry!.version, undefined);
+  assert.ok(entry!.evidence.length > 0);
+});
+
+test('the css-scroll-driven-reveal entry declares its @supports guard as a requirement, and falls back to scroll-reveal', () => {
+  const entry = EXPERIENCE_REGISTRY['css-scroll-driven-reveal'];
+  assert.ok(entry);
+  assert.ok(entry!.requirements.some((r) => r.includes('@supports')));
+  assert.equal(entry!.fallback, 'scroll-reveal');
+});
+
+test('the resolver selects css-scroll-driven-reveal from an explicit, registry-validated declaration', () => {
+  const resolved = resolvePrimitives(architecture({ mode: 'showcase' }), ['css-scroll-driven-reveal']);
+  assert.deepEqual(resolved, ['css-scroll-driven-reveal']);
+});
+
+test('deriveRuntimePrimitives never auto-selects css-scroll-driven-reveal — reachable only through an explicit declaration, like the other opt-in primitives', () => {
+  for (const mode of ['brochure', 'showcase', 'narrative'] as const) {
+    for (const transition of ['none', 'veil', 'wipe', 'circular-handoff'] as const) {
+      const declared = resolvePrimitives(architecture({ mode, transition }));
+      assert.ok(!declared.includes('css-scroll-driven-reveal' as never), `${mode}/${transition} must not auto-derive css-scroll-driven-reveal`);
     }
   }
 });

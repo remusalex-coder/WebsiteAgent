@@ -874,6 +874,27 @@
       "confidence": "high"
     },
     {
+      "id": "runtime.css-scroll-driven-reveal",
+      "category": "runtime_primitive",
+      "capabilityOffered": "scroll reveal (native, zero-JS)",
+      "whatItDoes": "Gated runtime primitive 'css-scroll-driven-reveal' -- the same reveal-on-scroll outcome as 'scroll-reveal', driven entirely by the native CSS animation-timeline: view() compositor timeline instead of the JS-computed --forge-vis signal. Zero JS. WQ-021 / docs/IMPLEMENTATION_GAP.md P2-2.",
+      "currentImplementation": "REAL_IMPLEMENTED",
+      "realFiles": [
+        "lib/design/experience.ts (RuntimePrimitiveId union)",
+        "lib/design/experienceRegistry.ts (registry entry)",
+        "lib/render/runtime-rules.ts (CSS_SCROLL_DRIVEN_REVEAL_RULES)",
+        "lib/runtime/scroll-progress.ts (RUNTIME_PRIMITIVE_SOURCES -- empty, no JS)",
+        "lib/render/runtimeAssets.ts (RUNTIME_PRIMITIVE_ASSET_FILES -- empty, no sibling files)"
+      ],
+      "status": "REAL_IMPLEMENTED",
+      "integrationMode": "runtime-primitive (gated, budget-limited, opt-in via explicit declaration only -- not auto-derived)",
+      "localOrExternal": "local (platform CSS primitive -- no package to vendor, the browser itself is the dependency)",
+      "cost": "free",
+      "apiKeyRequired": false,
+      "documentarySource": "lib/design/experienceRegistry.ts; caniuse.com/mdn-css_properties_animation-timeline_scroll (OBSERVED 2026-08-25, 85.43% global support: Chrome 115+, Firefox 157+, Safari 26.0+); webkit.org/blog/17101 (OBSERVED 2026-08-25)",
+      "confidence": "high"
+    },
+    {
       "id": "runtime.text-reveal",
       "category": "runtime_primitive",
       "capabilityOffered": "text reveal",

@@ -203,6 +203,48 @@ const MAGNETIC_CURSOR_RULES = `
 `;
 
 /**
+ * CSS scroll-driven reveal — the same "settle in as it is framed" outcome as
+ * `SCROLL_REVEAL_RULES`, driven entirely by the native
+ * `animation-timeline: view()` compositor timeline instead of the JS-computed
+ * `--forge-vis` custom property. No `data-runtime="scroll-progress"`
+ * attribute is *required* by the mechanism itself — the browser drives the
+ * animation range from the element's own position in the scrollport, nothing
+ * else — but the rule is still scoped under it for the same reason every
+ * other Tier-2 primitive is: one opt-in switch (`RenderOptions.runtime`),
+ * not two independent ones a caller could get out of sync.
+ *
+ * `@supports (animation-timeline: view())` is the entire fallback mechanism:
+ * a browser that does not understand the property never matches the block,
+ * so an unsupported visitor gets the identical static floor as a visitor who
+ * asked for `prefers-reduced-motion: reduce` — never a broken or half-applied
+ * animation. `animation-range: entry 0% cover 40%` mirrors `scroll-reveal`'s
+ * own settle distance (its `--forge-vis` reaches 1 well before a section is
+ * fully centered), so the two primitives read as the same design intent
+ * through two different engines, not two different-feeling reveals.
+ */
+const CSS_SCROLL_DRIVEN_REVEAL_RULES = `
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes forge-view-reveal {
+      from {
+        opacity: 0.4;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    [data-runtime="scroll-progress"] .section:not(.section--hero) {
+      animation: forge-view-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+  }
+}
+`;
+
+/**
  * The closed dispatch table: a `RuntimePrimitiveId` in, its one deterministic
  * CSS implementation out. This is the entire surface a Director/Experience
  * Signature can reach — a name from `RuntimePrimitiveId`, never a style, a
@@ -211,6 +253,7 @@ const MAGNETIC_CURSOR_RULES = `
  */
 const RUNTIME_PRIMITIVE_RULES: Readonly<Record<RuntimePrimitiveId, string>> = {
   'scroll-reveal': SCROLL_REVEAL_RULES,
+  'css-scroll-driven-reveal': CSS_SCROLL_DRIVEN_REVEAL_RULES,
   'text-reveal': TEXT_REVEAL_RULES,
   'magnetic-cursor': MAGNETIC_CURSOR_RULES,
   'lenis-smooth-scroll': LENIS_STYLE_RULES,

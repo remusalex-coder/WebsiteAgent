@@ -39,6 +39,7 @@ import type { RenderedFile } from './types.js';
  */
 const RUNTIME_PRIMITIVE_ASSET_FILES: Readonly<Record<RuntimePrimitiveId, readonly RenderedFile[]>> = {
   'scroll-reveal': [],
+  'css-scroll-driven-reveal': [],
   'text-reveal': [],
   'magnetic-cursor': [],
   'lenis-smooth-scroll': [],
