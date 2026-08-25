@@ -200,6 +200,17 @@ export function createStageServer(
             .map(([name]) => name);
           const deterministicTally = summary.workers.byProvider['(deterministic)'];
           const fallbacks = deterministicTally === undefined ? 0 : deterministicTally.ok + deterministicTally.failed;
+          // Additive (WQ-027): per-provider cost/duration/retry detail the
+          // mandate's observability section asks for, alongside (never
+          // replacing) providersUsed/failedProviders/fallbacks above, which
+          // stay exactly as they were for any existing consumer.
+          const providerStats = Object.entries(summary.workers.byProvider).map(([name, tally]) => ({
+            name,
+            ok: tally.ok,
+            failed: tally.failed,
+            totalDurationMs: tally.totalDurationMs,
+            totalRetries: tally.totalRetries,
+          }));
 
           send(res, 200, {
             runId,
@@ -210,7 +221,7 @@ export function createStageServer(
             decision: summary.decision,
             business: summary.business,
             finalOutput: summary.finalOutput,
-            workers: { calls: summary.workers.total, providersUsed, failedProviders, fallbacks },
+            workers: { calls: summary.workers.total, providersUsed, failedProviders, fallbacks, providerStats },
             budgetCents: summary.budgetCents,
             gate: summary.gate,
             // Additive (WQ-016): not read by the n8n workflow, but real —

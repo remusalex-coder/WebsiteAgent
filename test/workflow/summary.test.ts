@@ -46,9 +46,29 @@ test('summarizeJob: worker tallies split by outcome and provider, null provider 
   assert.equal(summary.workers.ok, 4);
   assert.equal(summary.workers.failed, 1);
   assert.deepEqual(summary.workers.byProvider, {
-    groq: { ok: 2, failed: 1 },
-    anthropic: { ok: 1, failed: 0 },
-    '(deterministic)': { ok: 1, failed: 0 },
+    groq: { ok: 2, failed: 1, totalDurationMs: null, totalRetries: 0 },
+    anthropic: { ok: 1, failed: 0, totalDurationMs: null, totalRetries: 0 },
+    '(deterministic)': { ok: 1, failed: 0, totalDurationMs: null, totalRetries: 0 },
+  });
+});
+
+test('summarizeJob: WQ-027 -- durationMs/retryCount accumulate per provider; a provider with no timed calls stays null, not 0', () => {
+  const job: JobState = {
+    ...createJob('job-durations', 'Acme Bakery'),
+    providerLog: [
+      call({ stage: 'research', capability: 'web_search', provider: 'groq', outcome: 'failed', durationMs: 400 }),
+      call({ stage: 'research', capability: 'web_search', provider: 'groq', outcome: 'ok', durationMs: 900, retryCount: 1 }),
+      call({ stage: 'content', capability: 'prose_writing', provider: 'anthropic', outcome: 'ok' }),
+      call({ stage: 'design', capability: 'layout', provider: null, outcome: 'ok' }),
+    ],
+  };
+
+  const summary = summarizeJob(job);
+
+  assert.deepEqual(summary.workers.byProvider, {
+    groq: { ok: 1, failed: 1, totalDurationMs: 1300, totalRetries: 1 },
+    anthropic: { ok: 1, failed: 0, totalDurationMs: null, totalRetries: 0 },
+    '(deterministic)': { ok: 1, failed: 0, totalDurationMs: null, totalRetries: 0 },
   });
 });
 

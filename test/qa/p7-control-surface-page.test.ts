@@ -64,6 +64,18 @@ test('WQ-023: ABSTRACT_STAGE_LABELS exists with all 12 AbstractJobState keys, ad
   }
 });
 
+test('WQ-027: the workers table gained a Duration/retries column, filled from the new providerStats field', () => {
+  const scriptStart = CONTROL_SURFACE_HTML.indexOf('<script>');
+  assert.ok(scriptStart >= 0);
+  const script = CONTROL_SURFACE_HTML.slice(scriptStart);
+  assert.ok(script.includes('<th>Duration / retries</th>'), 'the table has a duration/retries header');
+  assert.ok(script.includes('workers.providerStats'), 'reads the new GET /job field');
+  assert.ok(
+    script.includes("'-'"),
+    'falls back to a plain dash rather than a false 0 when a provider has no timed calls yet',
+  );
+});
+
 test('WQ-023: the abstract-stage label is rendered alongside the concrete stage label, not in place of it', () => {
   const scriptStart = CONTROL_SURFACE_HTML.indexOf('<script>');
   assert.ok(scriptStart >= 0);

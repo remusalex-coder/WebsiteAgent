@@ -260,7 +260,10 @@ test('GET /job\'s additive fields (errors/phases/candidateCount/battle) come fro
     business: 'Mara',
     finalOutput: null,
     budgetCents: 20,
-    providerLog: [],
+    providerLog: [
+      { stage: 'research', capability: 'research', provider: 'groq', outcome: 'failed', at: '2026-08-25T00:00:00.000Z', durationMs: 400 },
+      { stage: 'research', capability: 'research', provider: 'groq', outcome: 'ok', at: '2026-08-25T00:00:01.000Z', durationMs: 900, retryCount: 1 },
+    ],
     errors: ['research: timed out once, retried'],
     implementationStatus: 'built',
     browserStatus: 'pending',
@@ -298,6 +301,13 @@ test('GET /job\'s additive fields (errors/phases/candidateCount/battle) come fro
       // state "diverge" (lib/workflow/stageMapping.ts, one of the three
       // exact-name matches its own doc comment calls out).
       assert.equal(body.abstractStage, 'diverge');
+      // WQ-027: per-provider cost/duration/retry detail, additive alongside
+      // (never replacing) the existing providersUsed/failedProviders/
+      // fallbacks fields the n8n workflow's poll step already reads.
+      const workers = body.workers as Record<string, unknown>;
+      assert.deepEqual(workers.providerStats, [
+        { name: 'groq', ok: 1, failed: 1, totalDurationMs: 1300, totalRetries: 1 },
+      ]);
     });
   } finally {
     if (original === undefined) {

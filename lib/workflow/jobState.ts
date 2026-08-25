@@ -154,6 +154,22 @@ export interface WorkerCall {
   /** Who this call was for, when a model actually answered. */
   readonly model?: string;
   readonly at: string;
+  /**
+   * Wall-clock time this specific attempt took, in milliseconds. Optional
+   * (WQ-027): older job.json files and any call site not yet updated to
+   * measure it simply omit the field rather than lying with a 0 or a guess —
+   * every existing consumer already treats WorkerCall as a plain data object,
+   * so an absent field is a normal, valid read, not a migration.
+   */
+  readonly durationMs?: number;
+  /**
+   * How many OTHER pool members were tried and failed before this one
+   * answered (0 for a clean first-try success). Only meaningful on the 'ok'
+   * call that closes out a `withPoolFailover` chain — a 'failed' entry is
+   * itself one of the attempts being counted, not a chain with its own
+   * retry history. Optional for the same reason as `durationMs`.
+   */
+  readonly retryCount?: number;
 }
 
 /** Builds a fresh job with safe defaults. */

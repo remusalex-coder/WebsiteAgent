@@ -36,6 +36,16 @@ const RECENT_FAILURES_LIMIT = 5;
 export interface WorkerTally {
   readonly ok: number;
   readonly failed: number;
+  /**
+   * Sum of every call's `durationMs` for this provider that actually
+   * reported one (WQ-027) — calls made before this field existed, or by a
+   * call site not yet updated to measure it, simply do not contribute.
+   * `null` when not a single call for this provider reported a duration, so
+   * a caller can tell "zero-cost calls" apart from "no timing data yet".
+   */
+  readonly totalDurationMs: number | null;
+  /** Sum of every 'ok' call's `retryCount` for this provider — how many prior pool members failed before this one answered, summed across calls. */
+  readonly totalRetries: number;
 }
 
 export interface WorkerSummary {
@@ -171,19 +181,25 @@ export function summarizeJob(job: JobState, candidateCount = 0): JobSummary {
 
 function summarizeWorkers(calls: readonly WorkerCall[] | null | undefined): WorkerSummary {
   const safeCalls = Array.isArray(calls) ? calls : [];
-  const byProvider: Record<string, { ok: number; failed: number }> = {};
+  const byProvider: Record<string, { ok: number; failed: number; totalDurationMs: number | null; totalRetries: number }> = {};
   let ok = 0;
   let failed = 0;
 
   for (const call of safeCalls) {
     const key = call.provider ?? '(deterministic)';
-    const tally = byProvider[key] ?? { ok: 0, failed: 0 };
+    const tally = byProvider[key] ?? { ok: 0, failed: 0, totalDurationMs: null, totalRetries: 0 };
     if (call.outcome === 'ok') {
       tally.ok += 1;
       ok += 1;
     } else {
       tally.failed += 1;
       failed += 1;
+    }
+    if (typeof call.durationMs === 'number') {
+      tally.totalDurationMs = (tally.totalDurationMs ?? 0) + call.durationMs;
+    }
+    if (typeof call.retryCount === 'number') {
+      tally.totalRetries += call.retryCount;
     }
     byProvider[key] = tally;
   }

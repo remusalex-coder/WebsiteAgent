@@ -294,9 +294,21 @@ export const CONTROL_SURFACE_HTML = `<!doctype html>
     });
 
     els.workersTable.innerHTML = '';
-    var workers = summary.workers || { calls: 0, providersUsed: [], failedProviders: [], fallbacks: 0 };
+    var workers = summary.workers || { calls: 0, providersUsed: [], failedProviders: [], fallbacks: 0, providerStats: [] };
+    // Additive (WQ-027): a Duration/Retries column, filled from the new
+    // providerStats field when the server sends it. An older server (or a
+    // job with no timed calls yet) simply has an empty/missing providerStats,
+    // in which case every cell below reads '-' -- never a false 0.
+    var statsByName = {};
+    (workers.providerStats || []).forEach(function (s) { statsByName[s.name] = s; });
+    function statCell(name) {
+      var s = statsByName[name];
+      if (!s) { return '-'; }
+      var duration = typeof s.totalDurationMs === 'number' ? (s.totalDurationMs / 1000).toFixed(1) + 's' : '-';
+      return duration + ' / ' + s.totalRetries + ' retr' + (s.totalRetries === 1 ? 'y' : 'ies');
+    }
     var headerRow = document.createElement('tr');
-    headerRow.innerHTML = '<th>Provider</th><th>OK</th><th>Failed</th>';
+    headerRow.innerHTML = '<th>Provider</th><th>OK</th><th>Failed</th><th>Duration / retries</th>';
     els.workersTable.appendChild(headerRow);
     var names = {};
     (workers.providersUsed || []).forEach(function (n) { names[n] = true; });
@@ -307,16 +319,16 @@ export const CONTROL_SURFACE_HTML = `<!doctype html>
       var okBadge = workers.providersUsed.indexOf(name) >= 0 ? '<span class="badge ok">used</span>' : '';
       var failBadge = workers.failedProviders.indexOf(name) >= 0 ? '<span class="badge err">had failures</span>' : '';
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + name + '</td><td>' + okBadge + '</td><td>' + failBadge + '</td>';
+      tr.innerHTML = '<td>' + name + '</td><td>' + okBadge + '</td><td>' + failBadge + '</td><td>' + statCell(name) + '</td>';
       els.workersTable.appendChild(tr);
     });
     if (!any) {
       var tr2 = document.createElement('tr');
-      tr2.innerHTML = '<td colspan="3" class="muted">' + workers.calls + ' call(s) so far' + (workers.fallbacks ? ', ' + workers.fallbacks + ' via the deterministic floor' : '') + '</td>';
+      tr2.innerHTML = '<td colspan="4" class="muted">' + workers.calls + ' call(s) so far' + (workers.fallbacks ? ', ' + workers.fallbacks + ' via the deterministic floor' : '') + '</td>';
       els.workersTable.appendChild(tr2);
     } else if (workers.fallbacks) {
       var tr3 = document.createElement('tr');
-      tr3.innerHTML = '<td colspan="3" class="muted">' + workers.fallbacks + ' call(s) fell back to the deterministic floor (no live provider used)</td>';
+      tr3.innerHTML = '<td colspan="4" class="muted">' + workers.fallbacks + ' call(s) fell back to the deterministic floor (no live provider used)</td>';
       els.workersTable.appendChild(tr3);
     }
 

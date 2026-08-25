@@ -355,8 +355,10 @@ function configForMember(
  * is reported, so a run that survived on its second vendor says so rather than
  * looking like a clean first-try success.
  *
- * Returns the value, which member served it, the failed attempts, and the
- * router's exclusion ledger (who was considered and why each was dropped).
+ * Returns the value, which member served it, the failed attempts (each with
+ * its own real wall-clock duration — WQ-027), the winning attempt's own
+ * duration, and the router's exclusion ledger (who was considered and why
+ * each was dropped).
  */
 async function withPoolFailover<T>(
   role: 'research' | 'design' | 'content',
@@ -366,7 +368,8 @@ async function withPoolFailover<T>(
 ): Promise<{
   value: T;
   used: string;
-  attempts: readonly { provider: string; error: string }[];
+  usedDurationMs: number;
+  attempts: readonly { provider: string; error: string; durationMs: number }[];
   excluded: readonly { provider: string; reason: string }[];
 }> {
   const pool = resolvePool(role, config.ai);
@@ -387,15 +390,22 @@ async function withPoolFailover<T>(
   });
   const ordered = routedMembers(route.chain, pool.members);
 
-  const attempts: { provider: string; error: string }[] = [];
+  const attempts: { provider: string; error: string; durationMs: number }[] = [];
   for (const member of ordered) {
+    const startedAt = Date.now();
     try {
       const value = await work(configForMember(config, member), member);
-      return { value, used: member.provider, attempts, excluded: exclusionLedger(route.considered) };
+      return {
+        value,
+        used: member.provider,
+        usedDurationMs: Date.now() - startedAt,
+        attempts,
+        excluded: exclusionLedger(route.considered),
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message.slice(0, 200) : String(error);
       logger.warn('pool member failed; trying the next', { role, provider: member.provider, error: message });
-      attempts.push({ provider: member.provider, error: message });
+      attempts.push({ provider: member.provider, error: message, durationMs: Date.now() - startedAt });
     }
   }
 
@@ -720,18 +730,19 @@ export async function runStage(opts: {
         providers = { used: [], absent: [{ provider: name, reason: 'configuration-required (API key not set)' }] };
         break;
       }
+      const researchStartedAt = Date.now();
       try {
         const note_ = await researchWith({ brief, member, config: config.ai, logger });
         await writeJson(path.join(outputDir, FACTORY_ARTIFACTS.researchDir, `${name}.json`), note_);
         job = await recordWorkers(outputDir, job, [
-          { stage, capability: 'research', provider: name, outcome: 'ok', model: note_.authoredBy.model, at: new Date().toISOString() },
+          { stage, capability: 'research', provider: name, outcome: 'ok', model: note_.authoredBy.model, at: new Date().toISOString(), durationMs: Date.now() - researchStartedAt },
         ]);
         note = `${name}: ${note_.differentiators.length} differentiator(s), ${note_.searchQueries.length} query/queries`;
         providers = { used: [name], absent: [] };
       } catch (error) {
         const message = error instanceof Error ? error.message.slice(0, 200) : String(error);
         job = await recordWorkers(outputDir, job, [
-          { stage, capability: 'research', provider: name, outcome: 'failed', at: new Date().toISOString() },
+          { stage, capability: 'research', provider: name, outcome: 'failed', at: new Date().toISOString(), durationMs: Date.now() - researchStartedAt },
         ]);
         note = `${name} failed: ${message}`;
         providers = { used: [], absent: [{ provider: name, reason: message }] };
@@ -845,9 +856,9 @@ export async function runStage(opts: {
       });
       job = await recordWorkers(outputDir, job, [
         ...analysis.attempts.map(
-          (a): WorkerCall => ({ stage, capability: 'research', provider: a.provider, outcome: 'failed', at: new Date().toISOString() }),
+          (a): WorkerCall => ({ stage, capability: 'research', provider: a.provider, outcome: 'failed', at: new Date().toISOString(), durationMs: a.durationMs }),
         ),
-        { stage, capability: 'research', provider: analysis.used, outcome: 'ok', at: new Date().toISOString() },
+        { stage, capability: 'research', provider: analysis.used, outcome: 'ok', at: new Date().toISOString(), durationMs: analysis.usedDurationMs, retryCount: analysis.attempts.length },
       ]);
       {
         const strategy = analysis.value;
@@ -912,9 +923,9 @@ export async function runStage(opts: {
           wroteWith = written.used;
           job = await recordWorkers(outputDir, job, [
             ...written.attempts.map(
-              (a): WorkerCall => ({ stage, capability: 'content', provider: a.provider, outcome: 'failed', at: new Date().toISOString() }),
+              (a): WorkerCall => ({ stage, capability: 'content', provider: a.provider, outcome: 'failed', at: new Date().toISOString(), durationMs: a.durationMs }),
             ),
-            { stage, capability: 'content', provider: written.used, outcome: 'ok', at: new Date().toISOString() },
+            { stage, capability: 'content', provider: written.used, outcome: 'ok', at: new Date().toISOString(), durationMs: written.usedDurationMs, retryCount: written.attempts.length },
           ]);
         } catch (error) {
           logger.warn('every content pool member failed; falling back to the profile-only baseline', {
@@ -973,10 +984,14 @@ export async function runStage(opts: {
         provider,
         outcome: 'ok',
         at: new Date().toISOString(),
+        // Only the real winning attempt has a duration/retry count worth
+        // recording; provider === null means the director was disabled and
+        // this call site never ran `directed` for real (see its call above).
+        ...(provider !== null ? { durationMs: directed.usedDurationMs, retryCount: directed.attempts.length } : {}),
       });
       job = await recordWorkers(outputDir, job, [
         ...directed.attempts.map(
-          (a): WorkerCall => ({ stage, capability: 'design.concept', provider: a.provider, outcome: 'failed', at: new Date().toISOString() }),
+          (a): WorkerCall => ({ stage, capability: 'design.concept', provider: a.provider, outcome: 'failed', at: new Date().toISOString(), durationMs: a.durationMs }),
         ),
         workerCall(config.director.enabled ? directed.used : null),
       ]);
@@ -1489,9 +1504,9 @@ export async function runStage(opts: {
       );
       job = await recordWorkers(outputDir, job, [
         ...repaired.attempts.map(
-          (a): WorkerCall => ({ stage, capability: 'design.concept', provider: a.provider, outcome: 'failed', at: new Date().toISOString() }),
+          (a): WorkerCall => ({ stage, capability: 'design.concept', provider: a.provider, outcome: 'failed', at: new Date().toISOString(), durationMs: a.durationMs }),
         ),
-        { stage, capability: 'design.concept', provider: repaired.used, outcome: 'ok', at: new Date().toISOString() },
+        { stage, capability: 'design.concept', provider: repaired.used, outcome: 'ok', at: new Date().toISOString(), durationMs: repaired.usedDurationMs, retryCount: repaired.attempts.length },
       ]);
       job = await saveJob(outputDir, {
         stage: 'build',
