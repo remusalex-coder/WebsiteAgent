@@ -34,6 +34,7 @@ import { buildFrontend } from './builder.js';
 import { auditAntiAIGeneric } from './anti-ai-gate.js';
 import { captureSite } from './browser.js';
 import { evaluateVision } from './critic.js';
+import { repairCode } from './repair.js';
 import { forgeVerdictableCandidate } from './verdict.js';
 import { combineVerdicts, selectBestVerdict } from '../qa/verdict.js';
 
@@ -59,6 +60,15 @@ export interface BattleOptions {
   readonly logger: Logger;
   /** Defaults to 2 — see the module docstring on why this is not 3 by default. */
   readonly candidateCount?: number;
+  /**
+   * Per-candidate repair-loop ceiling — same meaning and same default (2) as
+   * `ForgeOptions.maxIterations` (`orchestrator.ts` step 9). Each battle
+   * candidate gets its own bounded repair loop, not a single unrepaired
+   * pass: without this, a candidate that would have been rescued by
+   * `repairCode` in a normal single-build run instead loses the battle on a
+   * defect the classic path would have fixed. See `WORK_QUEUE.json` WQ-018.
+   */
+  readonly maxIterationsPerCandidate?: number;
 }
 
 export interface BattleCandidate {
@@ -70,6 +80,8 @@ export interface BattleCandidate {
   readonly critique: VisionCritiqueReport;
   readonly verdict: CombinedVerdict;
   readonly screenshots: { readonly desktop: string; readonly mobile: string };
+  /** How many repair-loop iterations this candidate actually needed (0 = passed on the first pass). */
+  readonly repairIterations: number;
 }
 
 export interface BattleResult {
@@ -84,6 +96,7 @@ export interface BattleResult {
 export async function runExperienceBattle(options: BattleOptions): Promise<BattleResult> {
   const { dossier, config, routing, runDir, logger } = options;
   const candidateCount = options.candidateCount ?? 2;
+  const maxIterations = options.maxIterationsPerCandidate ?? 2;
   const candidatesDir = path.join(runDir, 'candidates');
   await fs.mkdir(candidatesDir, { recursive: true });
 
@@ -104,7 +117,7 @@ export async function runExperienceBattle(options: BattleOptions): Promise<Battl
     await fs.writeFile(path.join(candidateForgeDir, '3-signature.json'), JSON.stringify(signature, null, 2), 'utf8');
 
     const blueprint = compileBlueprint(dossier, signature, logger.child(id));
-    const code = await buildFrontend(blueprint, candidateDir, config, routing, logger.child(id));
+    const code = await buildFrontend(blueprint, candidateDir, candidateSiteDir, config, routing, logger.child(id));
 
     const antiAiGate = await auditAntiAIGeneric({
       code,
@@ -117,8 +130,8 @@ export async function runExperienceBattle(options: BattleOptions): Promise<Battl
       convergenceWarning = `${id} converged with ${antiAiGate.structuralConvergence.closestPeer} on ${antiAiGate.structuralConvergence.matchedAxes.length} identity axes (${antiAiGate.structuralConvergence.matchedAxes.join(', ')}) — these are variations on one idea, not distinct directions.`;
     }
 
-    const capture = await captureSite(candidateSiteDir, candidateDir, logger.child(id));
-    const critique = await evaluateVision({
+    let capture = await captureSite(candidateSiteDir, candidateDir, logger.child(id));
+    let critique = await evaluateVision({
       desktopShotPath: capture.desktop,
       mobileShotPath: capture.mobile,
       businessName: blueprint.brandName,
@@ -128,24 +141,77 @@ export async function runExperienceBattle(options: BattleOptions): Promise<Battl
       logger: logger.child(id),
     });
 
-    const candidateVerdictable = forgeVerdictableCandidate(id, i, antiAiGate, critique);
+    // Per-candidate autonomous repair loop — mirrors orchestrator.ts's step
+    // 9 exactly (same exit condition, same `repairCode` call, same
+    // re-audit/re-capture/re-critique sequence) so a candidate that would
+    // have been rescued in a normal single-build run is not silently
+    // disqualified from the battle on a repairable defect. See
+    // WORK_QUEUE.json WQ-018.
+    let currentCode = code;
+    let currentAntiAiGate = antiAiGate;
+    let repairIterations = 0;
+
+    while (
+      (critique.issues.length > 0 && critique.score < 88 || !currentAntiAiGate.passed) &&
+      repairIterations < maxIterations
+    ) {
+      repairIterations++;
+      logger.info(`Battle: candidate ${i + 1}/${candidateCount} repair iteration ${repairIterations}/${maxIterations}`, { id });
+
+      currentCode = await repairCode({
+        siteDir: candidateSiteDir,
+        blueprint,
+        critique,
+        antiAiResult: currentAntiAiGate,
+        iteration: repairIterations,
+        config,
+        routing,
+        logger: logger.child(id),
+      });
+
+      currentAntiAiGate = await auditAntiAIGeneric({
+        code: currentCode,
+        blueprint,
+        outputDir: candidatesDir,
+        runId: id,
+        logger: logger.child(id),
+      });
+      if (currentAntiAiGate.structuralConvergence?.verdict === 'TEMPLATE_CONVERGENCE') {
+        convergenceWarning = `${id} converged with ${currentAntiAiGate.structuralConvergence.closestPeer} on ${currentAntiAiGate.structuralConvergence.matchedAxes.length} identity axes (${currentAntiAiGate.structuralConvergence.matchedAxes.join(', ')}) — these are variations on one idea, not distinct directions.`;
+      }
+
+      capture = await captureSite(candidateSiteDir, candidateDir, logger.child(id));
+      critique = await evaluateVision({
+        desktopShotPath: capture.desktop,
+        mobileShotPath: capture.mobile,
+        businessName: blueprint.brandName,
+        signature: blueprint.signature,
+        config,
+        capabilities: routing.capabilities,
+        logger: logger.child(id),
+      });
+    }
+
+    const candidateVerdictable = forgeVerdictableCandidate(id, i, currentAntiAiGate, critique);
     verdictable.push(candidateVerdictable);
 
     candidates.push({
       id,
       signature,
       blueprint,
-      code,
-      antiAiGate,
+      code: currentCode,
+      antiAiGate: currentAntiAiGate,
       critique,
       verdict: combineVerdicts(candidateVerdictable),
       screenshots: { desktop: capture.desktop, mobile: capture.mobile },
+      repairIterations,
     });
 
     logger.info(`Battle: candidate ${i + 1}/${candidateCount} complete`, {
       id,
       verdict: candidates[candidates.length - 1]!.verdict.verdict,
       quality: candidates[candidates.length - 1]!.verdict.quality,
+      repairIterations,
     });
   }
 

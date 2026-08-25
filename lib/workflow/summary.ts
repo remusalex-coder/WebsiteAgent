@@ -54,6 +54,27 @@ export interface BattleSummary {
   readonly judgeCount: number | null;
 }
 
+/**
+ * The Forge Design Battle (`lib/forge/battle.ts`'s `runExperienceBattle`,
+ * WQ-018), when the run used battle mode — a distinct mechanism from
+ * `BattleSummary` above (the classic diverge battle); see `JobState.forgeBattle`'s
+ * own doc comment for why the two are never conflated.
+ */
+export interface ForgeBattleSummary {
+  readonly count: number;
+  readonly winnerId: string | null;
+  readonly allCandidatesWeak: boolean;
+  readonly convergenceWarning: string | null;
+  readonly candidates: readonly ForgeBattleCandidateSummary[];
+}
+
+export interface ForgeBattleCandidateSummary {
+  readonly id: string;
+  readonly verdict: string;
+  readonly quality: number;
+  readonly repairIterations: number;
+}
+
 /** The distinctness gate's verdict, when the job has reached it — see `scripts/n8n/stage.ts`'s `distinctness-gate` case. */
 export interface GateSummary {
   readonly verdict: string;
@@ -75,6 +96,8 @@ export interface JobSummary {
   readonly workers: WorkerSummary;
   /** `null` when the job never reached the diverge stage — not the same as a battle that produced zero candidates. */
   readonly battle: BattleSummary | null;
+  /** `null` when the run did not use Forge battle mode (the default) — see `ForgeBattleSummary`'s own doc comment. */
+  readonly forgeBattle: ForgeBattleSummary | null;
   /** How many immutable candidates were actually recorded on disk, when the candidate store exists. */
   readonly candidateCount: number;
   /** `null` until the distinctness-gate stage has actually run. */
@@ -106,6 +129,7 @@ export interface JobSummary {
 export function summarizeJob(job: JobState, candidateCount = 0): JobSummary {
   const workers = summarizeWorkers(job.providerLog);
   const battle = summarizeBattle(job.designDirections);
+  const forgeBattle = summarizeForgeBattle(job.forgeBattle);
   const gate = summarizeGate(job.distinctnessScore);
 
   return {
@@ -122,6 +146,7 @@ export function summarizeJob(job: JobState, candidateCount = 0): JobSummary {
     },
     workers,
     battle,
+    forgeBattle,
     candidateCount,
     gate,
     budgetCents: job.budgetCents ?? 0,
@@ -192,6 +217,37 @@ function summarizeBattle(designDirections: unknown): BattleSummary | null {
   const judgeCount = jury !== null && typeof jury.judgeCount === 'number' ? jury.judgeCount : null;
 
   return { count, winnerId: winner, bestQuality, judgeCount };
+}
+
+/**
+ * `forgeBattle` is stored as `unknown` on `JobState`, same reasoning as
+ * `designDirections` above. Its real writer, `runJob.ts`'s default build
+ * hook (when `config.forgeBattleMode` is on), always writes the same shape
+ * when it writes anything at all. Reads defensively rather than casting —
+ * including against a `job.json` written before this field existed, where
+ * the key is simply absent (`undefined`, not `null`) — so an old or
+ * malformed record reports as "no Forge battle data" instead of throwing.
+ */
+function summarizeForgeBattle(forgeBattle: unknown): ForgeBattleSummary | null {
+  if (forgeBattle === null || forgeBattle === undefined || typeof forgeBattle !== 'object') {
+    return null;
+  }
+  const record = forgeBattle as Record<string, unknown>;
+  const count = typeof record.count === 'number' ? record.count : 0;
+  const winnerId = typeof record.winnerId === 'string' ? record.winnerId : null;
+  const allCandidatesWeak = record.allCandidatesWeak === true;
+  const convergenceWarning = typeof record.convergenceWarning === 'string' ? record.convergenceWarning : null;
+  const rawCandidates = Array.isArray(record.candidates) ? record.candidates : [];
+  const candidates: ForgeBattleCandidateSummary[] = rawCandidates
+    .filter((c): c is Record<string, unknown> => typeof c === 'object' && c !== null)
+    .map((c) => ({
+      id: typeof c.id === 'string' ? c.id : 'unknown',
+      verdict: typeof c.verdict === 'string' ? c.verdict : 'unknown',
+      quality: typeof c.quality === 'number' ? c.quality : 0,
+      repairIterations: typeof c.repairIterations === 'number' ? c.repairIterations : 0,
+    }));
+
+  return { count, winnerId, allCandidatesWeak, convergenceWarning, candidates };
 }
 
 /* ------------------------------------------------------------------ */

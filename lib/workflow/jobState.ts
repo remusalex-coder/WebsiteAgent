@@ -86,6 +86,18 @@ export interface JobState {
    */
   designDirections: unknown;
 
+  /**
+   * The Forge Design Battle (`lib/forge/battle.ts`'s `runExperienceBattle`,
+   * WQ-018) — a distinct mechanism from `designDirections` above: N whole
+   * Experience Signature builds, each with its own repair loop, reduced to
+   * one winner by the same lexicographic comparator. Deliberately its own
+   * field rather than reusing `designDirections`/`distinctnessScore` (the
+   * classic diverge battle's fields, per WQ-016's `summarizeBattle`) — the
+   * two battle mechanisms must never be conflated in the control surface.
+   * `null` when the run did not use Forge battle mode (the default).
+   */
+  forgeBattle: unknown;
+
   /** Phase statuses for the dashboard. */
   implementationStatus: PhaseStatus;
   browserStatus: PhaseStatus;
@@ -163,6 +175,7 @@ export function createJob(jobId: string, business: string, maxIter = 3): JobStat
     assetPlan: null,
     design: null,
     designDirections: null,
+    forgeBattle: null,
     implementationStatus: 'pending',
     browserStatus: 'pending',
     qaStatus: 'pending',

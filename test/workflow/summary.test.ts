@@ -108,6 +108,87 @@ test('summarizeJob: battle tolerates a present but empty jury object', () => {
   assert.deepEqual(summary.battle, { count: 1, winnerId: null, bestQuality: null, judgeCount: null });
 });
 
+test('summarizeJob: forgeBattle is null when the run did not use Forge battle mode — the default', () => {
+  const job: JobState = createJob('job-fb-1', 'Acme Bakery');
+  assert.equal(job.forgeBattle, null);
+  assert.equal(summarizeJob(job).forgeBattle, null);
+});
+
+test('summarizeJob: forgeBattle is null for a job.json written before this field existed (the key is simply absent)', () => {
+  // Mirrors an old on-disk record: no `forgeBattle` key at all, not `null`.
+  const { forgeBattle: _drop, ...withoutField } = createJob('job-fb-legacy', 'Acme Bakery');
+  const job = withoutField as JobState;
+  assert.equal(summarizeJob(job).forgeBattle, null);
+});
+
+test('summarizeJob: forgeBattle is null for a malformed/foreign shape rather than throwing', () => {
+  const job: JobState = { ...createJob('job-fb-2', 'Acme Bakery'), forgeBattle: 'not-an-object' };
+  assert.equal(summarizeJob(job).forgeBattle, null);
+});
+
+test('summarizeJob: forgeBattle extracts the real WQ-018 writer shape (runJob.ts battle-mode build hook)', () => {
+  const job: JobState = {
+    ...createJob('job-fb-3', 'Acme Bakery'),
+    forgeBattle: {
+      count: 2,
+      winnerId: 'candidate-1',
+      allCandidatesWeak: false,
+      convergenceWarning: null,
+      candidates: [
+        { id: 'candidate-0', verdict: 'PASS', quality: 72, repairIterations: 1 },
+        { id: 'candidate-1', verdict: 'PASS', quality: 88, repairIterations: 0 },
+      ],
+    },
+  };
+
+  const summary = summarizeJob(job);
+  assert.deepEqual(summary.forgeBattle, {
+    count: 2,
+    winnerId: 'candidate-1',
+    allCandidatesWeak: false,
+    convergenceWarning: null,
+    candidates: [
+      { id: 'candidate-0', verdict: 'PASS', quality: 72, repairIterations: 1 },
+      { id: 'candidate-1', verdict: 'PASS', quality: 88, repairIterations: 0 },
+    ],
+  });
+});
+
+test('summarizeJob: forgeBattle reports allCandidatesWeak/convergenceWarning/null winner when the battle produced no usable winner', () => {
+  const job: JobState = {
+    ...createJob('job-fb-4', 'Acme Bakery'),
+    forgeBattle: {
+      count: 2,
+      winnerId: null,
+      allCandidatesWeak: true,
+      convergenceWarning: 'candidate-1 converged with candidate-0 on 4 identity axes (metaphor, mechanism) — these are variations on one idea, not distinct directions.',
+      candidates: [
+        { id: 'candidate-0', verdict: 'FAIL', quality: 40, repairIterations: 2 },
+        { id: 'candidate-1', verdict: 'FAIL', quality: 38, repairIterations: 2 },
+      ],
+    },
+  };
+
+  const summary = summarizeJob(job);
+  assert.equal(summary.forgeBattle?.winnerId, null);
+  assert.equal(summary.forgeBattle?.allCandidatesWeak, true);
+  assert.match(summary.forgeBattle?.convergenceWarning ?? '', /candidate-1 converged with candidate-0/);
+});
+
+test('summarizeJob: forgeBattle and battle (the classic diverge mechanism) are never conflated — both can be present, independently', () => {
+  const job: JobState = {
+    ...createJob('job-fb-5', 'Acme Bakery'),
+    designDirections: { count: 3, winner: 'direction-B', jury: { bestQuality: 80, judgeCount: 2 } },
+    forgeBattle: { count: 2, winnerId: 'candidate-0', allCandidatesWeak: false, convergenceWarning: null, candidates: [] },
+  };
+
+  const summary = summarizeJob(job);
+  assert.ok(summary.battle);
+  assert.ok(summary.forgeBattle);
+  assert.equal(summary.battle?.winnerId, 'direction-B');
+  assert.equal(summary.forgeBattle?.winnerId, 'candidate-0');
+});
+
 test('summarizeJob: gate is null before the distinctness-gate stage has run', () => {
   const job: JobState = createJob('job-gate-1', 'Acme Bakery');
   assert.equal(job.distinctnessScore, null);

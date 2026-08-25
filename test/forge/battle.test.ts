@@ -169,3 +169,69 @@ test('two candidates that land on the same signature are flagged as convergence,
   assert.ok(result.convergenceWarning, 'identical signatures across two candidates should be caught by the existing structural-convergence check');
   assert.match(result.convergenceWarning!, /candidate-0/);
 });
+
+test('WQ-018: a candidate with a repairable critique issue gets its own repair pass, mirroring orchestrator.ts step 9', async () => {
+  // Same 4-call shape as the tests above (territories, signature, html,
+  // css+js) plus one extra `structured_generation` call for `repairCode`'s
+  // single combined { html, css, js } response — repair.ts issues exactly
+  // one model call per iteration, not three.
+  const html = '<!DOCTYPE html><html><body>hi</body></html>';
+  const repairedHtml = '<!DOCTYPE html><html><body>hi, repaired</body></html>';
+  const responses = [
+    { territories: [{ id: 't1', name: 'n', conceptThesis: 'c', metaphor: 'm', emotionalTarget: 'e', visualLanguage: 'v', interactionLanguage: 'i', signatureMoment: 's', risks: [], reasonsNotToChoose: 'r' }] },
+    signatureData(),
+    { html }, { css: '', js: '' },
+    { html: repairedHtml, css: '/* repaired */', js: '// repaired' },
+  ];
+  // First critique has a real issue and a sub-88 score, so the repair-loop
+  // condition (`issues.length > 0 && score < 88`) is true; the second
+  // (post-repair) critique is clean, so the loop stops after one iteration
+  // rather than running to `maxIterationsPerCandidate`.
+  const orchestrator = battleOrchestrator(
+    fakeCapabilityOrchestrator({ credentials: new Set(['GEMINI_API_KEY']) }),
+    [
+      critique({ score: 60, issues: [{ severity: 'critical', area: 'layout', description: 'cards overlap on mobile', fixInstruction: 'add gap' }] }),
+      critique({ score: 92, issues: [] }),
+    ],
+  );
+
+  const result = await runExperienceBattle({
+    dossier: dossier(),
+    config: fakeConfig(),
+    routing: { capabilities: orchestrator, providers: queuedProviderFactory(responses) },
+    runDir: tmpDir('bf-battle-repair-'),
+    logger: noopLogger,
+    candidateCount: 1,
+  });
+
+  assert.equal(result.candidates.length, 1);
+  const [candidate] = result.candidates;
+  assert.equal(candidate!.repairIterations, 1, 'exactly one repair pass — the second critique was clean, so the loop must not run a second iteration');
+  assert.equal(candidate!.code.html, repairedHtml, 'the repaired code, not the original pre-repair build, must be what the candidate carries forward');
+  assert.equal(candidate!.critique.score, 92, 'the candidate must carry the post-repair critique, not the pre-repair one');
+});
+
+test('WQ-018: a clean critique on the first pass needs no repair — repairIterations stays 0 and the original code is kept', async () => {
+  const html = '<!DOCTYPE html><html><body>hi</body></html>';
+  const responses = [
+    { territories: [{ id: 't1', name: 'n', conceptThesis: 'c', metaphor: 'm', emotionalTarget: 'e', visualLanguage: 'v', interactionLanguage: 'i', signatureMoment: 's', risks: [], reasonsNotToChoose: 'r' }] },
+    signatureData(),
+    { html }, { css: '', js: '' },
+  ];
+  const orchestrator = battleOrchestrator(
+    fakeCapabilityOrchestrator({ credentials: new Set(['GEMINI_API_KEY']) }),
+    [critique({ score: 95, issues: [] })],
+  );
+
+  const result = await runExperienceBattle({
+    dossier: dossier(),
+    config: fakeConfig(),
+    routing: { capabilities: orchestrator, providers: queuedProviderFactory(responses) },
+    runDir: tmpDir('bf-battle-no-repair-'),
+    logger: noopLogger,
+    candidateCount: 1,
+  });
+
+  assert.equal(result.candidates[0]!.repairIterations, 0);
+  assert.equal(result.candidates[0]!.code.html, html, 'no repair call was needed, so the original build output must be unchanged');
+});

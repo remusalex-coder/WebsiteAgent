@@ -26,6 +26,7 @@ import { decide } from './hermes.js';
 import { createJob, saveJob } from './jobState.js';
 import { finalizeBest, recordCandidate } from './candidates.js';
 import { composeDesign } from '../design/compose.js';
+import { directiveRuntimePrimitiveIds } from '../design/directive.js';
 import { planNarrative } from '../design/plan.js';
 import { brandSeedFor } from '../art/seed.js';
 import { renderSite, writeRenderedSite } from '../render/index.js';
@@ -34,12 +35,97 @@ import type { DesignDirective } from '../design/directive.js';
 
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
+import type { ForgeRouting } from '../forge/types.js';
 import type { WebsiteDesign, WebsiteContent, BusinessProfile, BusinessStrategy } from '../types.js';
 import type { VisualCritique } from '../qa/visual-critic.js';
 import type { JobState } from './jobState.js';
 
 const SITE_DIR_NAME = 'site';
 const SHOTS_DIR_NAME = 'shots';
+
+/**
+ * Battle-mode build (WQ-018): opt-in via `cfg.forgeBattleMode`, default off.
+ * Runs `runExperienceBattle` — N independent Experience Signature builds,
+ * each with its own repair loop — instead of `runExperienceForge`'s single
+ * build, copies the winner's site into the run's canonical `site/`
+ * directory (the same location `runExperienceForge`/`composeStandalone`
+ * write to), and persists a `JobState.forgeBattle` summary distinct from
+ * the classic diverge battle's `designDirections` (see that field's own
+ * doc comment in `jobState.ts`).
+ *
+ * `outputDir` is `path.join(config.outputDir, runId)` — the same value
+ * Forge's own `runDir` resolves to when called with `outputDir: cfg.outputDir`
+ * and this `runId`, so the dossier/candidates land in the same place a
+ * single-build run's artifacts would.
+ *
+ * All-weak or winnerless battles are not treated as a hard failure: the
+ * template build `composeStandalone` already produced stands, same
+ * graceful-degradation posture as the single-build path's catch block.
+ *
+ * `routing`, when supplied, wins outright over building a default one —
+ * the same seam `ForgeOptions.routing` exposes on `runExperienceForge`, for
+ * the same two reasons: a future run-scoped orchestrator can be threaded
+ * through here exactly as `main.ts`'s `'enhance'` step already does for the
+ * single-build path, and a test can inject a hermetic fake instead of
+ * exercising a real network-backed capability orchestrator.
+ */
+export async function runForgeBattleBuild(
+  runId: string,
+  cfg: AppConfig,
+  outputDir: string,
+  logger: Logger,
+  routingOverride?: ForgeRouting,
+): Promise<void> {
+  const { runExperienceBattle } = await import('../forge/battle.js');
+  const { buildRunDossier, createDefaultForgeRouting } = await import('../forge/orchestrator.js');
+
+  logger.info('Forge Design Battle build starting', { runId, candidateCount: cfg.forgeBattleCandidateCount });
+
+  const forgeDir = path.join(outputDir, 'forge');
+  await fs.mkdir(forgeDir, { recursive: true });
+
+  const routing = routingOverride ?? (await createDefaultForgeRouting(cfg, logger));
+  const dossier = await buildRunDossier({
+    runDir: outputDir,
+    forgeDir,
+    config: cfg,
+    routing,
+    logger,
+  });
+
+  const battleResult = await runExperienceBattle({
+    dossier,
+    config: cfg,
+    routing,
+    runDir: outputDir,
+    logger,
+    candidateCount: cfg.forgeBattleCandidateCount,
+  });
+
+  if (battleResult.winner) {
+    const winnerSiteDir = path.join(outputDir, 'candidates', battleResult.winner.id, 'site');
+    await fs.cp(winnerSiteDir, path.join(outputDir, SITE_DIR_NAME), { recursive: true, force: true });
+  } else {
+    logger.warn('Forge Design Battle produced no usable winner (all candidates weak) — the template build stands unreplaced', {
+      candidateCount: battleResult.candidates.length,
+    });
+  }
+
+  await saveJob(outputDir, {
+    forgeBattle: {
+      count: battleResult.candidates.length,
+      winnerId: battleResult.winner?.id ?? null,
+      allCandidatesWeak: battleResult.allCandidatesWeak,
+      convergenceWarning: battleResult.convergenceWarning,
+      candidates: battleResult.candidates.map((c) => ({
+        id: c.id,
+        verdict: c.verdict.verdict,
+        quality: c.verdict.quality,
+        repairIterations: c.repairIterations,
+      })),
+    },
+  });
+}
 
 /** Vision endpoint credentials for the visual critic. Omitted disables it. */
 export interface VisionOptions {
@@ -345,23 +431,39 @@ export async function reconceptBuild(args: {
 
   const seed = await brandSeedFor(profile, outputDir);
   const plan = planNarrative(profile, content, directive);
+
+  // The director (or the deterministic diverge/perturb path) chose a creative
+  // direction + runtime primitives. These used to be computed and then dropped
+  // before the build, so every site re-derived a generic industry direction and
+  // shipped with zero Awwwards components. Thread them through now.
+  const directiveDirection = directive.direction;
+  const runtimePrimitives = directiveRuntimePrimitiveIds(directive);
+
   const design = composeDesign(
     { profile, content },
     {
       photographicSeed: seed.hex,
       plan,
       directive,
+      ...(directiveDirection !== undefined ? { direction: directiveDirection } : {}),
       ...(directive.experienceMode !== undefined ? { experienceMode: directive.experienceMode } : {}),
       ...(directive.signatureMoment !== undefined && directive.signatureMoment !== null ? { momentSection: directive.signatureMoment } : {}),
     },
   );
 
+  // Enable the runtime whenever the experience warrants it OR the director
+  // earned interactive primitives — without it, runtime.js never ships and the
+  // components stay inert.
+  const runtime: 'scroll-progress' | 'none' =
+    (plan.experience.mode === 'narrative' && plan.character.visualWeight === 'image-led') ||
+    runtimePrimitives.length > 0
+      ? 'scroll-progress'
+      : 'none';
+
   const site = renderSite(content, {
     design,
-    runtime:
-      plan.experience.mode === 'narrative' && plan.character.visualWeight === 'image-led'
-        ? 'scroll-progress'
-        : 'none',
+    runtime,
+    ...(runtimePrimitives.length > 0 ? { runtimePrimitives } : {}),
   });
   const targetDir = path.join(outputDir, SITE_DIR_NAME);
   await writeRenderedSite(site, { sourceDir: outputDir, targetDir });
@@ -424,7 +526,15 @@ export async function runJob(opts: RunJobOptions): Promise<JobState> {
 
   const build = opts.hooks?.build ?? (async (runId, cfg): Promise<void> => {
     await composeStandalone(runId, cfg);
-    if (cfg.experienceEngine === 'signature') {
+    if (cfg.experienceEngine === 'signature' && cfg.forgeBattleMode) {
+      try {
+        await runForgeBattleBuild(runId, cfg, outputDir, logger);
+      } catch (err: unknown) {
+        logger.warn('Forge Design Battle warning (fallback to template build)', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    } else if (cfg.experienceEngine === 'signature') {
       try {
         const { runExperienceForge } = await import('../forge/orchestrator.js');
         await runExperienceForge({

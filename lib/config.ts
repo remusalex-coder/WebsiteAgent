@@ -294,6 +294,17 @@ export interface AppConfig {
    * Cerebras, never any other unverified-price provider.
    */
   readonly allowCerebrasSpend: boolean;
+  /**
+   * `FORGE_BATTLE_MODE`. Opt-in, default off. When on, `runJob.ts`'s default
+   * build hook calls `runExperienceBattle` (N independent Experience
+   * Signature builds, each repaired and re-verdicted, reduced to one
+   * winner) instead of `runExperienceForge`'s single build — see
+   * `WORK_QUEUE.json` WQ-018. Off by default because it multiplies a run's
+   * real cost by `forgeBattleCandidateCount`; a caller must choose it.
+   */
+  readonly forgeBattleMode: boolean;
+  /** `FORGE_BATTLE_CANDIDATES`. Only meaningful when `forgeBattleMode` is on. Minimum 2 — a "battle" of one is not a battle. */
+  readonly forgeBattleCandidateCount: number;
 }
 
 /** Applied wherever the environment leaves a value unset. */
@@ -368,6 +379,8 @@ export const DEFAULTS = {
   },
   budgetTier: 'tier0' as const,
   allowCerebrasSpend: false,
+  forgeBattleMode: false,
+  forgeBattleCandidateCount: 2,
 } as const;
 
 /**
@@ -757,5 +770,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     budgetTier: budgetTier(env, 'BF_BUDGET_TIER', DEFAULTS.budgetTier),
     budgetCustomCents: optionalInt(env, 'BF_BUDGET_CENTS', 1),
     allowCerebrasSpend: bool(env, 'BF_ALLOW_CEREBRAS_SPEND', DEFAULTS.allowCerebrasSpend),
+    forgeBattleMode: bool(env, 'FORGE_BATTLE_MODE', DEFAULTS.forgeBattleMode),
+    forgeBattleCandidateCount: int(env, 'FORGE_BATTLE_CANDIDATES', DEFAULTS.forgeBattleCandidateCount, 2),
   };
 }

@@ -290,13 +290,13 @@
       "category": "engineering/concurrency",
       "purpose": "Bounded concurrency pool + ledger mutex for parallel candidate builds.",
       "source": "lib/workflow/runner.ts",
-      "current_implementation": "Real code, but its ONLY importer in the entire repo is its own test file -- confirmed by grep. Not an orchestrator despite the name suggesting it.",
-      "status": "unwired scaffold",
-      "owner": "none (dead code path)",
-      "tests": "test/workflow/runner.test.ts",
-      "production_readiness": "compiles and is tested in isolation, never exercised in a real run",
-      "duplicate_conflict": "CONSOLIDATION_MAP already flagged 'DEFER, read-before-decide' -- now read and confirmed still unwired",
-      "decision": "DEFER-RESOLVED-TO-DECIDE: either wire it into Forge's battle.ts (parallel candidate generation, which currently has no shared concurrency/ledger-mutex primitive of its own) or formally mark DEPRECATED. See decisions_and_actions."
+      "current_implementation": "RESOLVED 2026-08-25 (P2-3 / IMPLEMENTATION_GAP.md, WORK_QUEUE.json WQ-004/G-RUNNER-01, commit 019367f): wired into scripts/n8n/stage.ts's 'diverge' case -- its K candidate directions now build in parallel through runPool/createSerializedWriter, each direction isolated in a symlinked shadow directory so concurrent builds cannot interleave writes to the shared run root. Not wired into lib/forge/battle.ts, which stayed sequential per-candidate (battle.ts's own docstring reasons cost is already real and multiplicative; concurrency was never its blocker) -- see G-BATTLE-01 for that module's own separate, since-resolved wiring gap (WQ-007/WQ-018).",
+      "status": "wired (production, diverge stage)",
+      "owner": "scripts/n8n/stage.ts's diverge case",
+      "tests": "test/workflow/runner.test.ts, test/workflow/candidates.test.ts (the underlying-race regression proof)",
+      "production_readiness": "wired, tested, verified natively (Windows, including fs.symlink), 0 regressions",
+      "duplicate_conflict": "CONSOLIDATION_MAP's 'DEFER, read-before-decide' flag is now resolved -- read, decided, wired.",
+      "decision": "RESOLVED: wired into stage.ts's diverge case (not battle.ts). See decisions_and_actions and IMPLEMENTATION_GAP.md P2-3."
     },
     {
       "name": "lib/workflow/runJob.ts (runJob)",

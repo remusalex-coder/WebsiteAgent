@@ -13,6 +13,8 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { ForgeOptions, ForgeResult, FactualDossier, ForgeRouting } from './types.js';
 import type { BusinessProfile } from '../types.js';
+import type { AppConfig } from '../config.js';
+import type { Logger } from '../logger.js';
 import { harvestResearch } from './research.js';
 import { buildFactualDossier } from './grounding.js';
 import { formulateExperienceSignature } from './signature.js';
@@ -27,47 +29,34 @@ import { loadConfig } from '../config.js';
 import { createLogger, createConsoleSink } from '../logger.js';
 import { createAIProviderFactory } from '../ai/factory.js';
 import { createCapabilityOrchestrator } from '../capability/orchestrator.js';
+import { resolveBudgetTier } from '../capability/budget.js';
 
-export async function runExperienceForge(options: ForgeOptions): Promise<ForgeResult> {
-  const config = loadConfig();
-  const runId = options.runId || `forge-${randomUUID().slice(0, 8)}`;
-  const outputDir = options.outputDir || config.outputDir;
-  const runDir = path.join(outputDir, runId);
-  const forgeDir = path.join(runDir, 'forge');
-  const siteDir = path.join(runDir, 'site');
+export interface BuildRunDossierOptions {
+  readonly url?: string | undefined;
+  readonly profile?: BusinessProfile | undefined;
+  readonly order?: string | undefined;
+  readonly runDir: string;
+  readonly forgeDir: string;
+  readonly config: AppConfig;
+  readonly routing: ForgeRouting;
+  readonly logger: Logger;
+}
 
-  await fs.mkdir(forgeDir, { recursive: true });
-  await fs.mkdir(siteDir, { recursive: true });
-
-  const logger = createLogger({
-    level: config.logLevel,
-    scope: `forge.${runId}`,
-    sink: createConsoleSink(),
-  });
-
-  /*
-   * Every model-backed stage in this pipeline — research, grounding,
-   * signature, builder, critic, repair — routes through the same capability
-   * planner and executor every other stage in this repository uses, rather
-   * than each constructing its own single-vendor provider. One orchestrator
-   * for the whole run: cost and quota accumulate across every stage, not
-   * per call, and a Gemini daily-quota exhaustion partway through a run
-   * fails that stage over to the next-ranked vendor instead of stopping the
-   * pipeline outright.
-   */
-  const providers = createAIProviderFactory({ config: config.ai, logger: logger.child('ai') });
-  const capabilities = await createCapabilityOrchestrator({ config, logger: logger.child('capability') });
-  const routing: ForgeRouting = { capabilities, providers };
-
-  logger.info('========================================================================');
-  logger.info('BUSINESSFORGE 2.0 — EXPERIENCE SIGNATURE AUTONOMOUS FACTORY');
-  logger.info('========================================================================', {
-    runId,
-    url: options.url,
-    hasProfile: Boolean(options.profile),
-    order: options.order,
-  });
-
+/**
+ * Steps 1–2 of the pipeline (Sourcing/Profile Ingest → Factual Firewall
+ * Grounding), factored out of `runExperienceForge` so a second caller can
+ * build the same dossier without duplicating this logic. `battle.ts`'s
+ * `runExperienceBattle` needs exactly this — one dossier, shared across all
+ * of a battle's candidates (research/grounding is the business's ground
+ * truth, not something that should vary per candidate) — and `runJob.ts`'s
+ * battle-mode build hook (WQ-018) is the real second caller.
+ *
+ * Behavior is unchanged from before this extraction: profile-supplied and
+ * URL-only paths both still write `1-factual-dossier.json` under `forgeDir`,
+ * and `runExperienceForge` itself now calls this rather than inlining it.
+ */
+export async function buildRunDossier(options: BuildRunDossierOptions): Promise<FactualDossier> {
+  const { runDir, forgeDir, config, routing, logger } = options;
   let factualDossier: FactualDossier;
 
   // Check if profile is provided directly or exists on disk
@@ -145,6 +134,94 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
   }
 
   await fs.writeFile(path.join(forgeDir, '1-factual-dossier.json'), JSON.stringify(factualDossier, null, 2), 'utf8');
+  return factualDossier;
+}
+
+/**
+ * Builds the default run-scoped capability orchestrator + provider factory
+ * a standalone Forge caller gets when it supplies no `routing` of its own —
+ * factored out of `runExperienceForge` (see its own doc comment on why
+ * `options.routing`, when supplied, always wins over this) so `runJob.ts`'s
+ * battle-mode build hook (WQ-018) can build the identical default routing
+ * without duplicating the budget-tier/Cerebras-flag resolution logic.
+ */
+export async function createDefaultForgeRouting(config: AppConfig, logger: Logger): Promise<ForgeRouting> {
+  return {
+    capabilities: await createCapabilityOrchestrator({
+      config,
+      logger: logger.child('capability'),
+      policy: {
+        ...resolveBudgetTier(config.budgetTier, config.budgetCustomCents ?? undefined),
+        ...(config.allowCerebrasSpend ? { allowUnverifiedPricingFor: ['cerebras'] as const } : {}),
+      },
+    }),
+    providers: createAIProviderFactory({ config: config.ai, logger: logger.child('ai') }),
+  };
+}
+
+export async function runExperienceForge(options: ForgeOptions): Promise<ForgeResult> {
+  const config = loadConfig();
+  const runId = options.runId || `forge-${randomUUID().slice(0, 8)}`;
+  const outputDir = options.outputDir || config.outputDir;
+  const runDir = path.join(outputDir, runId);
+  const forgeDir = path.join(runDir, 'forge');
+  const siteDir = options.siteDir ?? path.join(runDir, 'site');
+
+  await fs.mkdir(forgeDir, { recursive: true });
+  await fs.mkdir(siteDir, { recursive: true });
+
+  const logger = createLogger({
+    level: config.logLevel,
+    scope: `forge.${runId}`,
+    sink: createConsoleSink(),
+  });
+
+  /*
+   * Every model-backed stage in this pipeline — research, grounding,
+   * signature, builder, critic, repair — routes through the same capability
+   * planner and executor every other stage in this repository uses, rather
+   * than each constructing its own single-vendor provider. One orchestrator
+   * for the whole run: cost and quota accumulate across every stage, not
+   * per call, and a Gemini daily-quota exhaustion partway through a run
+   * fails that stage over to the next-ranked vendor instead of stopping the
+   * pipeline outright.
+   *
+   * `options.routing`, when supplied, is the caller's own run-scoped
+   * orchestrator (`main.ts`'s `'enhance'` step passes `run.platform`) — this
+   * is what makes `BF_BUDGET_TIER` actually reach Forge's model calls, and
+   * what makes Forge's spend land in the run's own cost report. Without it
+   * (every standalone/CLI caller), Forge builds its own orchestrator here,
+   * explicitly resolved from `config.budgetTier` rather than left to
+   * `createCapabilityOrchestrator`'s own `DEFAULT_POLICY` (€0, no paid
+   * providers) — a standalone `npm run forge` with `BF_BUDGET_TIER` set must
+   * honor it too, not just the wired-in pipeline path.
+   */
+  const routing: ForgeRouting = options.routing ?? (await createDefaultForgeRouting(config, logger));
+  const { capabilities, providers } = routing;
+
+  logger.info('========================================================================');
+  logger.info('BUSINESSFORGE 2.0 — EXPERIENCE SIGNATURE AUTONOMOUS FACTORY');
+  logger.info('========================================================================', {
+    runId,
+    url: options.url,
+    hasProfile: Boolean(options.profile),
+    order: options.order,
+  });
+
+  // Steps 1-2: Sourcing/Profile Ingest -> Factual Firewall Grounding.
+  // Factored into `buildRunDossier` (above) so `runJob.ts`'s battle-mode
+  // build hook (WQ-018) can build the same dossier without duplicating this
+  // logic — see that function's own doc comment.
+  const factualDossier = await buildRunDossier({
+    url: options.url,
+    profile: options.profile,
+    order: options.order,
+    runDir,
+    forgeDir,
+    config,
+    routing,
+    logger,
+  });
 
   // Step 3: Creative Territories & Experience Signature
   logger.info('STEP 3: Formulating 3 Creative Territories & Experience Signature...');
@@ -164,11 +241,11 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
 
   // Step 5: Autonomous Frontend Code Generation
   logger.info('STEP 5: Coding Bespoke Frontend (HTML, CSS, JS)...');
-  let code = await buildFrontend(blueprint, runDir, config, routing, logger.child('builder'));
+  let code = await buildFrontend(blueprint, runDir, siteDir, config, routing, logger.child('builder'));
 
   // Step 6: Anti-AI-Generic Gate Audit
   logger.info('STEP 6: Anti-AI-Generic Gate & Structural Audit...');
-  const antiAiResult = await auditAntiAIGeneric({
+  let antiAiResult = await auditAntiAIGeneric({
     code,
     blueprint,
     outputDir: config.outputDir,
@@ -202,10 +279,22 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
   });
 
   // Step 9: Autonomous Code Repair Loop (up to maxIterations)
+  //
+  // Re-enters on either a craft-critic issue OR a structural/registry-gate
+  // failure from step 6 — not the critic's score alone. A registry-gate
+  // `fail` (an ungated runtime library, or one over `RUNTIME_PRIMITIVE_BUDGET`)
+  // is otherwise unrepairable by construction: nothing would ever feed it
+  // back to `repairCode`, and it would only ever surface downstream as an
+  // unrepaired `FAIL` verdict. Re-running `auditAntiAIGeneric` each
+  // iteration (not just recapture/re-critique) is what lets a repair attempt
+  // actually clear a structural flag instead of only a visual one.
   const maxIterations = options.maxIterations ?? 2;
   let currentIteration = 0;
 
-  while (critique.issues.length > 0 && critique.score < 88 && currentIteration < maxIterations) {
+  while (
+    (critique.issues.length > 0 && critique.score < 88 || !antiAiResult.passed) &&
+    currentIteration < maxIterations
+  ) {
     currentIteration++;
     logger.info(`STEP 9: Autonomous Code Repair Loop (Iteration ${currentIteration}/${maxIterations})...`);
 
@@ -213,11 +302,26 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
       siteDir,
       blueprint,
       critique,
+      antiAiResult,
       iteration: currentIteration,
       config,
       routing,
       logger: logger.child('repair'),
     });
+
+    // Re-run the structural/registry gate against the repaired code
+    antiAiResult = await auditAntiAIGeneric({
+      code,
+      blueprint,
+      outputDir: config.outputDir,
+      runId,
+      logger: logger.child('anti-ai-gate'),
+    });
+    await fs.writeFile(
+      path.join(forgeDir, `5-anti-ai-gate-iter${currentIteration}.json`),
+      JSON.stringify(antiAiResult, null, 2),
+      'utf8',
+    );
 
     // Re-capture
     capture = await captureSite(siteDir, runDir, logger.child('browser'));
@@ -243,6 +347,7 @@ export async function runExperienceForge(options: ForgeOptions): Promise<ForgeRe
       score: critique.score,
       verdict: critique.verdict,
       remainingIssues: critique.issues.length,
+      structuralPassed: antiAiResult.passed,
     });
   }
 

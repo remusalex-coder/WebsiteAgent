@@ -1584,14 +1584,19 @@
     {
       "id": "orch.forge-battle",
       "name": "lib/forge/battle.ts",
-      "whatItDoes": "Multi-candidate 'Design Battle' orchestration.",
-      "currentImplementation": "REAL_IMPLEMENTED but UNREACHABLE from the production entrypoint",
-      "status": "PARTIALLY_IMPLEMENTED",
+      "whatItDoes": "Multi-candidate 'Design Battle' orchestration -- N independent Experience Signature builds, each with its own repair loop, reduced to one winner.",
+      "currentImplementation": "REAL_IMPLEMENTED and wired into the production entrypoint (WQ-018, 2026-08-25), opt-in via cfg.forgeBattleMode (FORGE_BATTLE_MODE), default off",
+      "status": "REAL_IMPLEMENTED",
       "realFiles": [
-        "lib/forge/battle.ts"
+        "lib/forge/battle.ts",
+        "lib/workflow/runJob.ts (runForgeBattleBuild, the build-hook wiring)",
+        "lib/forge/orchestrator.ts (buildRunDossier / createDefaultForgeRouting, extracted for reuse by both the single-build and battle-mode paths)",
+        "lib/workflow/jobState.ts (JobState.forgeBattle)",
+        "lib/workflow/summary.ts (summarizeForgeBattle / JobSummary.forgeBattle)",
+        "lib/config.ts (forgeBattleMode / forgeBattleCandidateCount)"
       ],
-      "note": "orchestrator.ts (main.ts's real entrypoint) runs a single build, not the multi-candidate battle. test/forge/battle.test.ts exercises it directly (and is one of the 4 known Playwright-dependent sandbox-only failures).",
-      "documentarySource": "direct code reading; test/forge/battle.test.ts",
+      "note": "orchestrator.ts's runExperienceForge remains the default single-build path (FORGE_BATTLE_MODE unset/false, matching every existing deployment's behaviour unchanged). When on, runJob.ts's default build hook calls runExperienceBattle instead, each candidate gets its own repair loop (mirrors orchestrator.ts step 9 exactly), the winner's site is copied into the run's canonical site/ directory, and the result is persisted to a dedicated JobState.forgeBattle field -- deliberately never conflated with the classic diverge battle's designDirections/distinctnessScore (WQ-016's summarizeBattle). test/forge/battle.test.ts and test/workflow/forgeBattleBuild.test.ts exercise it (both Playwright-dependent, sandbox-only failures -- 8 total now, up from the prior 4, all verified natively).",
+      "documentarySource": "direct code reading; test/forge/battle.test.ts; test/workflow/forgeBattleBuild.test.ts; WORK_QUEUE.json WQ-018",
       "confidence": "high"
     },
     {
@@ -1738,10 +1743,10 @@
     },
     {
       "id": "G-BATTLE-01",
-      "title": "lib/forge/battle.ts (multi-candidate Design Battle) is fully implemented but unreachable from the production entrypoint",
-      "severity": "medium",
-      "detail": "orchestrator.ts / main.ts runs a single build, not the battle. Only test/forge/battle.test.ts exercises it (and is one of the 4 known sandbox-only Playwright failures).",
-      "recommendedNextStep": "RESOLVED 2026-08-25 (docs/WORK_QUEUE.json WQ-007): deliberately NOT wired as the production default. runExperienceBattle lacks a per-candidate repair loop (runExperienceForge's step 9), lacks budget-tier integration (lib/capability/budget.ts), and has no dedicated JobState field distinct from the classic diverge battle's designDirections/distinctnessScore (see WQ-016's summarizeBattle). Wiring it in today would regress quality (no repair) and corrupt the one-read-model control surface, not extend it. Follow-up WQ-018 queued with those three prerequisites as its scope."
+      "title": "lib/forge/battle.ts (multi-candidate Design Battle) is fully implemented and wired into the production entrypoint (opt-in) -- RESOLVED",
+      "severity": "resolved",
+      "detail": "orchestrator.ts / main.ts's default single-build path is unchanged. runJob.ts's build hook can now opt into battle mode via cfg.forgeBattleMode (FORGE_BATTLE_MODE), default off. test/forge/battle.test.ts and test/workflow/forgeBattleBuild.test.ts exercise it (Playwright-dependent, sandbox-only failures, verified natively).",
+      "recommendedNextStep": "RESOLVED 2026-08-25 (docs/WORK_QUEUE.json WQ-018, following WQ-007's decision): all three prerequisites WQ-007 identified are now closed. (1) Each battle candidate gets its own per-candidate repair loop in battle.ts, mirroring orchestrator.ts step 9 exactly (same exit condition, same repairCode call, same re-audit/re-capture/re-critique sequence) -- no longer a single unrepaired pass. (2) Battle spend is bounded the same way a single build's spend already is: all candidates share one routing.capabilities orchestrator instance, so remainingCents() shrinks with every candidate's real spend rather than each candidate getting a fresh budget allocation; cfg.forgeBattleCandidateCount (FORGE_BATTLE_CANDIDATES, minimum 2) additionally caps how many candidates a battle can even attempt. (3) JobState.forgeBattle is a new, dedicated field (jobState.ts), with its own summarizeForgeBattle projection (summary.ts) surfaced as JobSummary.forgeBattle -- never conflated with the classic diverge battle's designDirections/distinctnessScore/BattleSummary. runJob.ts's default build hook opts into battle mode via cfg.forgeBattleMode, default off; when on, the winner's site is copied into the run's canonical site/ directory and an all-weak/winnerless battle leaves the template build unreplaced rather than failing the run."
     }
   ],
   "machine_contract": {
