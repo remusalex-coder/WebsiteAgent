@@ -26,6 +26,7 @@ export const AI_PROVIDER_NAMES = [
   'deepseek',
   'cerebras',
   'groq',
+  'ollama',
 ] as const;
 
 export type AIProviderName = (typeof AI_PROVIDER_NAMES)[number];

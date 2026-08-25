@@ -323,6 +323,7 @@ function credentialSet(config: AppConfig, env: NodeJS.ProcessEnv): ReadonlySet<s
     deepseek: 'DEEPSEEK_API_KEY',
     cerebras: 'CEREBRAS_API_KEY',
     groq: 'GROQ_API_KEY',
+    ollama: 'OLLAMA_ENABLED',
   };
   for (const provider of CATALOGUED_PROVIDERS) {
     if (config.ai.apiKeys[provider] !== '') present.add(providerKeys[provider]);

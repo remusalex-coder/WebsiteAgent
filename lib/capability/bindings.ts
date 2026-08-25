@@ -53,8 +53,13 @@ function model(
     kind: 'model',
     provider,
     modelClass,
-    licence: provider === 'gemini' || provider === 'groq' ? 'free-tier-unverified' : 'commercial-api',
-    jurisdiction: provider === 'openrouter' ? 'other' : 'us',
+    licence:
+      provider === 'ollama'
+        ? 'permissive-local'
+        : provider === 'gemini' || provider === 'groq'
+          ? 'free-tier-unverified'
+          : 'commercial-api',
+    jurisdiction: provider === 'ollama' ? 'local' : provider === 'openrouter' ? 'other' : 'us',
     order,
     detail,
     fixedCents: 0,
@@ -71,6 +76,7 @@ const DEEPSEEK_KEY = 'DEEPSEEK_API_KEY';
 const CEREBRAS_KEY = 'CEREBRAS_API_KEY';
 const GROQ_KEY = 'GROQ_API_KEY';
 const XAI_KEY = 'XAI_API_KEY';
+const OLLAMA_KEY = 'OLLAMA_ENABLED';
 
 /** Shorthand for in-repo code with a real dependency. */
 function tool(
@@ -166,7 +172,16 @@ export const SERVICE_BINDINGS: Readonly<Record<CapabilityId, readonly ServiceBin
     // seats are quota-blocked or network-unreachable. Placed immediately before
     // the deterministic floor so it is used only when every preferred seat fails.
     model('reasoning', 'cerebras', 'workhorse', 5, 'Cerebras workhorse — reachable fallback', CEREBRAS_KEY),
-    floor('reasoning', 'compose-baseline', 6, 'composeBaseline — strategy derived from the profile'),
+    // Local, free ($0, `priceConfidence: 'observed'` — models.ts), credential-
+    // free (opt-in via OLLAMA_ENABLED). This planner ranks free before paid
+    // on cost alone (see this file's own header doctrine), so a genuinely-
+    // $0 local call sorts WITH the free tier, ahead of every paid vendor,
+    // despite being the slowest member of that group (~40s/call,
+    // lib/ai/providers/ollama.ts) — this router optimizes spend, not
+    // latency; `order: 6` only breaks the tie against gemini/groq, placing
+    // it third within the free group, never ahead of them.
+    model('reasoning', 'ollama', 'workhorse', 6, 'Local Ollama — $0, free tier by cost, slow by latency', OLLAMA_KEY),
+    floor('reasoning', 'compose-baseline', 7, 'composeBaseline — strategy derived from the profile'),
   ],
 
   structured_generation: [
@@ -197,7 +212,12 @@ export const SERVICE_BINDINGS: Readonly<Record<CapabilityId, readonly ServiceBin
     // deep-dived"). Placed last among paid candidates on purpose, pending a live call that
     // actually confirms schema compliance under instructed mode.
     model('structured_generation', 'cerebras', 'workhorse', 7, 'Unverified pricing/schema compliance — last resort', CEREBRAS_KEY),
-    floor('structured_generation', 'reject-directive', 8, 'Discard the response and keep the deterministic value'),
+    // Same reasoning as the 'reasoning' capability above: genuinely $0, so
+    // this cost-ranked planner places it with the free tier despite being
+    // the slowest member of it — see that binding's comment for the full
+    // reasoning. `order: 8` is a tie-break number, not a "ranks 8th" claim.
+    model('structured_generation', 'ollama', 'workhorse', 8, 'Local Ollama — $0, schema supplied in-prompt, validated locally', OLLAMA_KEY),
+    floor('structured_generation', 'reject-directive', 9, 'Discard the response and keep the deterministic value'),
   ],
 
   prose_writing: [

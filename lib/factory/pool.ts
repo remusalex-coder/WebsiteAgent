@@ -55,6 +55,7 @@ const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   deepseek: 'deepseek-v4-flash',
   cerebras: 'gpt-oss-120b',
   groq: 'openai/gpt-oss-120b',
+  ollama: 'gemma4:26b',
 };
 
 /**
@@ -68,8 +69,18 @@ const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
  * addresses the Provider Pool review's "Gemini is the only vendor confirmed
  * live" single-point-of-failure flag: a role that names no explicit `BF_POOL`
  * now fans out over two independent free vendors instead of one.
+ *
+ * `ollama` joins the list too, opt-in via `OLLAMA_ENABLED` (so a deployment
+ * with no local Ollama running never has this member attempted). It costs
+ * nothing and holds no rate limit, but the live-verified round trip was
+ * ~40 seconds for a trivial call (`lib/ai/providers/ollama.ts`'s file
+ * header) — appending it after `groq` here, and appending `'ollama'` last in
+ * `AI_PROVIDER_NAMES` (`lib/ai/types.ts`), keeps it the tie-break loser in
+ * `routeCapability`'s ranking (`lib/ai/router.ts`) whenever telemetry has not
+ * yet distinguished the members, i.e. a genuine last-resort fallback rather
+ * than a peer of the faster free vendors.
  */
-const FREE_TIER: readonly AIProviderName[] = ['gemini', 'groq'];
+const FREE_TIER: readonly AIProviderName[] = ['gemini', 'groq', 'ollama'];
 
 export interface PoolMember {
   readonly role: PoolRole;

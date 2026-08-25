@@ -383,6 +383,45 @@ export const MODEL_CATALOG: readonly ModelRecord[] = [
     jurisdiction: 'us',
     priceConfidence: 'estimated',
   },
+
+  /* ----------------------------- Ollama ----------------------------- */
+  // Live-verified against the actual host this deployment's runtime executes
+  // on (2026-08-25): `curl http://localhost:11434/api/tags` confirmed
+  // `gemma4:26b` installed (25.8B params, Q4_K_M quant), and a real
+  // `POST /api/chat` with `format: "json"` round-tripped successfully — see
+  // `lib/ai/providers/ollama.ts`'s file header for the full response. Local
+  // and self-hosted, so `licence: 'permissive-local'` / `jurisdiction:
+  // 'local'` (never leaves the machine) rather than any vendor-terms class,
+  // and cost is genuinely $0 — `priceConfidence: 'observed'`, not estimated,
+  // because "a local process costs nothing to call" needs no rate card to
+  // verify. `freeAllowance: null`: there is no rate *limit* to record, which
+  // is a different fact from a paid vendor's allowance and doesn't fit that
+  // field's shape. The measured latency (~40s for a trivial call) is not a
+  // field this record carries — it lives in the router's own telemetry
+  // (`lib/ai/router.ts`), which is what actually keeps this entry ranked
+  // last once a run has called it at least once.
+  //
+  // `contextTokens` is from a live `POST /api/show` (2026-08-25):
+  // `gemma4.context_length: 262144`. That same probe also surfaced
+  // `gemma4.vision.*` fields, meaning the underlying architecture is
+  // multimodal — noted here rather than acted on, since no image-bearing
+  // `/api/chat` request has actually been exercised against it; `modalities`
+  // stays `TEXT` and `visionInvoker.ts` still declines ollama vision until a
+  // real call verifies the request shape.
+  {
+    id: 'gemma4:26b',
+    provider: 'ollama',
+    modelClass: 'workhorse',
+    modalities: TEXT,
+    structuredOutput: 'instructed',
+    contextTokens: 262_144,
+    centsPerMillionInput: 0,
+    centsPerMillionOutput: 0,
+    freeAllowance: null,
+    licence: 'permissive-local',
+    jurisdiction: 'local',
+    priceConfidence: 'observed',
+  },
 ];
 
 /* ------------------------------------------------------------------ */

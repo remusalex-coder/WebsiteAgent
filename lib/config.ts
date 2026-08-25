@@ -433,6 +433,10 @@ export const DEFAULT_MODELS: Readonly<Record<AIProviderName, string>> = {
   // models Groq documents strict json_schema support for — see
   // lib/ai/providers/groq.ts.
   groq: 'openai/gpt-oss-120b',
+  // Live-verified installed model (`ollama list` / `/api/tags`,
+  // OBSERVED 2026-08-25) on the host this deployment's runtime executes on.
+  // Free and credential-free, but ~40s/call — see lib/ai/providers/ollama.ts.
+  ollama: 'gemma4:26b',
 };
 
 /**
@@ -711,6 +715,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         deepseek: str(env, 'DEEPSEEK_API_KEY', ''),
         cerebras: str(env, 'CEREBRAS_API_KEY', ''),
         groq: str(env, 'GROQ_API_KEY', ''),
+        // Ollama has no credential — a local, loopback-only server. Reuses
+        // the same "is this provider configured" gate as every other vendor
+        // (`config.apiKeys[name] !== ''`) as a plain opt-in flag: unset, the
+        // adapter is never attempted; any non-empty value enables it. See
+        // `lib/ai/providers/ollama.ts`'s file header for why this value is
+        // never sent as a real credential.
+        ollama: str(env, 'OLLAMA_ENABLED', ''),
       },
       baseUrls: {
         anthropic: optional(env, 'ANTHROPIC_BASE_URL'),
@@ -721,6 +732,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         deepseek: optional(env, 'DEEPSEEK_BASE_URL'),
         cerebras: optional(env, 'CEREBRAS_BASE_URL'),
         groq: optional(env, 'GROQ_BASE_URL'),
+        // Unset, the adapter defaults to http://localhost:11434 internally.
+        ollama: optional(env, 'OLLAMA_BASE_URL'),
       },
       requestTimeoutMs: int(env, 'AI_REQUEST_TIMEOUT_MS', DEFAULTS.ai.requestTimeoutMs),
       maxRetries: int(env, 'AI_MAX_RETRIES', DEFAULTS.ai.maxRetries, 0),

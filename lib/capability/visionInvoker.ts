@@ -294,6 +294,13 @@ export function createVisionInvoker(
             'vision request shape has been verified against a live call, and this module ' +
             'does not guess at one',
         );
+      case 'ollama':
+        throw new Error(
+          `[${SOURCE}] ollama vision is not implemented — the adapter (lib/ai/providers/` +
+            'ollama.ts) targets the text-only /api/chat shape this deployment live-verified; ' +
+            'no image-bearing request against the locally installed model has been exercised, ' +
+            'and this module does not guess at one',
+        );
     }
   };
 }
