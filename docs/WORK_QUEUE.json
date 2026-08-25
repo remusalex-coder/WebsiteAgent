@@ -141,13 +141,16 @@
       "description": "gap G-STAGE-01: reconcile the three coexisting job-stage vocabularies (main.ts STAGES, jobState.ts JobStage, stage.ts's own STAGES) against lib/workflow/state.ts's unadopted unification",
       "priority": "P2",
       "dependencies": [],
-      "status": "QUEUED",
+      "status": "DONE",
       "assignedWorker": "claude \u2014 audit first (is state.ts a strict superset?), then migrate only if genuinely safe",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "main.ts, lib/workflow/jobState.ts, scripts/n8n/stage.ts, lib/workflow/state.ts",
-      "outputs": "either a migration plan + implementation, or a documented decision to leave the three vocabularies as-is with a clear rationale",
-      "artifacts": null,
-      "validationState": "UNVERIFIED",
+      "outputs": "RESOLVED 2026-08-25: documented decision to KEEP the three vocabularies as-is, not migrate yet, after performing the exact audit docs/MASTER_CAPABILITY_TOOL_REGISTRY.json's G-STAGE-01 asked for ('audit whether state.ts's vocabulary is a strict superset of the three live ones before any adoption'). Finding: it is NOT a superset -- lib/workflow/state.ts's 12 states use deliberately abstract names (verify/judge/decide) that state.ts's own docstring already explains are meant to CONTAIN jobState.ts's 17 concrete stages as sub-steps (e.g. 'browser' + 'visual-critic' + 'distinctness-gate' would fold into 'verify'/'judge'/'decide'), not rename them 1:1. Only 3 of jobState.ts's 17 names (created/evidence/diverge) and 1 of stage.ts's 23 names (diverge) match state.ts's vocabulary by exact string -- confirming this is a real semantic remapping design task, not a mechanical find-replace, and confirming the registry's caution was correct. The three vocabularies also serve three genuinely different, currently load-bearing purposes verified by reading each: main.ts's 9 STAGES are the deterministic CLI pipeline's step names; jobState.ts's 17 JobStage values are the persisted production job.json contract that WQ-016's control surface (STAGE_LABELS/STAGE_ORDER in controlSurfacePage.ts) and the n8n GET /job HTTP contract (test/qa/p7-endpoints.test.ts) both already depend on; scripts/n8n/stage.ts's 23 STAGES are the legacy per-stage HTTP dispatch keys (GET/POST /stage/:name) used by the CLI and Factory V1. A real migration would need to simultaneously: (1) design the concrete-to-abstract state mapping, (2) write a back-compat reader for every existing on-disk job.json (old stage names), (3) update the control surface and n8n workflow generator in lockstep so neither silently breaks. That is a genuine, carefully-planned multi-file migration, not something to fold into this checkpoint -- follow-up WQ-019 queued with these exact prerequisites as its scope. lib/workflow/state.ts is kept as-is (not deprecated): it is the correct target semantic model, just not yet an adoptable one.",
+      "artifacts": [
+        "docs/WORK_QUEUE.json WQ-006 (this decision) and WQ-019 (follow-up)",
+        "docs/MASTER_CAPABILITY_TOOL_REGISTRY.json gap G-STAGE-01 resolution field"
+      ],
+      "validationState": "IMPLEMENTED",
       "failureState": null,
       "provenance": "MASTER_CAPABILITY_TOOL_REGISTRY gap G-STAGE-01",
       "createdAt": "2026-08-25",
@@ -377,6 +380,25 @@
       "validationState": "UNVERIFIED",
       "failureState": null,
       "provenance": "WQ-007's architectural decision, 2026-08-25 -- the three concrete prerequisites found by comparing runExperienceForge and runExperienceBattle side by side",
+      "createdAt": "2026-08-25",
+      "updatedAt": "2026-08-25"
+    },
+    {
+      "id": "WQ-019",
+      "description": "Follow-up to WQ-006's audit finding: lib/workflow/state.ts's 12 abstract job states are NOT a strict superset of the three live stage vocabularies (main.ts's 9 CLI pipeline steps, jobState.ts's 17 persisted JobStage values, stage.ts's 23 n8n HTTP dispatch keys) -- only created/evidence/diverge match jobState.ts by exact name, and 'diverge' matches stage.ts. Before any migration: (1) design and document the concrete-to-abstract mapping (which jobState.ts/stage.ts stage names fold into which of state.ts's verify/judge/decide/etc.); (2) write a back-compat reader so every existing on-disk output/<runId>/job.json (old stage names) still loads correctly; (3) update lib/workflow/summary.ts's summarizeJob (the shared read model, WQ-016), scripts/n8n/controlSurfacePage.ts's STAGE_LABELS/STAGE_ORDER, and scripts/n8n/build-workflow-json.ts's generated workflow in lockstep so the control surface and the n8n contract never silently break mid-migration.",
+      "priority": "P2",
+      "dependencies": [
+        "WQ-006"
+      ],
+      "status": "QUEUED",
+      "assignedWorker": "claude, deterministic -- design task first, then a coordinated multi-file migration + tests",
+      "attempts": 0,
+      "inputs": "lib/workflow/state.ts, lib/workflow/jobState.ts, scripts/n8n/stage.ts, main.ts, lib/workflow/summary.ts, scripts/n8n/controlSurfacePage.ts, scripts/n8n/build-workflow-json.ts",
+      "outputs": "a documented concrete-to-abstract stage mapping; a back-compat job.json reader; summary.ts/control-surface/n8n-workflow-generator updated in lockstep; tests proving old job.json files still load and the n8n contract fields are unchanged",
+      "artifacts": null,
+      "validationState": "UNVERIFIED",
+      "failureState": null,
+      "provenance": "WQ-006's audit, 2026-08-25 -- confirms docs/MASTER_CAPABILITY_TOOL_REGISTRY.json G-STAGE-01's own caution that state.ts must be verified as a superset before adoption; it is not one",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
     }

@@ -1671,7 +1671,7 @@
       "title": "Three job-stage vocabularies still coexist in production",
       "severity": "medium",
       "detail": "lib/workflow/state.ts was purpose-built to unify main.ts's STAGES, jobState.ts's JobStage, and stage.ts's own STAGES array, but has zero production importers.",
-      "recommendedNextStep": "Audit whether state.ts's vocabulary is a strict superset of the three live ones before any adoption; if it is not, extend it first rather than forcing a migration onto an incomplete target."
+      "recommendedNextStep": "RESOLVED 2026-08-25 (docs/WORK_QUEUE.json WQ-006): performed the audit this entry asked for. Finding: state.ts is NOT a strict superset -- only created/evidence/diverge match jobState.ts's 17 stage names exactly, and only diverge matches stage.ts's 23. state.ts's abstract names (verify/judge/decide) are meant to CONTAIN concrete stages as sub-steps (e.g. jobState.ts's browser+visual-critic+distinctness-gate fold into verify/judge/decide), which is a real semantic design task, not a mechanical migration. Decision: keep the three vocabularies as-is for now (each is currently load-bearing: CLI pipeline steps, the persisted job.json contract WQ-016's control surface and the n8n GET /job contract both depend on, and stage.ts's legacy HTTP dispatch keys); state.ts stays as the correct target model, not deprecated. Follow-up WQ-019 queued with the concrete-to-abstract mapping design, a back-compat job.json reader, and lockstep control-surface/n8n-generator updates as its scope."
     },
     {
       "id": "G-RUNNER-01",
