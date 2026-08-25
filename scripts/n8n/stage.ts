@@ -53,7 +53,9 @@ import { decideJury } from '../../lib/qa/jury.js';
 import { scoreExperience } from '../../lib/design/quality.js';
 import { fingerprintDirective } from '../../lib/design/fingerprint.js';
 import { diverge } from '../../lib/design/diverge.js';
-import { finalizeBest, recordCandidate } from '../../lib/workflow/candidates.js';
+import { finalizeBest, recordCandidate, CANDIDATES_DIR_NAME } from '../../lib/workflow/candidates.js';
+import { runPool, createSerializedWriter } from '../../lib/workflow/runner.js';
+import type { RunnerTask } from '../../lib/workflow/runner.js';
 import { decide } from '../../lib/workflow/hermes.js';
 import { createJob, loadJob, saveJob } from '../../lib/workflow/jobState.js';
 import type { WorkerCall, JobState } from '../../lib/workflow/jobState.js';
@@ -133,6 +135,48 @@ export type StageName = (typeof STAGES)[number];
  * candidates, not three re-colours of one page.
  */
 export const K_DESIGN_DIRECTIONS = 3;
+
+/** Where `reconceptBuild` writes the rendered site, relative to its `outputDir`. */
+const SITE_DIR_NAME = 'site';
+
+/**
+ * Gives a parallel candidate build its own `outputDir` without copying the
+ * run's evidence/asset bytes.
+ *
+ * Every entry `realDir` has — profile, content, strategy, collected images,
+ * research — is symlinked into `shadowDir` under the same name, except the
+ * two paths a build actually writes (`5b-design.json`, `site/`) and the
+ * shared candidate store (`candidates/`, plus this helper's own scratch
+ * root). `reconceptBuild` and everything it calls (`writeRenderedSite`
+ * resolving an asset's `sourcePath`, `deterministicQuality` reading
+ * `5-content.json`) then reads through the symlink exactly as if `shadowDir`
+ * were `realDir` — but its own `5b-design.json`/`site/` land in a directory
+ * nothing else touches. This is what makes K candidates safe to build
+ * concurrently: two directions finishing at the same moment cannot interleave
+ * writes to a file they do not share.
+ */
+async function createShadowDir(
+  realDir: string,
+  shadowDir: string,
+  exclude: ReadonlySet<string>,
+): Promise<void> {
+  await fs.mkdir(shadowDir, { recursive: true });
+  const entries = await fs.readdir(realDir, { withFileTypes: true });
+  await Promise.all(
+    entries
+      .filter((entry) => !exclude.has(entry.name))
+      .map(async (entry) => {
+        try {
+          await fs.symlink(path.join(realDir, entry.name), path.join(shadowDir, entry.name));
+        } catch (error) {
+          // Another shadow build's own directory, or a temp file the run
+          // wrote between `readdir` and here, is not this helper's problem —
+          // a build surviving it is better than failing the whole direction.
+          if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        }
+      }),
+  );
+}
 
 /**
  * A candidate's deterministic quality, used by the pre-browser jury.
@@ -1017,30 +1061,90 @@ export async function runStage(opts: {
       }
 
       // Each direction becomes a real rendered candidate, recorded immutably.
-      // The run root is overwritten per candidate; the candidate index keeps
-      // every attempt, and `finalizeBest` restores the winner once.
-      const qualities: number[] = [];
-      const fingerprints: string[] = [];
-      for (const direction of directions) {
-        const built = await reconceptBuild({
-          outputDir,
-          config,
-          logger: logger.child('diverge'),
-          previousDirective: baseDirective,
-          feedback: '',
-          route: 'director',
-          iteration: 0,
-          applyDirective: direction.directive,
-        });
-        const quality = await deterministicQuality(outputDir, built.design);
-        qualities.push(quality);
-        fingerprints.push(fingerprintDirective(direction.directive));
-        await recordCandidate({
-          outputDir,
-          iteration: 0,
-          scores: { quality, distinctness: 0, blockingClean: true },
-        });
+      // Directions build in PARALLEL (Freeze N-05/P3-6/F-12, via
+      // `lib/workflow/runner.ts`'s pool): each gets its own shadow `outputDir`
+      // (see `createShadowDir`) so concurrent builds cannot interleave writes
+      // to the shared `5b-design.json`/`site/` — the real race a naive
+      // parallel loop would introduce (previously tracked as MASTER_INVENTORY
+      // A3 / MASTER_CAPABILITY_TOOL_REGISTRY gap G-RUNNER-01). Only the cheap
+      // bookkeeping — assigning a candidate id and appending to the shared
+      // `candidates/` index — is serialized, via the same `SerializedWriter`
+      // this module exists for; the actual compose+render work, which is the
+      // part worth parallelizing, runs fully concurrently beforehand.
+      //
+      // No model calls happen in this stage regardless (zero-cost per P5-2),
+      // so unlike browser-bound work this has no reason to stay small — K is
+      // frozen at 3, so the whole battle runs as one pool generation.
+      const shadowRoot = path.join(outputDir, '.diverge-build');
+      const excludeFromShadow = new Set([
+        '5b-design.json',
+        SITE_DIR_NAME,
+        CANDIDATES_DIR_NAME,
+        path.basename(shadowRoot),
+      ]);
+      const writer = createSerializedWriter();
+
+      type DivergeOutcome = { readonly quality: number; readonly fingerprint: string };
+      const tasks: RunnerTask<DivergeOutcome>[] = directions.map((direction, index) => {
+        const id = `direction-${String.fromCharCode(65 + index)}`;
+        return {
+          id,
+          run: async (): Promise<DivergeOutcome> => {
+            const shadowDir = path.join(shadowRoot, id);
+            await createShadowDir(outputDir, shadowDir, excludeFromShadow);
+            try {
+              const built = await reconceptBuild({
+                outputDir: shadowDir,
+                config,
+                logger: logger.child('diverge').child(id),
+                previousDirective: baseDirective,
+                feedback: '',
+                route: 'director',
+                iteration: 0,
+                applyDirective: direction.directive,
+              });
+              const quality = await deterministicQuality(shadowDir, built.design);
+              // Serialized: id assignment and the index read-modify-write
+              // must not overlap across directions finishing at once.
+              await writer.withLock(() =>
+                recordCandidate({
+                  outputDir,
+                  sourceDir: shadowDir,
+                  iteration: 0,
+                  scores: { quality, distinctness: 0, blockingClean: true },
+                }),
+              );
+              return { quality, fingerprint: fingerprintDirective(direction.directive) };
+            } finally {
+              await fs.rm(shadowDir, { recursive: true, force: true });
+            }
+          },
+        };
+      });
+
+      const outcome = await runPool(tasks, { concurrency: directions.length });
+      await fs.rm(shadowRoot, { recursive: true, force: true }).catch(() => undefined);
+      if (outcome.failures.length > 0) {
+        // A direction that failed to build never got recorded — surface it
+        // rather than silently juring the survivors as if nothing was lost.
+        throw outcome.failures[0]!.error;
       }
+
+      // `runPool`'s `results` is completion order, not task order (see its
+      // own docstring) — key back onto `directions` by `id` rather than by
+      // array position, so which direction a quality/fingerprint belongs to
+      // never depends on which one happened to finish first.
+      const byId = new Map(outcome.results.map((r) => [r.id, r.value]));
+      const qualities = directions.map((_direction, index) => {
+        const id = `direction-${String.fromCharCode(65 + index)}`;
+        const value = byId.get(id);
+        if (value === undefined) throw new Error(`[diverge] missing result for ${id}`);
+        return value.quality;
+      });
+      const fingerprints = directions.map((_direction, index) => {
+        const id = `direction-${String.fromCharCode(65 + index)}`;
+        return byId.get(id)!.fingerprint;
+      });
 
       // The conditional jury: wide deterministic spread needs one judge,
       // narrow spread (margin ±5) would spend a second vision judge — which is

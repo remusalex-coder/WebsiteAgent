@@ -30,6 +30,7 @@ import {
   selectBest,
   type CandidateRecord,
 } from '../../lib/workflow/candidates.js';
+import { createSerializedWriter } from '../../lib/workflow/runner.js';
 
 function record(over: Partial<CandidateRecord> & { index: number }): CandidateRecord {
   return {
@@ -209,4 +210,114 @@ test('finalizeBest on a run with no candidates changes nothing', async () => {
   fs.writeFileSync(path.join(dir, '5b-design.json'), '{"untouched":true}', 'utf8');
   assert.equal(await finalizeBest(dir), null);
   assert.equal(fs.readFileSync(path.join(dir, '5b-design.json'), 'utf8'), '{"untouched":true}');
+});
+
+/* ------------------------------------------------------------------ */
+/* sourceDir — parallel candidate builds (scripts/n8n/stage.ts diverge) */
+/* ------------------------------------------------------------------ */
+
+test('recordCandidate copies from sourceDir when given, leaving outputDir\'s own 5b-design.json/site untouched', async () => {
+  const dir = tmpRun();
+  // The run root carries a DIFFERENT design than the one actually being
+  // recorded — exactly the shape a parallel build's shadow directory takes:
+  // its own 5b-design.json/site, never the shared root's.
+  fs.writeFileSync(path.join(dir, '5b-design.json'), JSON.stringify({ marker: 'root, must stay untouched' }), 'utf8');
+
+  const shadow = fs.mkdtempSync(path.join(os.tmpdir(), 'bf-candidates-shadow-'));
+  fs.writeFileSync(path.join(shadow, '5b-design.json'), JSON.stringify({ marker: 'from shadow' }), 'utf8');
+  fs.mkdirSync(path.join(shadow, 'site'), { recursive: true });
+  fs.writeFileSync(path.join(shadow, 'site', 'index.html'), '<!doctype html><title>shadow</title>', 'utf8');
+
+  await recordCandidate({
+    outputDir: dir,
+    sourceDir: shadow,
+    iteration: 0,
+    scores: { quality: 50, distinctness: 0, blockingClean: true },
+  });
+
+  // The candidate directory holds the shadow's content...
+  const recorded = JSON.parse(
+    fs.readFileSync(path.join(dir, 'candidates', 'c000', '5b-design.json'), 'utf8'),
+  ) as { marker: string };
+  assert.equal(recorded.marker, 'from shadow');
+  assert.match(
+    fs.readFileSync(path.join(dir, 'candidates', 'c000', 'site', 'index.html'), 'utf8'),
+    /<title>shadow<\/title>/,
+  );
+
+  // ...and the run root's own 5b-design.json — which a concurrently-building
+  // sibling candidate might still be reading or about to overwrite — was
+  // never touched by this call.
+  const rootStill = JSON.parse(fs.readFileSync(path.join(dir, '5b-design.json'), 'utf8')) as { marker: string };
+  assert.equal(rootStill.marker, 'root, must stay untouched');
+});
+
+/* ------------------------------------------------------------------ */
+/* Concurrency — the race A3/G-RUNNER-01 named, and the fix for it     */
+/* ------------------------------------------------------------------ */
+
+/** A source directory for one simulated parallel candidate build. */
+function fakeShadow(marker: number): string {
+  const shadow = fs.mkdtempSync(path.join(os.tmpdir(), `bf-candidates-shadow-${marker}-`));
+  fs.writeFileSync(path.join(shadow, '5b-design.json'), JSON.stringify({ marker }), 'utf8');
+  return shadow;
+}
+
+test('regression: concurrent recordCandidate calls WITHOUT serialization can lose a candidate (the race this fix removes)', async () => {
+  const dir = tmpRun();
+  const shadows = [0, 1, 2, 3, 4].map(fakeShadow);
+
+  // No SerializedWriter: every call reads the same (empty) index, computes
+  // the same "position 0" candidate id, and races to write it back. This is
+  // exactly the failure mode a naive parallel diverge loop would hit.
+  await Promise.all(
+    shadows.map((shadow, i) =>
+      recordCandidate({
+        outputDir: dir,
+        sourceDir: shadow,
+        iteration: 0,
+        scores: { quality: i, distinctness: 0, blockingClean: true },
+      }).catch(() => null), // a losing writer may also throw write-once; either loss counts
+    ),
+  );
+
+  const index = await loadIndex(dir);
+  assert.ok(
+    index.candidates.length < shadows.length,
+    'without serialization, concurrent candidates collide on id assignment and at least one is lost or rejected — ' +
+      `got ${index.candidates.length}/${shadows.length}, proving the race is real`,
+  );
+});
+
+test('fix: the same concurrent calls, serialized through SerializedWriter, record every candidate exactly once', async () => {
+  const dir = tmpRun();
+  const shadows = [0, 1, 2, 3, 4].map(fakeShadow);
+  const writer = createSerializedWriter();
+
+  await Promise.all(
+    shadows.map((shadow, i) =>
+      writer.withLock(() =>
+        recordCandidate({
+          outputDir: dir,
+          sourceDir: shadow,
+          iteration: 0,
+          scores: { quality: i, distinctness: 0, blockingClean: true },
+        }),
+      ),
+    ),
+  );
+
+  const index = await loadIndex(dir);
+  assert.equal(index.candidates.length, shadows.length, 'every candidate must be recorded exactly once');
+
+  // No two candidates collapsed onto the same id, and each candidate really
+  // does hold its OWN shadow's design — not another one's.
+  const ids = index.candidates.map((c) => c.candidateId);
+  assert.equal(new Set(ids).size, ids.length, 'candidate ids must be unique');
+
+  const markers = index.candidates
+    .map((c) => JSON.parse(fs.readFileSync(path.join(dir, c.dir, '5b-design.json'), 'utf8')) as { marker: number })
+    .map((d) => d.marker)
+    .sort((a, b) => a - b);
+  assert.deepEqual(markers, [0, 1, 2, 3, 4], 'each candidate carries its own shadow\'s content, not a sibling\'s');
 });

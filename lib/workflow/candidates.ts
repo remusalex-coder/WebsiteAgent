@@ -201,15 +201,31 @@ export interface RecordCandidateOptions {
    * winning design without its rendered site would hand a human a JSON file.
    */
   readonly includeSite?: boolean;
+  /**
+   * Where the just-built `5b-design.json` and `site/` actually live, when it
+   * is not `outputDir` itself.
+   *
+   * Split from `outputDir` for exactly one reason: a caller building several
+   * candidates concurrently (`scripts/n8n/stage.ts`'s `diverge` stage, via
+   * `lib/workflow/runner.ts`'s pool) cannot let those builds write
+   * `outputDir`'s shared `5b-design.json`/`site/` — two directions finishing
+   * at once would interleave their writes into the same files. Each build
+   * instead writes into its own isolated directory and passes it here as
+   * `sourceDir`; `outputDir` still names the run whose shared `candidates/`
+   * index this call appends to. Defaults to `outputDir`, so every existing,
+   * single-build caller is unaffected.
+   */
+  readonly sourceDir?: string;
 }
 
 /**
  * Records one attempt as an immutable candidate and returns the updated index.
  *
- * Copies the run's current `5b-design.json` and `site/` into a fresh candidate
- * directory. **Refuses to overwrite**: a candidate id that already exists is a
- * caller bug, and silently replacing it would reintroduce exactly the loss this
- * module was built to prevent.
+ * Copies `5b-design.json` and `site/` — from `sourceDir` when given, from
+ * `outputDir` itself otherwise — into a fresh candidate directory. **Refuses
+ * to overwrite**: a candidate id that already exists is a caller bug, and
+ * silently replacing it would reintroduce exactly the loss this module was
+ * built to prevent.
  *
  * The run root is deliberately left alone here. Restoring it mid-loop would
  * clobber the working site the next reconcept iteration is about to screenshot;
@@ -217,6 +233,7 @@ export interface RecordCandidateOptions {
  */
 export async function recordCandidate(options: RecordCandidateOptions): Promise<CandidateIndex> {
   const { outputDir, iteration, scores } = options;
+  const copyFrom = options.sourceDir ?? outputDir;
   const index = await loadIndex(outputDir);
   const position = index.candidates.length;
   const candidateId = `c${String(position).padStart(3, '0')}`;
@@ -227,13 +244,13 @@ export async function recordCandidate(options: RecordCandidateOptions): Promise<
   }
   await fs.mkdir(dir, { recursive: true });
 
-  const designSource = path.join(outputDir, DESIGN_FILE_NAME);
+  const designSource = path.join(copyFrom, DESIGN_FILE_NAME);
   if (await exists(designSource)) {
     await fs.copyFile(designSource, path.join(dir, DESIGN_FILE_NAME));
   }
 
   if (options.includeSite !== false) {
-    const siteSource = path.join(outputDir, SITE_DIR_NAME);
+    const siteSource = path.join(copyFrom, SITE_DIR_NAME);
     if (await exists(siteSource)) {
       await fs.cp(siteSource, path.join(dir, SITE_DIR_NAME), { recursive: true });
     }

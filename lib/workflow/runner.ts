@@ -72,8 +72,10 @@ export interface RunOutcome<T> {
  *
  * Resolves when every task settles. A task failure is collected, not thrown —
  * the caller decides whether a failed candidate kills the run or merely
- * escalates it. Order of `results` matches task order; `failures` never
- * contains an id twice.
+ * escalates it. `results` is in COMPLETION order, not task order — with
+ * `concurrency > 1` a later task can finish first, so a caller that needs
+ * results lined back up with its input list must key by `RunnerTask.id`,
+ * never by array position. `failures` never contains an id twice.
  */
 export async function runPool<T>(tasks: readonly RunnerTask<T>[], options: PoolOptions): Promise<RunOutcome<T>> {
   const { concurrency } = options;
