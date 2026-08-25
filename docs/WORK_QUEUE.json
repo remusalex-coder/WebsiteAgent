@@ -609,9 +609,10 @@
         "scripts/n8n/controlSurfacePage.ts (Duration/retries table column)",
         "test/workflow/summary.test.ts (+1 test)",
         "test/qa/p7-endpoints.test.ts (fixture + 1 assertion)",
-        "test/qa/p7-control-surface-page.test.ts (+1 test)"
+        "test/qa/p7-control-surface-page.test.ts (+1 test)",
+        "commit e5cd357 on branch design-director-smoke (C:\\Users\\40728\\WebsiteAgent), native full suite 1517/1517 passing, tsc --noEmit exit 0"
       ],
-      "validationState": "UNVERIFIED",
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "WQ-026's audit, 2026-08-25",
       "createdAt": "2026-08-25",
