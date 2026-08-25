@@ -155,6 +155,28 @@ export interface WriterConfig {
   readonly maxPageChars: number;
 }
 
+export interface DirectorConfig {
+  /**
+   * Whether the Design Director AI agent is active.
+   *
+   * `false` (default) — pipeline behaves exactly as before integration:
+   * the deterministic design agent runs with no directive.
+   *
+   * `true` — the Design Director runs between the writer and design stages,
+   * produces a `DesignDirective`, and that directive is threaded into the
+   * deterministic composition via `applyDirective()`.
+   *
+   * Set `DIRECTOR_ENABLED=true` in the environment to enable.
+   */
+  readonly enabled: boolean;
+  /** Resolved from `DIRECTOR_MODEL`, else the selected provider's default. */
+  readonly model: string;
+  readonly effort: Effort;
+  readonly maxOutputTokens: number;
+  /** Per-page cap when excerpting site text into the director's brief. */
+  readonly maxPageChars: number;
+}
+
 export interface LovableConfig {
   readonly apiKey: string;
   readonly baseUrl: string;
@@ -186,6 +208,7 @@ export interface AppConfig {
   readonly credentials: Readonly<Record<string, string>>;
   readonly analyst: AnalystConfig;
   readonly writer: WriterConfig;
+  readonly director: DirectorConfig;
   readonly lovable: LovableConfig;
 }
 
@@ -233,6 +256,12 @@ export const DEFAULTS = {
     // has to hold nine sections of prose *and* the reasoning behind them.
     maxOutputTokens: 24_000,
     maxPageChars: 6_000,
+  },
+  director: {
+    enabled: false,
+    effort: 'medium',
+    maxOutputTokens: 4_000,
+    maxPageChars: 2_000,
   },
   lovable: {
     baseUrl: 'https://api.lovable.dev',
@@ -548,6 +577,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       effort: effort(env, 'WRITER_EFFORT', DEFAULTS.writer.effort),
       maxOutputTokens: int(env, 'WRITER_MAX_OUTPUT_TOKENS', DEFAULTS.writer.maxOutputTokens),
       maxPageChars: int(env, 'WRITER_MAX_PAGE_CHARS', DEFAULTS.writer.maxPageChars),
+    },
+    director: {
+      enabled: bool(env, 'DIRECTOR_ENABLED', DEFAULTS.director.enabled),
+      model: str(env, 'DIRECTOR_MODEL', defaultModelFor(providerName)),
+      effort: effort(env, 'DIRECTOR_EFFORT', DEFAULTS.director.effort),
+      maxOutputTokens: int(env, 'DIRECTOR_MAX_OUTPUT_TOKENS', DEFAULTS.director.maxOutputTokens),
+      maxPageChars: int(env, 'DIRECTOR_MAX_PAGE_CHARS', DEFAULTS.director.maxPageChars),
     },
     lovable: {
       apiKey: str(env, 'LOVABLE_API_KEY', ''),
