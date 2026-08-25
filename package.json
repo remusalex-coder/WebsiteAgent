@@ -29,6 +29,7 @@
     "forge": "node --import tsx --env-file=.env scripts/forge/run.ts",
     "capability-board": "node --import tsx --env-file=.env scripts/capability-board.ts",
     "capability-proof": "node --import tsx --env-file=.env scripts/capability-e2e-proof.ts",
+    "status": "node --import tsx scripts/status.ts",
     "preview": "node scripts/preview.mjs",
     "postinstall": "playwright install chromium"
   },
