@@ -221,35 +221,37 @@
     },
     {
       "id": "WQ-011",
-      "description": "A10: config.lovable dead config parsing (zero live readers) \u2014 cosmetic cleanup, low priority",
+      "description": "A10: config.lovable dead config parsing (zero live readers) -- cosmetic cleanup. Resolved 2026-08-25: removed LovableConfig, AppConfig.lovable, DEFAULTS.lovable, and the LOVABLE_API_KEY/LOVABLE_BASE_URL/LOVABLE_PROJECT_ID/LOVABLE_DEPLOY_TIMEOUT_MS parsing block from lib/config.ts -- confirmed zero live readers repo-wide before removal (agents/lovableAgent.ts reads config.netlify, never config.lovable). lib/platform/skills/builtin/web.ts's 'lovable' placeholder skill still declares LOVABLE_API_KEY as a requiredCredentials name (a separate, still-relevant metadata list unrelated to config.ts's env parsing) -- left as-is, only its blockedOn/description text corrected.",
       "priority": "P3",
-      "dependencies": [
-        "WQ-012"
-      ],
-      "status": "QUEUED",
+      "dependencies": [],
+      "status": "DONE",
       "assignedWorker": "claude, deterministic",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "lib/config.ts's lovable section, agents/lovableAgent.ts",
-      "outputs": "either removal or a documented reason to keep it",
-      "artifacts": null,
-      "validationState": "UNVERIFIED",
+      "outputs": "lib/config.ts (LovableConfig/AppConfig.lovable/DEFAULTS.lovable/its parsing block removed)",
+      "artifacts": [
+        "commit cc3f18c on the Windows checkout"
+      ],
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "MASTER_INVENTORY A10",
       "createdAt": "2026-08-24",
-      "updatedAt": "2026-08-24"
+      "updatedAt": "2026-08-25"
     },
     {
       "id": "WQ-012",
-      "description": "External-tool decision REJECT already made for Lovable (agents/lovableAgent.ts's run() throws NotImplementedError) \u2014 formally deprecate or delete the stub rather than leaving a REJECT decision undocumented in code",
+      "description": "External-tool decision REJECT already made for Lovable. Original premise was stale: investigation 2026-08-25 found agents/lovableAgent.ts is NOT a throwing stub -- it was already replaced (by earlier, uncredited work) with a real, working Netlify 'Drop' deploy (lib/deploy/netlify.ts), and the REJECT decision is already documented in code (lib/config.ts's NetlifyConfig doc comment: 'The deploy target that replaced the Lovable stub'). No deprecation banner or deletion was warranted -- that would have mislabeled real, in-production code. The genuinely dead remnant (config.lovable's parsing) was WQ-011's scope, not this task's; resolved together. The stale 'lovable' platform-skill placeholder (lib/platform/skills/builtin/web.ts, blockedOn text claiming stage 6 was still unbuilt) was corrected in passing.",
       "priority": "P3",
       "dependencies": [],
-      "status": "QUEUED",
+      "status": "DONE",
       "assignedWorker": "claude, deterministic",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "agents/lovableAgent.ts, MASTER_CAPABILITY_TOOL_REGISTRY.json's ext.lovable entry (decision: REJECT)",
-      "outputs": "a DEPRECATED banner on the file (matching the pattern already used for doc supersession) or removal, plus MASTER_INVENTORY.json update",
-      "artifacts": null,
-      "validationState": "UNVERIFIED",
+      "outputs": "MASTER_INVENTORY.json A13 (new, documenting this finding), A10 closed (WQ-011's scope), lib/platform/skills/builtin/web.ts's lovable placeholder corrected",
+      "artifacts": [
+        "commit cc3f18c on the Windows checkout"
+      ],
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "MASTER_CAPABILITY_TOOL_REGISTRY ext.lovable decision",
       "createdAt": "2026-08-25",

@@ -487,7 +487,8 @@
     {
       "id": "A10",
       "title": "config.lovable dead config parsing (zero live readers)",
-      "status": "OPEN, low priority (P3 cosmetic)"
+      "status": "CLOSED",
+      "next_step": "Resolved 2026-08-25: removed LovableConfig, AppConfig.lovable, DEFAULTS.lovable and its parsing block from lib/config.ts -- confirmed zero live readers before removal. See WORK_QUEUE.json WQ-011, commit cc3f18c."
     },
     {
       "id": "A11",
@@ -500,6 +501,12 @@
       "title": "MAJOR FINDING, RESOLVED THIS PASS: most of the real production codebase was never committed to git at all",
       "status": "RESOLVED THIS PASS -- 5 commits, ~330 files added, one security fix",
       "next_step": "While delivering this pass's doc corrections, `git status` on the Windows checkout showed 149 untracked entries where the standing assumption (carried since early this session) was 'a large pre-existing untracked/modified set, never touched, unrelated to this session'. Investigated in full rather than assumed: confirmed the untracked set included ~40 core lib/ modules (the ENTIRE lib/workflow/hermes.ts, jobState.ts, candidates.ts, ledger.ts, runner.ts, state.ts -- i.e. the whole JobState persistence layer and candidate ledger had zero git history), ~30 scripts/ files including scripts/n8n/stage-server.ts (the actual production HTTP server n8n calls), ~37 test files, and the docs/research/assets/config corpus. A fresh `git clone` of this repo before this pass would have been missing the majority of the working factory. SECURITY FINDING in the same sweep: .env.awwwards (live API keys for Gemini/Cerebras/OpenAI/OpenRouter/xAI/DeepSeek plus a Netlify deploy token) was present and NOT covered by the existing .gitignore's exact-match .env/.env.local rules -- a single git add -A by anyone would have committed live secrets to history. Fixed first, as its own commit, before touching anything else: added `.env.*` plus benchmark/, benchmark-10/, preview/, verify-director-enrichment/ (generated run artifacts, same category as the already-ignored output/) and .agents/ (local tooling config) to .gitignore. Then committed the real source in 4 more logical commits: lib/ (45 files), scripts/ (30 files), test/ (41 files), docs+root-corpus+n8n+research+assets+config (192 files) -- explicitly excluding bf-inventory.txt (a generated report) and the empty .claude/skills/. Deliberately did NOT touch the ~57 pre-existing genuinely-modified (M) files still sitting in the working tree -- confirmed those remain exactly as found, per the standing rule not to sweep up unrelated WIP. Verified before and after: native Windows typecheck clean, 1406/1406 tests pass (cloud sandbox shows the same 4 known pre-existing Playwright-dependent failures as every prior checkpoint this session). This closes a real, severe autonomy/resumability gap (FAZA 10's 'state+ledger+resume connected' and general disaster-recovery posture) using existing git hygiene practice, not new tooling."
+    },
+    {
+      "id": "A13",
+      "title": "agents/lovableAgent.ts is not a throwing stub -- it is a real, working Netlify deploy agent under a legacy name",
+      "status": "CLOSED (documentation finding, no code defect)",
+      "next_step": "WQ-012 was queued on a stale premise (\"run() throws NotImplementedError\"), inherited from an earlier version of the file. Read in full 2026-08-25: the Lovable stub was already replaced (by earlier, uncredited work) with a real deployToNetlify call (lib/deploy/netlify.ts); the file's own header comment already documents this history. No deprecation banner or deletion was made -- that would have mislabeled real, in-production code as dead. The genuinely dead remnant was config.lovable's parsing (see A10, resolved separately as WQ-011), and the stale 'lovable' platform-skill placeholder text in lib/platform/skills/builtin/web.ts (claimed stage 6 was still unbuilt) was corrected in the same pass. See WORK_QUEUE.json WQ-012, commit cc3f18c."
     }
   ]
 }
