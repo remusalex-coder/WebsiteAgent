@@ -1114,18 +1114,18 @@
       "id": "runtime.menu-overlay",
       "category": "runtime_primitive",
       "capabilityOffered": "menu overlay",
-      "whatItDoes": "Gated runtime primitive 'menu-overlay', evidence-selected by experience.ts's tier ladder.",
+      "whatItDoes": "Gated runtime primitive 'menu-overlay', evidence-selected by experience.ts's tier ladder -- fullscreen overlay nav, toggle + Escape-to-close. WQ-022 / docs/IMPLEMENTATION_GAP.md P2-2 wrapped the open/close toggle in the native document.startViewTransition() when the platform supports it and prefers-reduced-motion is not set (feature-detected, never assumed); a browser without support, or a visitor who prefers reduced motion, reaches the exact pre-existing instant-attribute-flip + CSS-transition behaviour, unchanged.",
       "currentImplementation": "REAL_IMPLEMENTED",
       "realFiles": [
         "lib/design/experienceRegistry.ts",
-        "lib/runtime/vendor/*"
+        "lib/runtime/forgePrimitives.ts (MENU_OVERLAY_SOURCE / MENU_OVERLAY_RULES)"
       ],
       "status": "REAL_IMPLEMENTED",
       "integrationMode": "runtime-primitive (gated, budget-limited)",
-      "localOrExternal": "local (vendored source, not npm dependency)",
+      "localOrExternal": "local (internal source, no package to vendor -- document.startViewTransition() is a platform API)",
       "cost": "free",
       "apiKeyRequired": false,
-      "documentarySource": "lib/design/experienceRegistry.ts",
+      "documentarySource": "lib/design/experienceRegistry.ts, caniuse.com/view-transitions (OBSERVED 2026-08-25, 90.2% global), WORK_QUEUE.json WQ-022",
       "confidence": "high"
     },
     {

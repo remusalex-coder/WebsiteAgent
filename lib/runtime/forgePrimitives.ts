@@ -394,11 +394,25 @@ export const MENU_OVERLAY_SOURCE = `function startMenuOverlay() {
   var nav = document.querySelector('[data-menu-overlay]');
   if (!toggle || !nav) return;
   var open = false;
-  var setOpen = function (v) {
+  var applyOpen = function (v) {
     open = v;
     nav.setAttribute('data-menu-open', open ? 'true' : 'false');
     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     document.documentElement.style.overflow = open ? 'hidden' : '';
+  };
+  // WQ-022 / docs/IMPLEMENTATION_GAP.md P2-2 (View Transitions half): a
+  // same-document view transition softens the open/close into a native
+  // compositor cross-fade instead of a hard attribute flip, but only when
+  // the platform supports it (feature-detected, never assumed) and the
+  // visitor has not asked for less motion -- prefers-reduced-motion keeps
+  // the exact pre-existing instant-attribute behaviour below, unchanged.
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var setOpen = function (v) {
+    if (!reduceMotion && document.startViewTransition) {
+      document.startViewTransition(function () { applyOpen(v); });
+    } else {
+      applyOpen(v);
+    }
   };
   toggle.addEventListener('click', function () { setOpen(!open); });
   nav.querySelectorAll('a').forEach(function (a) {
@@ -455,5 +469,26 @@ export const MENU_OVERLAY_RULES = `
 }
 @media (prefers-reduced-motion: reduce) {
   [data-menu-overlay] { transition: opacity 200ms ease, visibility 0s; transform: none; }
+}
+/* WQ-022 / docs/IMPLEMENTATION_GAP.md P2-2 (View Transitions half): tag the
+ * overlay so a supporting browser's document.startViewTransition() (see
+ * MENU_OVERLAY_SOURCE) captures it on its own, instead of the implicit
+ * full-viewport root snapshot -- an unsupporting browser simply never has
+ * an active transition to name, so this property is inert there and the
+ * @media (prefers-reduced-motion: reduce) block above is untouched either
+ * way. Duration/easing match the existing opacity transition above so a
+ * supporting browser's native cross-fade reads as the same motion, not a
+ * different one; matching the translateY slide too is deliberately left
+ * to the browser's default view-transition behaviour rather than guessed
+ * at with unverified custom ::view-transition-old/new keyframes -- see
+ * IMPLEMENTATION_GAP.md P2-2 for the reasoning. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-menu-overlay] {
+    view-transition-name: forge-menu-overlay;
+  }
+  ::view-transition-group(forge-menu-overlay) {
+    animation-duration: 360ms;
+    animation-timing-function: ease;
+  }
 }
 `;

@@ -335,3 +335,46 @@ test('deriveRuntimePrimitives never auto-selects css-scroll-driven-reveal — re
     }
   }
 });
+
+/* ------------------------------------------------------------------ */
+/* menu-overlay View Transitions half — WQ-022 / IMPLEMENTATION_GAP.md  */
+/* P2-2                                                                  */
+/* ------------------------------------------------------------------ */
+
+test('the menu-overlay registry entry stays internal/exists/runtime-primitive after the WQ-022 view-transition enhancement', () => {
+  const entry = EXPERIENCE_REGISTRY['menu-overlay'];
+  assert.ok(entry);
+  assert.equal(entry!.sourceType, 'internal');
+  assert.equal(entry!.status, 'exists');
+  assert.equal(entry!.integrationMode, 'runtime-primitive');
+  assert.equal(entry!.license, 'internal');
+});
+
+test('the menu-overlay entry documents the view-transition enhancement in its capabilities and evidence', () => {
+  const entry = EXPERIENCE_REGISTRY['menu-overlay'];
+  assert.ok(entry);
+  assert.ok(entry!.capabilities.some((c) => /view transition/i.test(c)));
+  assert.ok(entry!.evidence.some((e) => e.includes('caniuse.com/view-transitions')));
+  assert.ok(entry!.evidence.some((e) => e.includes('WQ-022')));
+});
+
+test('the menu-overlay entry still carries no externalIntegration contract — a platform API, nothing vendored', () => {
+  const entry = EXPERIENCE_REGISTRY['menu-overlay'];
+  assert.ok(entry);
+  assert.equal(entry!.externalIntegration, null);
+  assert.equal(entry!.fallback, null);
+});
+
+test('the resolver still selects menu-overlay from an explicit, registry-validated declaration', () => {
+  const resolved = resolvePrimitives(architecture({ mode: 'showcase' }), ['menu-overlay']);
+  assert.deepEqual(resolved, ['menu-overlay']);
+});
+
+test('deriveRuntimePrimitives never auto-selects menu-overlay — reachable only through an explicit declaration, unchanged by WQ-022', () => {
+  for (const mode of ['brochure', 'showcase', 'narrative'] as const) {
+    for (const transition of ['none', 'veil', 'wipe', 'circular-handoff'] as const) {
+      const declared = resolvePrimitives(architecture({ mode, transition }));
+      assert.ok(!declared.includes('menu-overlay' as never), `${mode}/${transition} must not auto-derive menu-overlay`);
+    }
+  }
+});

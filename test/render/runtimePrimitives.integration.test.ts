@@ -441,4 +441,56 @@ describe('Tier-2 runtime primitives reach the rendered artifact', () => {
       assert.ok(js.includes('startMagneticCursor'), 'magnetic-cursor still reaches runtime.js');
     });
   });
+
+  describe('menu-overlay — WQ-022 / IMPLEMENTATION_GAP.md P2-2 (View Transitions half, native document.startViewTransition())', () => {
+    it('the open/close toggle is feature-detected and reduced-motion gated before using a view transition', () => {
+      const declared = resolvePrimitives(architecture({ mode: 'showcase' }), ['menu-overlay']);
+      const site = renderSite(fullContent, { runtime: 'scroll-progress', runtimePrimitives: declared });
+      const js = site.files.find((f) => f.path === 'runtime.js')?.contents ?? '';
+
+      assert.ok(js.includes('document.startViewTransition'), 'must feature-detect the API, never assume it');
+      assert.ok(js.includes("matchMedia('(prefers-reduced-motion: reduce)')"), 'must respect the reduced-motion floor, like every other primitive');
+
+      const reduceMotionIndex = js.indexOf("matchMedia('(prefers-reduced-motion: reduce)')");
+      const setOpenIndex = js.indexOf('var setOpen = function');
+      assert.ok(reduceMotionIndex >= 0 && reduceMotionIndex < setOpenIndex, 'the reduced-motion check must be computed before setOpen is defined/used');
+    });
+
+    it('the pre-existing attribute-flip logic (applyOpen) is unconditional — the fallback path is byte-for-byte the old behaviour', () => {
+      const declared = resolvePrimitives(architecture({ mode: 'showcase' }), ['menu-overlay']);
+      const site = renderSite(fullContent, { runtime: 'scroll-progress', runtimePrimitives: declared });
+      const js = site.files.find((f) => f.path === 'runtime.js')?.contents ?? '';
+
+      // applyOpen must still run in both branches (with or without a view
+      // transition wrapping it) -- a browser without support, or a visitor
+      // who prefers reduced motion, must reach the exact same three
+      // attribute/style mutations as before WQ-022.
+      assert.ok(js.includes("nav.setAttribute('data-menu-open'"));
+      assert.ok(js.includes("toggle.setAttribute('aria-expanded'"));
+      assert.ok(js.includes("document.documentElement.style.overflow"));
+      assert.ok(/if\s*\(!reduceMotion\s*&&\s*document\.startViewTransition\)/.test(js), 'must branch on both conditions, not just one');
+    });
+
+    it('ships a view-transition-name for the overlay, scoped under prefers-reduced-motion: no-preference', () => {
+      const declared = resolvePrimitives(architecture({ mode: 'showcase' }), ['menu-overlay']);
+      const site = renderSite(fullContent, { runtime: 'scroll-progress', runtimePrimitives: declared });
+      const css = cssOf(site.files);
+
+      assert.ok(css.includes('view-transition-name: forge-menu-overlay'));
+      assert.ok(css.includes('::view-transition-group(forge-menu-overlay)'));
+      const noPreferenceIndex = css.indexOf('@media (prefers-reduced-motion: no-preference)');
+      const nameIndex = css.indexOf('view-transition-name: forge-menu-overlay');
+      assert.ok(noPreferenceIndex >= 0 && noPreferenceIndex < nameIndex, 'the view-transition-name must be scoped inside the no-preference block, not applied unconditionally');
+
+      // The existing reduced-motion CSS transition override must be
+      // untouched by this change.
+      assert.ok(css.includes("transition: opacity 200ms ease, visibility 0s"), 'the reduced-motion fallback transition must be unchanged');
+    });
+
+    it('is inert without engaging the base runtime, exactly like every other Tier-2 primitive', () => {
+      const site = renderSite(minimalContent, { runtime: 'none', runtimePrimitives: ['menu-overlay'] });
+      assert.ok(!cssOf(site.files).includes('view-transition-name'));
+      assert.deepEqual(site.files.map((f) => f.path), ['index.html', 'styles.css'], 'no runtime.js when runtime is none, regardless of primitives');
+    });
+  });
 });

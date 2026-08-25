@@ -708,7 +708,17 @@ export const EXPERIENCE_REGISTRY: Readonly<Record<string, PrimitiveDescriptor>> 
     category: 'navigation',
     sourceType: 'internal',
     license: 'internal',
-    capabilities: ['fullscreen overlay navigation, toggle button + Escape-to-close, reduced-motion safe'],
+    capabilities: [
+      'fullscreen overlay navigation, toggle button + Escape-to-close, reduced-motion safe',
+      // WQ-022 / docs/IMPLEMENTATION_GAP.md P2-2: open/close is wrapped in
+      // document.startViewTransition() when the platform supports it and
+      // prefers-reduced-motion is not set -- feature-detected in JS, and
+      // a no-preference-scoped view-transition-name in CSS; a browser
+      // without support, or a visitor who prefers reduced motion, gets
+      // the exact pre-existing instant-attribute-flip + CSS-transition
+      // behaviour, byte-for-byte unchanged.
+      'same-document view transition on open/close (native compositor cross-fade) where supported, zero-regression fallback elsewhere',
+    ],
     requirements: ['data-menu-toggle', 'data-menu-overlay'],
     performanceCost: 'low',
     accessibilityRisk: 'low',
@@ -717,7 +727,12 @@ export const EXPERIENCE_REGISTRY: Readonly<Record<string, PrimitiveDescriptor>> 
     configurable: false,
     integrationMode: 'runtime-primitive',
     configurationSchema: null,
-    evidence: ['lib/runtime/forgePrimitives.ts (MENU_OVERLAY_SOURCE / MENU_OVERLAY_RULES)'],
+    evidence: [
+      'lib/runtime/forgePrimitives.ts (MENU_OVERLAY_SOURCE / MENU_OVERLAY_RULES)',
+      'caniuse.com/view-transitions (OBSERVED 2026-08-25, 90.2% global, Chrome 111+/Firefox 144+/Safari 18.0+)',
+      'test/design/experienceRegistry.test.ts, test/render/runtimePrimitives.integration.test.ts (menu-overlay view-transition cases)',
+      'docs/IMPLEMENTATION_GAP.md P2-2, WORK_QUEUE.json WQ-022',
+    ],
     status: 'exists',
     fallback: null,
     externalIntegration: null,
