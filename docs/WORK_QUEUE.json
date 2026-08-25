@@ -391,9 +391,10 @@
         "test/workflow/forgeBattleBuild.test.ts (new file, 2 tests)",
         "docs/MASTER_CAPABILITY_TOOL_REGISTRY.json (orch.forge-battle entry, G-BATTLE-01 gap resolution)",
         "docs/MASTER_CAPABILITY_TOOL_REGISTRY.md (G-BATTLE-01 summary line)",
-        "docs/MASTER_INVENTORY.json (lib/workflow/runner.ts entry corrected -- was stale from before P2-3's resolution, found and fixed in the course of this task)"
+        "docs/MASTER_INVENTORY.json (lib/workflow/runner.ts entry corrected -- was stale from before P2-3's resolution, found and fixed in the course of this task)",
+        "commit 0f6088a on design-director-smoke (C:\\Users\\40728\\WebsiteAgent) -- native verification: npx tsc -p tsconfig.test.json --noEmit EXIT:0, npm test 1500/1500 passing (0 failures, Playwright available natively resolves all 8 sandbox-only failures)"
       ],
-      "validationState": "UNVERIFIED",
+      "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "WQ-007's architectural decision, 2026-08-25 -- the three concrete prerequisites found by comparing runExperienceForge and runExperienceBattle side by side",
       "createdAt": "2026-08-25",
