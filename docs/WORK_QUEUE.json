@@ -154,13 +154,16 @@
       "description": "gap G-BATTLE-01: lib/forge/battle.ts (multi-candidate Design Battle) is fully implemented but unreachable from the production entrypoint \u2014 decide deliberately whether it becomes the production default",
       "priority": "P2",
       "dependencies": [],
-      "status": "QUEUED",
+      "status": "DONE",
       "assignedWorker": "claude to investigate; this is a product/architecture DECISION the mandate authorizes me to make, not one requiring human sign-off, but it is high-blast-radius (changes what a run actually produces) so it gets its own careful pass rather than a rushed tail-end change",
-      "attempts": 0,
+      "attempts": 1,
       "inputs": "lib/forge/battle.ts, main.ts/orchestrator.ts's real entrypoint, test/forge/battle.test.ts",
-      "outputs": "a decision (wire it in as production default, or formally deprecate) + implementation + tests",
-      "artifacts": null,
-      "validationState": "UNVERIFIED",
+      "outputs": "DECISION (2026-08-25): Design Battle stays deliberately opt-in scaffolding, not the production default, for three concrete reasons found by reading both code paths side by side (lib/forge/orchestrator.ts's runExperienceForge vs lib/forge/battle.ts's runExperienceBattle), not a generic caution: (1) runExperienceForge has a real autonomous repair loop (repairCode, up to maxIterations) after the first critique; runExperienceBattle builds each candidate in exactly one pass with no repair step at all -- wiring it in today would mean every battle-selected site skips repair entirely, a quality regression dressed as a feature, not an improvement. (2) Cost multiplies by candidateCount (default 2) with zero integration into lib/capability/budget.ts's resolveBudgetTier -- the existing per-job budget ceiling (job.budgetCents) would not see or bound battle spend. (3) JobState's designDirections/distinctnessScore fields are already the classic lib/design/diverge.ts battle's fields (see lib/workflow/summary.ts's summarizeBattle, wired in WQ-016) -- reusing them for Forge's separate battle.ts would conflate two different mechanisms in the one-read-model control surface this session just built, corrupting it rather than extending it. None of these are reasons to deprecate battle.ts (the structural-convergence reuse is sound and the module is well-tested) -- they are concrete missing prerequisites. Follow-up WQ-018 queued with those exact prerequisites as its scope, so the eventual wiring is a real quality upgrade, not a cost/quality regression shipped under a feature name.",
+      "artifacts": [
+        "docs/WORK_QUEUE.json WQ-007 (this decision) and WQ-018 (follow-up)",
+        "docs/MASTER_CAPABILITY_TOOL_REGISTRY.json gap G-BATTLE-01 resolution field"
+      ],
+      "validationState": "IMPLEMENTED",
       "failureState": null,
       "provenance": "MASTER_CAPABILITY_TOOL_REGISTRY gap G-BATTLE-01",
       "createdAt": "2026-08-25",
@@ -351,6 +354,25 @@
       "validationState": "TESTED_NATIVE",
       "failureState": null,
       "provenance": "docs/IMPLEMENTATION_GAP.md P2-4, surfaced this session by reading MASTER_EXECUTION_PLAN.md's T10 'next task' pointer (a real, previously-filed security gap never queued in WORK_QUEUE.json)",
+      "createdAt": "2026-08-25",
+      "updatedAt": "2026-08-25"
+    },
+    {
+      "id": "WQ-018",
+      "description": "Follow-up to WQ-007's decision: wire lib/forge/battle.ts's runExperienceBattle into the production entrypoint for real, once its three concrete gaps relative to runExperienceForge are closed: (1) each battle candidate needs its own autonomous repair loop (reuse repairCode the same way orchestrator.ts's step 9 does), not a single unrepaired pass; (2) battle spend must be bounded by lib/capability/budget.ts's resolveBudgetTier / JobState.budgetCents, not unbounded candidateCount multiplication; (3) a dedicated JobState field (not designDirections/distinctnessScore, which are the classic diverge battle's per WQ-016's summarizeBattle) must represent a Forge-battle result, with lib/workflow/summary.ts extended to surface it without conflating the two mechanisms in the control surface.",
+      "priority": "P2",
+      "dependencies": [
+        "WQ-007"
+      ],
+      "status": "QUEUED",
+      "assignedWorker": "claude, deterministic -- production wiring + new JobState field + tests",
+      "attempts": 0,
+      "inputs": "lib/forge/battle.ts, lib/forge/orchestrator.ts, lib/forge/repair.ts, lib/capability/budget.ts, lib/workflow/jobState.ts, lib/workflow/summary.ts, lib/workflow/runJob.ts",
+      "outputs": "battle.ts candidates each get a repair pass; battle spend is bounded by the run's budget tier; a new JobState field + summary.ts extension represent Forge-battle results distinctly from the classic diverge battle; runJob.ts's build hook can opt into battle mode via config, default off; tests proving default-off behavior is unchanged and battle-mode output is correctly written to the site dir",
+      "artifacts": null,
+      "validationState": "UNVERIFIED",
+      "failureState": null,
+      "provenance": "WQ-007's architectural decision, 2026-08-25 -- the three concrete prerequisites found by comparing runExperienceForge and runExperienceBattle side by side",
       "createdAt": "2026-08-25",
       "updatedAt": "2026-08-25"
     }

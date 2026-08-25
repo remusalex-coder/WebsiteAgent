@@ -1720,7 +1720,7 @@
       "title": "lib/forge/battle.ts (multi-candidate Design Battle) is fully implemented but unreachable from the production entrypoint",
       "severity": "medium",
       "detail": "orchestrator.ts / main.ts runs a single build, not the battle. Only test/forge/battle.test.ts exercises it (and is one of the 4 known sandbox-only Playwright failures).",
-      "recommendedNextStep": "Decide deliberately whether Design Battle is meant to become the production default (multi-candidate) or stays test-only scaffolding \u2014 currently ambiguous from the code alone."
+      "recommendedNextStep": "RESOLVED 2026-08-25 (docs/WORK_QUEUE.json WQ-007): deliberately NOT wired as the production default. runExperienceBattle lacks a per-candidate repair loop (runExperienceForge's step 9), lacks budget-tier integration (lib/capability/budget.ts), and has no dedicated JobState field distinct from the classic diverge battle's designDirections/distinctnessScore (see WQ-016's summarizeBattle). Wiring it in today would regress quality (no repair) and corrupt the one-read-model control surface, not extend it. Follow-up WQ-018 queued with those three prerequisites as its scope."
     }
   ],
   "machine_contract": {
