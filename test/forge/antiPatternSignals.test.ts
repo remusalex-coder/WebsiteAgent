@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkAntiPatternSignals, checkMotionCoherence, checkMotionLibraryUsage, checkReducedMotionSafeguard } from '../../lib/forge/antiPatternSignals.js';
+import { checkAntiPatternSignals, checkContentSafety, checkMotionCoherence, checkMotionLibraryUsage, checkReducedMotionSafeguard } from '../../lib/forge/antiPatternSignals.js';
 import { DEFAULT_EXPERIENCE_STRATEGY } from '../../lib/forge/experienceStrategy.js';
 import { planAssetStrategy } from '../../lib/forge/assetStrategy.js';
 
@@ -288,4 +288,90 @@ test('CSS with no declared durations at all is never flagged, regardless of moti
 test('a real motionIntensity "none" build (no durations) is correctly exempt', () => {
   const flags = checkReducedMotionSafeguard(code({ css: '' }));
   assert.deepEqual(flags, []);
+});
+
+/* -------------------------------------------------------------------- */
+/* WQ-017 / IMPLEMENTATION_GAP.md P2-4: content-safety gate              */
+/* -------------------------------------------------------------------- */
+
+test('a plain, safe page produces no content-safety flags', () => {
+  const html = '<html><body><a href="/about">About</a><script src="experience.js"></script></body></html>';
+  const flags = checkContentSafety(code({ html }));
+  assert.deepEqual(flags, []);
+});
+
+test('a javascript: URL on href is caught, whatever attribute it is on', () => {
+  const html = '<a href="javascript:alert(1)">click</a>';
+  const flags = checkContentSafety(code({ html }));
+  const flag = flags.find((f) => f.code === 'CONTENT_SAFETY_JAVASCRIPT_URL');
+  assert.ok(flag, `expected CONTENT_SAFETY_JAVASCRIPT_URL, got ${JSON.stringify(flags)}`);
+  assert.equal(flag!.severity, 'fail');
+});
+
+test('javascript: is also caught on src/action/formaction, not only href', () => {
+  const cases = [
+    '<iframe src="javascript:alert(1)"></iframe>',
+    '<form action="javascript:alert(1)"></form>',
+    '<button formaction="javascript:alert(1)">go</button>',
+  ];
+  for (const html of cases) {
+    const flags = checkContentSafety(code({ html }));
+    assert.ok(flags.some((f) => f.code === 'CONTENT_SAFETY_JAVASCRIPT_URL'), `expected a flag for: ${html}`);
+  }
+});
+
+test('an inline onclick= (or other on*=) attribute is caught', () => {
+  const html = '<button onclick="doThing()">Go</button>';
+  const flags = checkContentSafety(code({ html }));
+  const flag = flags.find((f) => f.code === 'CONTENT_SAFETY_INLINE_EVENT_HANDLER');
+  assert.ok(flag, `expected CONTENT_SAFETY_INLINE_EVENT_HANDLER, got ${JSON.stringify(flags)}`);
+  assert.equal(flag!.severity, 'fail');
+  assert.match(flag!.evidence ?? '', /onclick/);
+});
+
+test('a hyphenated data attribute that merely contains "on" is not a false positive', () => {
+  // data-oncomplete= must not match — the hyphen breaks the word boundary
+  // the inline-handler regex requires immediately before "on".
+  const html = '<div data-oncomplete="somevalue" data-section="onboarding"></div>';
+  const flags = checkContentSafety(code({ html }));
+  assert.equal(flags.find((f) => f.code === 'CONTENT_SAFETY_INLINE_EVENT_HANDLER'), undefined);
+});
+
+test('a real interactive page with addEventListener wiring (no inline handlers) is clean', () => {
+  const html = '<button id="cta">Book now</button><script src="experience.js"></script>';
+  const js = 'document.getElementById("cta").addEventListener("click", () => {});';
+  const flags = checkContentSafety(code({ html, js }));
+  assert.deepEqual(flags, []);
+});
+
+test('a <script src> from an allowed CDN (jsdelivr/unpkg/cdnjs) is not flagged', () => {
+  const cases = [
+    '<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>',
+    '<script src="https://unpkg.com/lenis@1/dist/lenis.min.js"></script>',
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>',
+  ];
+  for (const scriptTag of cases) {
+    const flags = checkContentSafety(code({ html: `<html><head>${scriptTag}</head></html>` }));
+    assert.deepEqual(flags, [], `expected no flags for: ${scriptTag}`);
+  }
+});
+
+test('a <script src> outside the CDN allowlist is caught', () => {
+  const html = '<script src="https://evil.example.com/payload.js"></script>';
+  const flags = checkContentSafety(code({ html }));
+  const flag = flags.find((f) => f.code === 'CONTENT_SAFETY_UNTRUSTED_SCRIPT_SRC');
+  assert.ok(flag, `expected CONTENT_SAFETY_UNTRUSTED_SCRIPT_SRC, got ${JSON.stringify(flags)}`);
+  assert.equal(flag!.severity, 'fail');
+});
+
+test('a look-alike domain does not sneak past the allowlist via a substring match', () => {
+  const html = '<script src="https://evil-cdn.jsdelivr.net.attacker.example/payload.js"></script>';
+  const flags = checkContentSafety(code({ html }));
+  assert.ok(flags.some((f) => f.code === 'CONTENT_SAFETY_UNTRUSTED_SCRIPT_SRC'));
+});
+
+test('a same-document relative <script src> is never flagged as external', () => {
+  const html = '<script src="experience.js"></script><script src="/vendor/local.js"></script>';
+  const flags = checkContentSafety(code({ html }));
+  assert.deepEqual(flags.filter((f) => f.code === 'CONTENT_SAFETY_UNTRUSTED_SCRIPT_SRC'), []);
 });

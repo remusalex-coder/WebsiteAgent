@@ -96,8 +96,39 @@ test('the full gate passes clean on the real build: no forbidden-assumption leak
     logger,
   });
 
-  assert.equal(result.passed, true, `expected the fixed gate to pass; flags: ${JSON.stringify(result.flags)}`);
+  // This fixture is a frozen, real capture from before the content-safety
+  // gate (WQ-017, `docs/IMPLEMENTATION_GAP.md` P2-4) existed, and it really
+  // does contain two inline `onsubmit="return false;"` handlers the model
+  // wrote — see the dedicated test below. That is a genuine, separately
+  // tracked finding about this specific historical build, not a defect in
+  // what THIS test asserts (structural convergence / forbidden assumptions /
+  // restraint / card-grid smell), so those flags are excluded here rather
+  // than either editing the frozen fixture or silently weakening the gate.
+  const relevantFails = result.flags.filter((f) => f.severity === 'fail' && !f.code.startsWith('CONTENT_SAFETY_'));
+  assert.deepEqual(relevantFails, [], `expected no non-content-safety fails; flags: ${JSON.stringify(result.flags)}`);
   assert.equal(result.structuralConvergence?.verdict, 'DISTINCT');
+});
+
+test('the real Ridgeway build genuinely contains inline onsubmit handlers — the content-safety gate (WQ-017) catching a real, previously-undetected defect in a real Forge run, not a synthetic example', async () => {
+  const outputDir = realPeerCorpus();
+  const html = fs.readFileSync(path.join(FIXTURES, 'ridgeway', 'site-B-index.html'), 'utf8');
+
+  const result = await auditAntiAIGeneric({
+    code: { html, css: '', js: '' },
+    blueprint: ridgewayBlueprint,
+    outputDir,
+    runId: 'ab-proof-mechanic',
+    logger,
+  });
+
+  const contentSafetyFails = result.flags.filter((f) => f.code === 'CONTENT_SAFETY_INLINE_EVENT_HANDLER');
+  assert.equal(contentSafetyFails.length, 1);
+  assert.equal(contentSafetyFails[0]?.evidence, 'onsubmit');
+  // The gate is whole-document, not per-instance: this run predates
+  // WQ-017 and would have failed the (now correctly stricter) gate had it
+  // existed at the time — the frozen fixture is left as-is precisely so
+  // this stays true and this test keeps proving it.
+  assert.equal(result.passed, false);
 });
 
 test('the final combined verdict no longer blocks Ridgeway on a structural false positive', () => {

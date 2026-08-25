@@ -8,6 +8,11 @@
  * - Structural template convergence against the real corpus of prior builds.
  * - Runtime libraries used but not declared in `lib/design/experienceRegistry.ts`,
  *   or over `RUNTIME_PRIMITIVE_BUDGET` (`registryGate.ts`).
+ * - Content-safety: `javascript:` URLs, inline `on*=` event-handler
+ *   attributes, and `<script src>` outside a trusted CDN allowlist
+ *   (`checkContentSafety`, `docs/IMPLEMENTATION_GAP.md` P2-4 / WQ-017) — the
+ *   deterministic renderer's `safeHref`/`escapeText`/etc. guard hand-templated
+ *   output; nothing else covered Forge's whole-document freeform HTML.
  *
  * ## The structural-convergence check, and why it was rewritten
  *
@@ -46,7 +51,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { checkAntiPatternSignals, checkMotionCoherence, checkMotionLibraryUsage, checkReducedMotionSafeguard } from './antiPatternSignals.js';
+import { checkAntiPatternSignals, checkContentSafety, checkMotionCoherence, checkMotionLibraryUsage, checkReducedMotionSafeguard } from './antiPatternSignals.js';
 import { checkRuntimePrimitiveRegistryGate } from './registryGate.js';
 import type { AntiAIGateResult, ExperienceBlueprint, ExperienceSignature, GeneratedCode } from './types.js';
 import type { Logger } from '../logger.js';
@@ -213,6 +218,7 @@ export async function auditAntiAIGeneric(options: AntiAIGateOptions): Promise<An
   flags.push(...checkMotionLibraryUsage(code));
   flags.push(...checkReducedMotionSafeguard(code));
   flags.push(...checkRuntimePrimitiveRegistryGate(code));
+  flags.push(...checkContentSafety(code));
 
   // 5. Structural template convergence against the real peer corpus
   const structuralConvergence = await checkStructuralConvergence(blueprint.signature, outputDir, runId);

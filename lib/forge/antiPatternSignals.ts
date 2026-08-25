@@ -296,3 +296,101 @@ export function checkMotionLibraryUsage(code: GeneratedCode): AntiPatternFlag[] 
   }
   return flags;
 }
+
+/**
+ * Content-safety gate for Forge's generated HTML/JS
+ * (`docs/IMPLEMENTATION_GAP.md` P2-4 / `WORK_QUEUE.json` WQ-017).
+ *
+ * Forge's model output is a whole freeform document, not data slotted into
+ * a template — the deterministic renderer's field-level guards (`safeHref`,
+ * `safeImageUrl`, `escapeText`, `escapeAttribute` in `lib/render/*`) never
+ * see it, and nothing else in `lib/forge/` fills the equivalent role. This
+ * is that role: three checks over the literal generated text, no DOM parse
+ * needed for the pattern shapes involved.
+ *
+ * Scope, deliberately: this is a content-safety net against a real vendor
+ * ever producing (accidentally, or from a prompt-injection-adjacent path —
+ * e.g. scraped web copy quoted back into the HTML-generation prompt in
+ * `research.ts`) a pattern that would execute arbitrary script in a
+ * visitor's browser. It is not a general HTML sanitizer and does not
+ * replace one; `lib/forge/anti-ai-gate.ts`'s file-write-containment proof
+ * (`test/qa/forge-writing-bounds.test.ts`) already covers the separate,
+ * more severe concern of the model escaping the site directory on disk —
+ * this covers what ships *inside* the page once it's on disk.
+ */
+export function checkContentSafety(code: GeneratedCode): AntiPatternFlag[] {
+  const flags: AntiPatternFlag[] = [];
+
+  // 1. javascript: URLs on any of the attributes browsers execute one from.
+  const javascriptUrlPattern = /\b(?:href|src|action|formaction)\s*=\s*["']\s*javascript:/gi;
+  const javascriptUrlMatches = [...code.html.matchAll(javascriptUrlPattern)];
+  if (javascriptUrlMatches.length > 0) {
+    flags.push({
+      code: 'CONTENT_SAFETY_JAVASCRIPT_URL',
+      severity: 'fail',
+      message: `${javascriptUrlMatches.length} "javascript:" URL(s) found in the generated HTML. A javascript: URL executes arbitrary script the moment its element is activated — there is no legitimate reason for Forge's output to contain one; real interactivity belongs in experience.js.`,
+      evidence: javascriptUrlMatches.map((m) => m[0]).slice(0, 5).join(' | '),
+    });
+  }
+
+  // 2. Inline on*= event-handler attributes (onclick, onerror, onload, …).
+  // A negative lookbehind for a word character or hyphen immediately before
+  // "on" keeps this from matching a hyphenated data attribute like
+  // data-oncomplete= — \b alone does NOT do this, since "-" is itself a
+  // non-word character and so a plain \b sits (wrongly) on both sides of it.
+  const inlineHandlerPattern = /(?<![\w-])on[a-z]{2,24}\s*=\s*["']/gi;
+  const inlineHandlerMatches = [...code.html.matchAll(inlineHandlerPattern)];
+  if (inlineHandlerMatches.length > 0) {
+    const names = [...new Set(inlineHandlerMatches.map((m) => m[0].split(/\s*=/)[0]?.trim() ?? m[0]))];
+    flags.push({
+      code: 'CONTENT_SAFETY_INLINE_EVENT_HANDLER',
+      severity: 'fail',
+      message: `${inlineHandlerMatches.length} inline event-handler attribute(s) found in the generated HTML (${names.slice(0, 8).join(', ')}). Forge's own interactivity is written to experience.js and wired via addEventListener — an inline on*= attribute is either dead weight the model shouldn't have written, or a real script-injection vector if its value was ever influenced by ungrounded/scraped text.`,
+      evidence: names.join(', '),
+    });
+  }
+
+  // 3. <script src> pointing outside the CDN domains Forge's own motion
+  // guidance actually recommends (motion.ts tells the model to CDN-load
+  // GSAP/ScrollTrigger/Lenis; these are the three CDNs that recommendation
+  // realistically resolves to). A relative path (no scheme, no "//") is a
+  // same-document local reference — always allowed, not "external" at all.
+  const scriptSrcMatches = [...code.html.matchAll(/<script[^>]*\ssrc\s*=\s*["']([^"']+)["']/gi)];
+  const disallowed: string[] = [];
+  for (const match of scriptSrcMatches) {
+    const src = match[1] ?? '';
+    if (!/^(?:[a-z]+:)?\/\//i.test(src)) continue; // relative/local — not external
+    let hostname: string | null = null;
+    try {
+      hostname = new URL(src.startsWith('//') ? `https:${src}` : src).hostname.toLowerCase();
+    } catch {
+      disallowed.push(src); // unparseable as a URL is itself suspicious enough to flag
+      continue;
+    }
+    if (!SCRIPT_SRC_ALLOWLIST.some((allowed) => hostname === allowed || hostname!.endsWith(`.${allowed}`))) {
+      disallowed.push(src);
+    }
+  }
+  if (disallowed.length > 0) {
+    flags.push({
+      code: 'CONTENT_SAFETY_UNTRUSTED_SCRIPT_SRC',
+      severity: 'fail',
+      message: `${disallowed.length} <script src> tag(s) point outside the trusted CDN allowlist (${SCRIPT_SRC_ALLOWLIST.join(', ')}): ${disallowed.slice(0, 5).join(', ')}. A vendor's generated page loading arbitrary third-party script is a supply-chain risk regardless of intent — motion libraries are only ever meant to come from one of the trusted CDNs.`,
+      evidence: disallowed.join(', '),
+    });
+  }
+
+  return flags;
+}
+
+/**
+ * The CDN domains `motion.ts`'s own guidance realistically resolves to —
+ * "load GSAP/ScrollTrigger/Lenis via a CDN `<script>` tag" has exactly these
+ * three legitimate answers in practice. A `<script src>` hostname must equal
+ * one of these exactly, or be a deeper subdomain of one (e.g.
+ * `foo.cdn.jsdelivr.net` still matches `cdn.jsdelivr.net`) — never a bare
+ * substring match, so `evil-cdn.jsdelivr.net.attacker.example` does not
+ * sneak past it (it fails both the equality and the `.cdn.jsdelivr.net`
+ * suffix check, since the real allowed domain is not its own suffix).
+ */
+const SCRIPT_SRC_ALLOWLIST: readonly string[] = ['cdn.jsdelivr.net', 'unpkg.com', 'cdnjs.cloudflare.com'];
