@@ -108,6 +108,40 @@ test('summarizeJob: battle tolerates a present but empty jury object', () => {
   assert.deepEqual(summary.battle, { count: 1, winnerId: null, bestQuality: null, judgeCount: null });
 });
 
+test('summarizeJob: gate is null before the distinctness-gate stage has run', () => {
+  const job: JobState = createJob('job-gate-1', 'Acme Bakery');
+  assert.equal(job.distinctnessScore, null);
+  assert.equal(summarizeJob(job).gate, null);
+});
+
+test('summarizeJob: gate extracts verdict/score from the real distinctness-gate writer shape', () => {
+  const job: JobState = { ...createJob('job-gate-2', 'Acme Bakery'), distinctnessScore: { verdict: 'PASS', overallScore: 88 } };
+  assert.deepEqual(summarizeJob(job).gate, { verdict: 'PASS', score: 88 });
+});
+
+test('summarizeJob: gate is null for a malformed distinctnessScore shape rather than throwing', () => {
+  assert.equal(summarizeJob({ ...createJob('job-gate-3', 'Acme Bakery'), distinctnessScore: 'not-an-object' }).gate, null);
+  assert.equal(summarizeJob({ ...createJob('job-gate-4', 'Acme Bakery'), distinctnessScore: { verdict: 'PASS' } }).gate, null);
+});
+
+test('summarizeJob: budgetCents passes through the job\'s real spend ceiling', () => {
+  const job: JobState = createJob('job-budget', 'Acme Bakery');
+  assert.equal(summarizeJob(job).budgetCents, job.budgetCents);
+});
+
+test('summarizeJob: tolerates a hand-written/partial job object missing providerLog or errors, rather than throwing', () => {
+  // A raw fixture (e.g. one written directly to job.json by a test, or a legacy
+  // file) may omit fields `createJob` always sets. This must degrade, not crash —
+  // stage-server.ts's GET /job reads exactly such fixtures in its own test suite.
+  const partial = { jobId: 'job-partial', business: 'Acme Bakery', stage: 'browser', maxIter: 3 } as unknown as JobState;
+  const summary = summarizeJob(partial);
+  assert.deepEqual(summary.workers, { total: 0, ok: 0, failed: 0, byProvider: {}, recentFailures: [] });
+  assert.deepEqual(summary.errors, []);
+  assert.equal(summary.budgetCents, 0);
+  assert.equal(summary.gate, null);
+  assert.equal(summary.battle, null);
+});
+
 test('summarizeJob: carries stage/iteration/decision/phases/errors/finalOutput straight through', () => {
   const job: JobState = {
     ...createJob('job-7', 'Acme Bakery', 5),

@@ -10,10 +10,12 @@
  * wrong. Nothing here is invented or estimated; a field is `null`/empty
  * exactly when the job has not reached the point that would populate it.
  *
- * Kept separate from any particular presentation (CLI today, `scripts/
- * status.ts`; a web view or `stage-server.ts` endpoint later, if ever
- * justified) so the read model itself is what gets tested, not a script's
- * stdout formatting.
+ * Kept separate from every presentation that reads it — `scripts/status.ts`
+ * (CLI) and `scripts/n8n/stage-server.ts`'s `GET /job`/`GET /jobs`/`GET /`
+ * control-surface page all call into this module rather than each computing
+ * their own notion of "which providers failed" or "is the battle done" —
+ * so the read model itself is what gets tested, not a script's stdout
+ * formatting or an HTTP handler's inline JSON-shaping.
  */
 
 import fs from 'node:fs/promises';
@@ -52,6 +54,12 @@ export interface BattleSummary {
   readonly judgeCount: number | null;
 }
 
+/** The distinctness gate's verdict, when the job has reached it — see `scripts/n8n/stage.ts`'s `distinctness-gate` case. */
+export interface GateSummary {
+  readonly verdict: string;
+  readonly score: number;
+}
+
 export interface JobSummary {
   readonly jobId: string;
   readonly business: string;
@@ -69,6 +77,10 @@ export interface JobSummary {
   readonly battle: BattleSummary | null;
   /** How many immutable candidates were actually recorded on disk, when the candidate store exists. */
   readonly candidateCount: number;
+  /** `null` until the distinctness-gate stage has actually run. */
+  readonly gate: GateSummary | null;
+  /** The job's spend ceiling, euro cents — surfaced so a control surface never shows spend with no ceiling to compare it to. */
+  readonly budgetCents: number;
   readonly errors: readonly string[];
   readonly finalOutput: string | null;
   readonly createdAt: string;
@@ -84,10 +96,17 @@ export interface JobSummary {
  * `job.json` alone (`designDirections` records the battle's *result*, not
  * how many candidates the store actually holds), so it is threaded in as a
  * plain number by the caller rather than read here.
+ *
+ * Defensive against a partial/hand-written `job.json` (a fixture, a crash
+ * mid-write before every field lands, or a future producer): `providerLog`/
+ * `errors` default to `[]` rather than assuming the real `createJob` shape,
+ * so a caller building `JobState`-shaped test data or reading a legacy file
+ * gets a degraded-but-correct summary instead of a thrown `TypeError`.
  */
 export function summarizeJob(job: JobState, candidateCount = 0): JobSummary {
   const workers = summarizeWorkers(job.providerLog);
   const battle = summarizeBattle(job.designDirections);
+  const gate = summarizeGate(job.distinctnessScore);
 
   return {
     jobId: job.jobId,
@@ -104,19 +123,22 @@ export function summarizeJob(job: JobState, candidateCount = 0): JobSummary {
     workers,
     battle,
     candidateCount,
-    errors: job.errors,
+    gate,
+    budgetCents: job.budgetCents ?? 0,
+    errors: job.errors ?? [],
     finalOutput: job.finalOutput,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
   };
 }
 
-function summarizeWorkers(calls: readonly WorkerCall[]): WorkerSummary {
+function summarizeWorkers(calls: readonly WorkerCall[] | null | undefined): WorkerSummary {
+  const safeCalls = Array.isArray(calls) ? calls : [];
   const byProvider: Record<string, { ok: number; failed: number }> = {};
   let ok = 0;
   let failed = 0;
 
-  for (const call of calls) {
+  for (const call of safeCalls) {
     const key = call.provider ?? '(deterministic)';
     const tally = byProvider[key] ?? { ok: 0, failed: 0 };
     if (call.outcome === 'ok') {
@@ -129,9 +151,24 @@ function summarizeWorkers(calls: readonly WorkerCall[]): WorkerSummary {
     byProvider[key] = tally;
   }
 
-  const recentFailures = calls.filter((c) => c.outcome === 'failed').slice(-RECENT_FAILURES_LIMIT);
+  const recentFailures = safeCalls.filter((c) => c.outcome === 'failed').slice(-RECENT_FAILURES_LIMIT);
 
-  return { total: calls.length, ok, failed, byProvider, recentFailures };
+  return { total: safeCalls.length, ok, failed, byProvider, recentFailures };
+}
+
+/**
+ * `distinctnessScore` is stored as `unknown` on `JobState`, same reasoning as
+ * `designDirections` below — its real writer (`scripts/n8n/stage.ts`'s
+ * `distinctness-gate` case) always writes `{ verdict, overallScore }`, but
+ * this reads it defensively rather than casting.
+ */
+function summarizeGate(distinctnessScore: unknown): GateSummary | null {
+  if (distinctnessScore === null || distinctnessScore === undefined || typeof distinctnessScore !== 'object') {
+    return null;
+  }
+  const record = distinctnessScore as Record<string, unknown>;
+  if (typeof record.verdict !== 'string' || typeof record.overallScore !== 'number') return null;
+  return { verdict: record.verdict, score: record.overallScore };
 }
 
 /**

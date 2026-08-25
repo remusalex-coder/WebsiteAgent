@@ -27,6 +27,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { runStage, runJobFull, isStageName, STAGES } from './stage.js';
+import { summarizeRun, summarizeAllRuns } from '../../lib/workflow/summary.js';
+import { CONTROL_SURFACE_HTML } from './controlSurfacePage.js';
 
 const DEFAULT_REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -97,6 +99,22 @@ export function createStageServer(
       return;
     }
 
+    /*
+     * The control-surface page (WQ-016) is intentionally served BEFORE the
+     * token check: it is static markup with zero job data embedded — every
+     * fact it shows comes from a browser-side fetch() the page's own script
+     * makes to /job, /jobs, carrying whatever token the human typed into it.
+     * A browser navigating to a URL cannot set a custom header, so the page
+     * itself has to be reachable without one; the data underneath it stays
+     * exactly as gated as it always was.
+     */
+    if ((url.pathname === '/' || url.pathname === '/ui') && req.method === 'GET') {
+      const payload = CONTROL_SURFACE_HTML;
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-length': Buffer.byteLength(payload) });
+      res.end(payload);
+      return;
+    }
+
     if (req.headers['x-bf-token'] !== token) {
       send(res, 401, { error: 'bad or missing x-bf-token' });
       return;
@@ -150,49 +168,82 @@ export function createStageServer(
     if (url.pathname === '/job' && req.method === 'GET') {
       // The poll endpoint. Reads the job's current state; a terminal decision
       // (deliver / escalate) is the "done" signal the workflow waits for.
+      //
+      // Delegates to lib/workflow/summary.ts's summarizeRun rather than
+      // hand-computing "which providers failed"/"is the battle done" here a
+      // second time (WQ-016) — this is the same read model scripts/status.ts
+      // and the control-surface page below use. The response's field names
+      // (runId, status, stage, decision, finalOutput, workers.{calls,
+      // providersUsed,failedProviders,fallbacks}, budgetCents, gate) are a
+      // real, tested contract the n8n workflow's poll step also reads —
+      // preserved exactly, derived from the shared summary rather than
+      // duplicated; the additive fields (errors, phases, candidateCount,
+      // battle) are new, for the richer control surface.
       const runId = url.searchParams.get('runId') ?? '';
       if (!RUN_ID.test(runId)) {
         send(res, 400, { error: 'runId must match /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/' });
         return;
       }
-      const jobPath = path.join(repoRoot(), 'output', runId, 'job.json');
-      if (!fsSync.existsSync(jobPath)) {
-        send(res, 404, { error: `no such run: ${runId}`, runId });
-        return;
-      }
-      try {
-        const job = JSON.parse(fsSync.readFileSync(jobPath, 'utf8'));
-        const terminal = job.decision === 'deliver' || job.decision === 'escalate';
-        const okCalls = (job.providerLog ?? []).filter((call: { outcome: string }) => call.outcome === 'ok');
-        const failedCalls = (job.providerLog ?? []).filter((call: { outcome: string }) => call.outcome === 'failed');
-        const providersUsed = [...new Set(okCalls.map((call: { provider: string | null }) => call.provider).filter((p: string | null): p is string => p !== null))];
-        const failedProviders = [...new Set(failedCalls.map((call: { provider: string | null }) => call.provider).filter((p: string | null): p is string => p !== null))];
-        send(res, 200, {
-          runId,
-          status: terminal ? 'complete' : 'running',
-          stage: job.stage ?? null,
-          iteration: job.iteration ?? 0,
-          maxIter: job.maxIter ?? 3,
-          decision: job.decision ?? null,
-          business: job.business ?? null,
-          finalOutput: job.finalOutput ?? null,
-          designDirections: job.designDirections ?? null,
-          workers: {
-            calls: (job.providerLog ?? []).length,
-            providersUsed,
-            failedProviders,
-            fallbacks: (job.providerLog ?? []).filter((call: { provider: string | null }) => call.provider === null).length,
-          },
-          budgetCents: job.budgetCents ?? 20,
-          gate:
-            job.distinctnessScore === null || job.distinctnessScore === undefined
-              ? null
-              : { verdict: job.distinctnessScore.verdict, score: job.distinctnessScore.overallScore },
-        });
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        send(res, 500, { error: message, runId });
-      }
+      void (async () => {
+        try {
+          const summary = await summarizeRun(path.join(repoRoot(), 'output'), runId);
+          if (summary === null) {
+            send(res, 404, { error: `no such run: ${runId}`, runId });
+            return;
+          }
+          const terminal = summary.decision === 'deliver' || summary.decision === 'escalate';
+          const providersUsed = Object.entries(summary.workers.byProvider)
+            .filter(([name, tally]) => name !== '(deterministic)' && tally.ok > 0)
+            .map(([name]) => name);
+          const failedProviders = Object.entries(summary.workers.byProvider)
+            .filter(([name, tally]) => name !== '(deterministic)' && tally.failed > 0)
+            .map(([name]) => name);
+          const deterministicTally = summary.workers.byProvider['(deterministic)'];
+          const fallbacks = deterministicTally === undefined ? 0 : deterministicTally.ok + deterministicTally.failed;
+
+          send(res, 200, {
+            runId,
+            status: terminal ? 'complete' : 'running',
+            stage: summary.stage,
+            iteration: summary.iteration,
+            maxIter: summary.maxIter,
+            decision: summary.decision,
+            business: summary.business,
+            finalOutput: summary.finalOutput,
+            workers: { calls: summary.workers.total, providersUsed, failedProviders, fallbacks },
+            budgetCents: summary.budgetCents,
+            gate: summary.gate,
+            // Additive (WQ-016): not read by the n8n workflow, but real —
+            // the same fields scripts/status.ts and the control-surface page
+            // show, so a caller does not need a second endpoint for them.
+            phases: summary.phases,
+            candidateCount: summary.candidateCount,
+            battle: summary.battle,
+            errors: summary.errors,
+            updatedAt: summary.updatedAt,
+          });
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          send(res, 500, { error: message, runId });
+        }
+      })();
+      return;
+    }
+
+    if (url.pathname === '/jobs' && req.method === 'GET') {
+      // Every discoverable run, most-recently-updated first — the
+      // control-surface page's job list (WQ-016). Same read model as /job,
+      // one call per run rather than a caller polling /job per id blind.
+      void (async () => {
+        try {
+          const summaries = await summarizeAllRuns(path.join(repoRoot(), 'output'));
+          const sorted = [...summaries].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+          send(res, 200, { runs: sorted });
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error);
+          send(res, 500, { error: message });
+        }
+      })();
       return;
     }
 

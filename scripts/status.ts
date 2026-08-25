@@ -58,6 +58,10 @@ function printSummary(summary: JobSummary): void {
     }
   }
   process.stdout.write(`  battle: ${battleLine}\n`);
+  process.stdout.write(
+    `  gate: ${summary.gate === null ? 'not reached' : `${summary.gate.verdict} (score ${summary.gate.score})`}` +
+      `   budget: ${summary.budgetCents}c\n`,
+  );
   if (summary.errors.length > 0) {
     process.stdout.write(`  errors (${summary.errors.length}):\n`);
     for (const error of summary.errors) process.stdout.write(`    - ${error}\n`);

@@ -6,6 +6,12 @@
  * status "complete". The success path calls `runJobFull` (heavy, needs real
  * stages + credentials), so this test covers the validation branches and the
  * poll mapping — the routing the n8n workflow actually depends on.
+ *
+ * Also covers WQ-016's additions: `GET /job`'s additive fields (errors,
+ * phases, candidateCount, battle — all delegated to `lib/workflow/summary.ts`
+ * rather than recomputed here), `GET /jobs` (the run list), and `GET /`/
+ * `GET /ui` (the control-surface page, servable without a token since it is
+ * static markup with no job data embedded).
  */
 
 import test from 'node:test';
@@ -233,4 +239,120 @@ test('POST /job maps a failure to 500 with status failed', async () => {
   } finally {
     await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
   }
+});
+
+/* ------------------------------------------------------------------ */
+/* WQ-016 — additive GET /job fields, GET /jobs, and the UI page       */
+/* ------------------------------------------------------------------ */
+
+test('GET /job\'s additive fields (errors/phases/candidateCount/battle) come from the shared summary, not a second computation', async () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bf-stage-server-'));
+  const runId = 'testrun2';
+  const runDir = path.join(tmpRoot, 'output', runId);
+  fs.mkdirSync(path.join(runDir, 'candidates'), { recursive: true });
+  const job = {
+    jobId: runId,
+    stage: 'diverge',
+    iteration: 1,
+    maxIter: 3,
+    decision: 'running',
+    business: 'Mara',
+    finalOutput: null,
+    budgetCents: 20,
+    providerLog: [],
+    errors: ['research: timed out once, retried'],
+    implementationStatus: 'built',
+    browserStatus: 'pending',
+    qaStatus: 'pending',
+    designDirections: { count: 2, winner: 'direction-A', jury: { bestQuality: 91, judgeCount: 1 } },
+  };
+  fs.writeFileSync(path.join(runDir, 'job.json'), JSON.stringify(job), 'utf8');
+  fs.writeFileSync(
+    path.join(runDir, 'candidates', 'index.json'),
+    JSON.stringify({
+      version: 1,
+      bestId: 'c000',
+      candidates: [
+        { candidateId: 'c000', index: 0, iteration: 0, dir: 'candidates/c000', scores: { quality: 91, distinctness: 1, blockingClean: true }, costUnits: 0, createdAt: new Date().toISOString() },
+        { candidateId: 'c001', index: 1, iteration: 0, dir: 'candidates/c001', scores: { quality: 80, distinctness: 0.5, blockingClean: true }, costUnits: 0, createdAt: new Date().toISOString() },
+      ],
+    }),
+    'utf8',
+  );
+
+  const original = process.env.BF_REPO_ROOT;
+  process.env.BF_REPO_ROOT = tmpRoot;
+  try {
+    await withServer(TOKEN, async (port) => {
+      const res = await request(port, 'GET', `/job?runId=${runId}`);
+      assert.equal(res.status, 200);
+      const body = res.body as Record<string, unknown>;
+      assert.deepEqual(body.errors, ['research: timed out once, retried']);
+      assert.deepEqual(body.phases, { implementation: 'built', browser: 'pending', qa: 'pending' });
+      assert.equal(body.candidateCount, 2);
+      assert.deepEqual(body.battle, { count: 2, winnerId: 'direction-A', bestQuality: 91, judgeCount: 1 });
+    });
+  } finally {
+    if (original === undefined) {
+      delete process.env.BF_REPO_ROOT;
+    } else {
+      process.env.BF_REPO_ROOT = original;
+    }
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test('GET /jobs lists every discoverable run, most-recently-updated first', async () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'bf-stage-server-'));
+  const older = path.join(tmpRoot, 'output', 'run-older');
+  const newer = path.join(tmpRoot, 'output', 'run-newer');
+  fs.mkdirSync(older, { recursive: true });
+  fs.mkdirSync(newer, { recursive: true });
+  fs.writeFileSync(path.join(older, 'job.json'), JSON.stringify({
+    jobId: 'run-older', business: 'Old Co', stage: 'build', maxIter: 3, decision: 'running',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  }), 'utf8');
+  fs.writeFileSync(path.join(newer, 'job.json'), JSON.stringify({
+    jobId: 'run-newer', business: 'New Co', stage: 'hermes', maxIter: 3, decision: 'deliver',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  }), 'utf8');
+  // A directory with no job.json must not appear — same discoverJobIds discipline summary.ts already tests.
+  fs.mkdirSync(path.join(tmpRoot, 'output', 'run-partial'), { recursive: true });
+
+  const original = process.env.BF_REPO_ROOT;
+  process.env.BF_REPO_ROOT = tmpRoot;
+  try {
+    await withServer(TOKEN, async (port) => {
+      const res = await request(port, 'GET', '/jobs');
+      assert.equal(res.status, 200);
+      const body = res.body as { runs: Array<{ jobId: string }> };
+      assert.deepEqual(body.runs.map((r) => r.jobId), ['run-newer', 'run-older']);
+    });
+  } finally {
+    if (original === undefined) {
+      delete process.env.BF_REPO_ROOT;
+    } else {
+      process.env.BF_REPO_ROOT = original;
+    }
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test('GET /jobs requires the token like every other data endpoint', async () => {
+  await withServer(TOKEN, async (port) => {
+    const res = await request(port, 'GET', '/jobs', false);
+    assert.equal(res.status, 401);
+  });
+});
+
+test('GET / and GET /ui serve the control-surface page without a token — static markup, no job data embedded', async () => {
+  await withServer(TOKEN, async (port) => {
+    const root = await request(port, 'GET', '/', false);
+    assert.equal(root.status, 200);
+    assert.ok(typeof root.body === 'string' && root.body.includes('<title>BusinessForge'));
+
+    const ui = await request(port, 'GET', '/ui', false);
+    assert.equal(ui.status, 200);
+    assert.ok(typeof ui.body === 'string' && ui.body.includes('<title>BusinessForge'));
+  });
 });

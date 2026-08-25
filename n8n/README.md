@@ -45,7 +45,35 @@ legacy `/stage/:name` used by the CLI and Factory V1):
 - `POST /job?runId=<id>&order=<order>&maxIter=<n>` — runs the whole job to a
   terminal decision, returns `{ runId, status: "complete", decision, ... }`.
 - `GET /job?runId=<id>` — polls a run's state; `status: "complete"` when the
-  decision is `deliver` or `escalate`.
+  decision is `deliver` or `escalate`. The response is built from
+  `lib/workflow/summary.ts`'s `summarizeRun` (WQ-016) — the same read model
+  `scripts/status.ts` and the control-surface page below use, so there is one
+  place that decides "which providers failed"/"is the battle done", not
+  several. The original tested fields (`workers.{calls,providersUsed,
+  failedProviders,fallbacks}`, `budgetCents`, `gate`) are unchanged; `errors`,
+  `phases`, `candidateCount`, `battle` are additive.
+- `GET /jobs` — every discoverable run under `output/`, most-recently-updated
+  first. Same read model as `GET /job`; the control-surface page's job list.
+
+## Control surface (WQ-016)
+
+`GET /` and `GET /ui` serve a single self-contained HTML+JS page — no build
+step, no CDN, works on this LAN-only host with no outbound internet. It is
+the only piece served without the `x-bf-token` (a browser navigating to a URL
+cannot set a custom header), but it embeds no job data: every fact it shows
+comes from the page's own `fetch()` calls to `/job`/`/jobs`/`/job` (POST),
+carrying the token a human pastes into the page (kept in `localStorage` so it
+does not need retyping — this is a real page served to a real operator, not a
+sandboxed preview).
+
+Point a browser at `http://<host>:7717/` (or `/ui`), paste the token, enter a
+business URL/brief, and click Start — it POSTs `/job` (fire-and-forget from
+the browser's side, since that request only resolves once the whole job
+reaches a terminal decision) and immediately starts polling `GET /job` every
+few seconds, rendering stage/progress/phases/workers/provider fallback/design
+battle/distinctness gate/errors/final result in plain language, no internal
+vocabulary required. This is the same orchestrator every other entrypoint
+drives — the page adds no execution logic of its own, only a view.
 
 ## Running it
 
