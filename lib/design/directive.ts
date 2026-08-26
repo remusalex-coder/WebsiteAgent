@@ -27,6 +27,9 @@
  * surfaces. See docs/design-director-v1.md for the full rationale.
  */
 
+import { RUNTIME_PRIMITIVE_BUDGET } from './experience.js';
+import type { RuntimePrimitiveId } from './experience.js';
+
 import type { ComposeOptions } from './compose.js';
 import type { Logger } from '../logger.js';
 import type { DesignDirection, HeroVariant, ImageTreatment, VisualDensity } from './types.js';
@@ -142,6 +145,34 @@ export interface ExperienceIntent {
   readonly momentIntent: string | null;
   /** Whether the deterministic transition primitive marks entry to the moment. */
   readonly transitionAtMoment: boolean;
+}
+
+/* ------------------------------------------------------------------ */
+/* Runtime primitive requests                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A single runtime-primitive request from the Director — the Director's only
+ * reach into the verified experience arsenal
+ * (`lib/design/experienceRegistry.ts`: internal primitives like
+ * `scroll-reveal`, and external ones like `lenis-smooth-scroll`,
+ * `gsap-scrolltrigger`, `three-js-hero-object`).
+ *
+ * `id` is intentionally typed `string`, not `RuntimePrimitiveId` — this
+ * contract only enforces *shape*, the same division of labour
+ * `ExperienceIntent.moment` already uses for `SectionKind`. Whether an id is
+ * real, executable, and within budget is `resolvePrimitives`'s job alone
+ * (`lib/design/experienceRegistry.ts`); duplicating that check here would be
+ * a second place the same rule could drift out of sync with the first. The
+ * live provider call is still steered onto the real closed set — see
+ * `agents/designDirectorAgent.ts`'s `DIRECTIVE_SCHEMA`, whose `enum` is built
+ * from `executablePrimitiveIds()` at schema-definition time — but this type
+ * does not assume the schema held.
+ */
+export interface RuntimePrimitiveRequest {
+  readonly id: string;
+  /** One sentence: why this primitive serves this business. Never "for decoration". */
+  readonly reason: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -288,6 +319,67 @@ export interface DesignDirective {
   readonly imageryStrategy?: ImageryStrategy | undefined;
   readonly interactionStrategy?: InteractionLevel | undefined;
   readonly conversionStrategy?: ConversionMode | undefined;
+
+  /**
+   * Runtime-primitive requests from the verified experience arsenal.
+   *
+   * Unlike every field above, this one does not reach `ComposeOptions` or
+   * `WebsiteDesign` at all — runtime primitives are a `renderSite`-level
+   * concern (`RenderOptions.runtimePrimitives`), not a design-token one, and
+   * `WebsiteDesign` is snapshotted verbatim in `test/__snapshots__/
+   * design.bakery.json` (a frozen contract no field may be added to for a
+   * value the renderer does not yet consume from it — see ADR 0008). Read
+   * instead via `directiveRuntimePrimitiveIds` below and passed straight to
+   * `resolvePrimitives`, the same "declare a name, the registry decides
+   * whether it is allowed" seam every other primitive already reaches
+   * through. Absent or empty means no runtime primitive — the common,
+   * correct answer for most businesses, not a fallback.
+   */
+  readonly runtimePrimitives?: readonly RuntimePrimitiveRequest[] | undefined;
+
+  /* ---------------------------------------------------------------- */
+  /* Creative concept — the open, AI-authored layer.                  */
+  /*                                                                 */
+  /* These are NOT closed sets. This is where genuine creative        */
+  /* freedom lives: the Director decides WHAT the site is, not just   */
+  /* which enum value to pick. Each is free text derived from the     */
+  /* business. They must never carry CSS, JS, tokens or pixel values  */
+  /* (additionalProperties:false rejects anything else), only intent. */
+  /* They are optional so a historical or partial directive degrades  */
+  /* to the character-driven deterministic floor.                    */
+  /* ---------------------------------------------------------------- */
+
+  /** What the website fundamentally IS — the controlling idea. */
+  readonly creativeThesis?: string | undefined;
+  /** The central visual metaphor the experience is built around. */
+  readonly visualMetaphor?: string | undefined;
+  /** The emotional arc the visitor moves through. */
+  readonly emotionalJourney?: string | undefined;
+  /** How space is organised and used to express the concept. */
+  readonly spatialStrategy?: string | undefined;
+  /** The composition logic the concept demands. */
+  readonly compositionStrategy?: string | undefined;
+  /** Common patterns / clichés this concept must explicitly avoid. */
+  readonly whatToAvoid?: string | undefined;
+
+  /**
+   * Audit trail only — never reaches `ComposeOptions` or `WebsiteDesign`.
+   *
+   * The 3 creative territories the Director considered before committing to
+   * this directive, and why the other two were rejected. Populated by the
+   * two-call divergence step in `agents/designDirectorAgent.ts`'s `direct()`
+   * (propose 3 territories, then select one and justify rejecting the rest —
+   * the mechanism proven in `lib/forge/signature.ts` to produce genuinely
+   * differentiated creative reasoning instead of a single unconstrained
+   * pass regressing to the median). Optional so a directive from before this
+   * field existed, or a degraded single-call path, still validates.
+   */
+  readonly consideredTerritories?: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly rejected: boolean;
+    readonly reason: string;
+  }[] | undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -586,4 +678,80 @@ export function applyExperienceIntent(
     momentSection: experienceIntent.moment,
     momentTransition: experienceIntent.transitionAtMoment,
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Runtime primitive requests — adapter                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Extracts the Director's requested primitive ids from a directive,
+ * shape-validated only — a non-empty string id, deduplicated in request
+ * order. Registry validity, executability, licence/accessibility/mobile
+ * safety and the real runtime budget are `resolvePrimitives`'s job alone
+ * (`lib/design/experienceRegistry.ts`); this function's only responsibility
+ * is turning "whatever JSON the provider returned" into the
+ * `readonly string[]` shape that function's `declared` parameter expects,
+ * exactly the same division of labour `applyExperienceIntent` above already
+ * uses for `ExperienceIntent`.
+ *
+ * A malformed entry (no `id`, a non-string `id`) is dropped with a warning,
+ * never thrown — the same fail-soft contract every other field in this file
+ * uses: a malformed directive degrades to fewer/no primitives, never a
+ * failed stage. `undefined`/absent input (director off, or a directive that
+ * predates this field) returns `[]`, which resolves to "no primitives" —
+ * byte-identical to every run before this field existed.
+ *
+ * The list is defensively capped at twice `RUNTIME_PRIMITIVE_BUDGET` before
+ * it is returned — not the real enforcement (that is `resolvePrimitives`'s
+ * `.slice(0, RUNTIME_PRIMITIVE_BUDGET)`), just a bound on how far a
+ * pathologically long/malformed response is carried before the real budget
+ * ever applies.
+ *
+ * @param directive  The Director's directive. May be undefined.
+ * @param logger  Optional logger for observability. Defaults to a no-op logger.
+ */
+export function directiveRuntimePrimitiveIds(
+  directive: DesignDirective | undefined,
+  logger: Logger = noopLogger,
+): RuntimePrimitiveId[] {
+  if (directive?.runtimePrimitives === undefined) return [];
+  if (!Array.isArray(directive.runtimePrimitives)) {
+    // A real provider response is untrusted input — the type says
+    // `readonly RuntimePrimitiveRequest[]`, but nothing upstream of this
+    // point actually guarantees it at runtime. A non-array value (a string,
+    // a single object, `null`) degrades to "no primitives" rather than
+    // iterating something that was never a list.
+    logger.warn('DesignDirective: runtimePrimitives is not an array; ignoring it');
+    return [];
+  }
+
+  // Shape-only: dedup and drop malformed entries. Whether an id is real,
+  // executable, and within budget is `resolvePrimitives`'s job alone
+  // (`lib/design/experienceRegistry.ts`) — duplicating that check here would
+  // be a second place the same rule could drift out of sync with the first,
+  // and it would also defeat the defensive cap below (a pathologically long,
+  // entirely-hallucinated response must still be truncated deterministically
+  // before it is handed off, not silently emptied by a registry check this
+  // function was never meant to own). Returned typed so the orchestrator can
+  // pass it straight to `resolvePrimitives`/`RenderOptions.runtimePrimitives`.
+  const seen = new Set<string>();
+  const ids: RuntimePrimitiveId[] = [];
+  for (const request of directive.runtimePrimitives) {
+    const id = request?.id;
+    if (typeof id !== 'string' || id.trim() === '') {
+      logger.warn('DesignDirective: a runtimePrimitives entry has no usable id; skipping it');
+      continue;
+    }
+    if (seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id as RuntimePrimitiveId);
+    logger.info(`DesignDirective: requested runtime primitive "${id}"${request.reason ? ` — ${request.reason}` : ''}`);
+  }
+
+  if (ids.length === 0) {
+    logger.info('DesignDirective: no runtime primitives requested');
+  }
+
+  return ids.slice(0, RUNTIME_PRIMITIVE_BUDGET * 2);
 }

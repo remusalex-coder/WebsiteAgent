@@ -68,11 +68,11 @@ export async function postJson(
         { source, retryable: !cancelled, cause: error },
       );
     }
-    throw new ProviderRequestError(provider, `could not reach ${hostOf(request.url)}`, {
-      source,
-      retryable: true,
-      cause: error,
-    });
+    throw new ProviderRequestError(
+      provider,
+      `could not reach ${hostOf(request.url)}: ${error instanceof Error ? error.message : String(error)}`,
+      { source, retryable: true, cause: error },
+    );
   } finally {
     deadline.release();
   }

@@ -34,6 +34,9 @@
 
 import { UpstreamError } from '../lib/errors.js';
 import { createModelInvoker } from '../lib/capability/invokers.js';
+import { EXPERIENCE_REGISTRY, executablePrimitiveIds } from '../lib/design/experienceRegistry.js';
+import { RUNTIME_PRIMITIVE_BUDGET } from '../lib/design/experience.js';
+import { planNarrative } from '../lib/design/plan.js';
 import type { DirectorConfig } from '../lib/config.js';
 import type {
   Agent,
@@ -258,6 +261,58 @@ export const DIRECTIVE_SCHEMA: JsonSchema = {
         + 'editorial: earn the visitor first, ask at the end (a wedding venue, a boutique hotel). '
         + 'balanced/direct in between.',
     },
+    runtimePrimitives: {
+      type: 'array',
+      // The real enforcement is resolvePrimitives' RUNTIME_PRIMITIVE_BUDGET
+      // (lib/design/experienceRegistry.ts); this only bounds how many the
+      // model is asked for, so a verbose response cannot itself be the
+      // reason a business ends up over budget.
+      maxItems: RUNTIME_PRIMITIVE_BUDGET,
+      description:
+        'Runtime primitives from the ARSENAL section above, earned by this specific business. '
+        + 'Empty is the common, correct answer for most businesses — do not select a primitive for '
+        + 'decoration alone, and never select more than the business justifies.',
+      items: {
+        type: 'object',
+        required: ['id', 'reason'],
+        additionalProperties: false,
+        properties: {
+          // Built from executablePrimitiveIds() at schema-definition time —
+          // the model is never offered an id the registry cannot dispatch,
+          // and this list grows on its own as the registry does, with no
+          // prompt/schema edit required.
+          id: {
+            type: 'string',
+            enum: [...executablePrimitiveIds()].sort(),
+            description: 'A primitive id, exactly as listed in the ARSENAL section.',
+          },
+          reason: {
+            type: 'string',
+            description: 'One concise sentence: the specific business reason this primitive earns its place here.',
+          },
+        },
+      },
+    },
+    consideredTerritories: {
+      type: 'array',
+      minItems: 3,
+      maxItems: 3,
+      description:
+        'Echo back all 3 proposed territories from the TERRITORIES section of the brief: mark the one you '
+        + 'built this directive from as rejected:false, the other two as rejected:true, each with a one-sentence '
+        + 'reason (why chosen, or why rejected).',
+      items: {
+        type: 'object',
+        required: ['id', 'name', 'rejected', 'reason'],
+        additionalProperties: false,
+        properties: {
+          id: { type: 'string', description: 'The territory id exactly as given in the brief.' },
+          name: { type: 'string', description: 'The territory name exactly as given in the brief.' },
+          rejected: { type: 'boolean' },
+          reason: { type: 'string', description: 'One sentence: why this territory was chosen, or why it was rejected.' },
+        },
+      },
+    },
     rationale: {
       type: 'string',
       description: 'Two to four sentences explaining the overall visual strategy and its relationship to the business.',
@@ -294,6 +349,70 @@ export const DIRECTIVE_SCHEMA: JsonSchema = {
 };
 
 /* ------------------------------------------------------------------ */
+/* Territory divergence — call 1 of 2                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A single proposed creative direction, before one is chosen.
+ *
+ * Deliberately smaller than `lib/forge/signature.ts`'s `CreativeTerritory` —
+ * no separate `visualLanguage`/`interactionLanguage` free-text fields, since
+ * the winning territory's equivalent detail already has a home in
+ * `DesignDirective.visualMetaphor`/`spatialStrategy`. This shape exists only
+ * to force genuine alternatives into existence before one is picked; it is
+ * not a second copy of the directive schema.
+ */
+export interface TerritoryCandidate {
+  readonly id: string;
+  readonly name: string;
+  readonly thesis: string;
+  readonly signatureMoment: string;
+  readonly reasonToChoose: string;
+  readonly reasonToReject: string;
+}
+
+/**
+ * JSON Schema for the territory-proposal call. `additionalProperties: false`
+ * throughout, tighter than Forge's own `signature.ts` schemas (which have no
+ * such guard) — this repository's discipline holds even for a module adapted
+ * from Forge's proven mechanism, not just for the fields original to this file.
+ */
+export const TERRITORY_SCHEMA: JsonSchema = {
+  type: 'object',
+  required: ['territories'],
+  additionalProperties: false,
+  properties: {
+    territories: {
+      type: 'array',
+      minItems: 3,
+      maxItems: 3,
+      description: 'Exactly 3 genuinely different creative directions for this business — not 3 variations on one idea.',
+      items: {
+        type: 'object',
+        required: ['id', 'name', 'thesis', 'signatureMoment', 'reasonToChoose', 'reasonToReject'],
+        additionalProperties: false,
+        properties: {
+          id: { type: 'string', description: 'A short slug, e.g. "workshop-intimacy".' },
+          name: { type: 'string', description: 'A short human name for this direction, 2-5 words.' },
+          thesis: { type: 'string', description: 'One sentence: what this website fundamentally IS under this direction.' },
+          signatureMoment: { type: 'string', description: 'One sentence: the one moment or section this direction would build to.' },
+          reasonToChoose: { type: 'string', description: 'One sentence: the strongest case for choosing this direction, grounded in this business\'s own evidence.' },
+          reasonToReject: { type: 'string', description: 'One sentence: the honest, specific weakness or risk of this direction — not a throwaway caveat.' },
+        },
+      },
+    },
+  },
+};
+
+const TERRITORY_SYSTEM_PROMPT = `You are a Creative Director proposing initial directions for a website, before any one of them is chosen.
+
+Propose exactly 3 genuinely different creative territories for this business — not 3 variations on the same idea with different adjectives. Each must be a distinct answer to "what could this website fundamentally be", grounded in this specific business's own evidence (its description, reviews, photography, character reading) — never a generic industry template.
+
+For each territory, name the honest reason it might be wrong for this business — a real weakness or risk, not a formality. A territory whose "reasonToReject" is trivial or interchangeable with the others has not been thought through.
+
+Do not design CSS, pick colours, or write implementation detail. This is creative direction, not a directive yet — a second pass will choose one.`;
+
+/* ------------------------------------------------------------------ */
 /* System prompt                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -322,6 +441,10 @@ Separately, decide whether this specific business has one section worth building
 Decide the experience architecture from the IMAGE CONTENT SIGNALS and the business character, not from the category. Set experienceMode (brochure/showcase/narrative/immersive), a signatureMoment (a section actually present), conversionStrategy (how hard and when to ask for the action), and interactionStrategy (how much the page moves). A business with several varied, atmospheric photographs and an emotional register earns a narrative built to a signature moment; a functional trade with a logo earns a brochure that presses the action early. Never invent photographs or facts to justify a richer mode — if the images are thin, the honest mode is the plainer one, and a strong deterministic floor will still produce an intentional page. These decisions are validated against closed sets and override the deterministic floor only when valid.
 
 The output must be implementable by a deterministic design system. You are choosing from closed sets of options — do not suggest values outside the listed enums. Do not output CSS, pixel values, colour hex codes, spacing values, font sizes, Tailwind classes, or any renderer instruction.
+
+You are also selecting from an existing, verified BusinessForge runtime-primitive registry — the ARSENAL section of the brief below lists every primitive that is actually executable today, each with its real performance cost, accessibility risk and mobile support. You are NOT writing implementation code: you choose primitive ids, never CSS, never JavaScript, never a shader. Select only a primitive that solves a demonstrated business or experience requirement — never for decoration alone, and never more than the business justifies. Respect performance, accessibility, mobile and business context: a primitive with a high performance cost or a mobile-disabled fallback needs a correspondingly strong reason. If no primitive is justified, select none — that is the common, correct answer for most businesses (a local trade whose visitors want a phone number fast has no use for smooth scroll or a hero object). A luxury/editorial business with genuine visual credibility to spend may justify one or two; a business whose whole positioning is speed and directness should usually select none.
+
+Concrete triggers for the heavier, external-library primitives, tied to your own chosen territory — not a menu to browse for novelty: select three-js-hero-object only when the winning territory's signature moment is built around one real, physical, spatial object central to the business (a loaf, a chassis, a room) that a 3D presence would genuinely serve, not decorate. Select gsap-scrolltrigger or lenis-smooth-scroll only when the territory's pacing is itself a scroll-driven sequence with real choreography across sections — not to make an ordinary page feel smoother. If your territory's central mechanism has no real link to motion or a hero object, that is a legitimate, common reason to select none of the three, even at a narrative/showcase experienceMode.
 
 Beyond the closed-set decisions above, you must also author the OPEN creative concept — this is the most important part of your job. Fill in:
 - creativeThesis: WHAT this website fundamentally is (e.g. "entering the workshop", "a journey from darkness into daylight", "the product progressively revealing itself"). One sentence. Never "a clean modern site for X".
@@ -390,6 +513,31 @@ function describeImageSignals(profile: BusinessProfile): string {
 }
 
 /**
+ * Describes the verified, executable runtime-primitive arsenal — built from
+ * the registry at call time, never hardcoded, so a future primitive that
+ * earns `status: 'exists'` (`lib/design/experienceRegistry.ts`) appears here
+ * automatically, with no prompt edit required. Only `executablePrimitiveIds()`
+ * rows are listed: a `'researched'`-only row (GSAP's own row was one, before
+ * it was integrated) is never something the Director could select anyway, so
+ * offering it would just be a way to author a request `resolvePrimitives`
+ * silently drops.
+ */
+function describeRuntimeArsenal(): string {
+  const ids = [...executablePrimitiveIds()].sort();
+  if (ids.length === 0) return 'none available';
+
+  return ids
+    .map((id) => {
+      const entry = EXPERIENCE_REGISTRY[id];
+      if (entry === undefined) return `- ${id}`;
+      return `- ${entry.id} (${entry.category}): ${entry.capabilities.join('; ')} — `
+        + `performanceCost:${entry.performanceCost}, accessibilityRisk:${entry.accessibilityRisk}, `
+        + `mobileSupport:${entry.mobileSupport}, source:${entry.sourceType}`;
+    })
+    .join('\n');
+}
+
+/**
  * Builds a concise, fact-grounded design brief from the pipeline inputs.
  *
  * Deliberately avoids dumping raw JSON. The brief emphasises signal that
@@ -451,6 +599,51 @@ export function buildDesignBrief(
 
   // Tagline / headline intent
   section('Tagline', content.tagline || 'none');
+
+  // The listing's own editorial description, verbatim — previously never
+  // reached the Director's brief at all (only aggregate rating/count did).
+  if (profile.description !== null && profile.description.value.trim() !== '') {
+    section('Description', truncate(profile.description.value, maxPageChars));
+  }
+
+  // Real customer quotes, verbatim and attributed — specific, business-owned
+  // language the deterministic writer never surfaces to the Director as more
+  // than an aggregate rating. Bounded to 3 so a business with hundreds of
+  // reviews does not drown the brief.
+  if (profile.reviews.length > 0) {
+    const reviewLines = profile.reviews.slice(0, 3).map((r) => {
+      const stars = r.rating !== null ? `${r.rating}★` : 'unrated';
+      const author = r.authorName ?? 'anonymous';
+      return `- ${stars} — ${author}: "${truncate(r.text, 300)}"`;
+    });
+    section('What customers say (verbatim)', reviewLines.join('\n'));
+  }
+
+  // The deterministic floor's own reading of this business's character and
+  // experience shape — computed here from the same profile+content the
+  // Director already has (pure, no model call, no cost). A grounding aid,
+  // not a cage: the Director may diverge from it, but the brief asks it to
+  // say why rather than guessing blind. `planNarrative` only needs
+  // profile+content, so this is safe to recompute on a resumed run too —
+  // unlike threading the Stage-5-computed plan across the write/direct
+  // resume boundary (see main.ts's own note on that gap).
+  const floor = planNarrative(profile, content, {});
+  section(
+    'Character reading (deterministic floor — you may diverge, but say why)',
+    [
+      `Visual weight: ${floor.character.visualWeight}`,
+      `Emotional register: ${floor.character.emotionalRegister}`,
+      `Narrative potential: ${floor.character.narrativePotential}`,
+      `Atmosphere range: ${floor.character.atmosphereRange}`,
+      `Signature candidate: ${floor.character.signatureCandidate ?? 'none'}`,
+      `Deterministic experience mode: ${floor.experience.mode} — ${floor.experience.rationale}`,
+    ].join('\n'),
+  );
+
+  // The verified, executable runtime-primitive arsenal — dynamic, from the
+  // registry, so runtimePrimitives' schema enum and this description always
+  // agree and both grow automatically as the registry does.
+  section('Available runtime primitives (ARSENAL — select only from this list)', describeRuntimeArsenal());
 
   // Image content signals — not just counts. Deterministic, from metadata:
   // dimensions, orientation, subject tag, and a rights heuristic from the host.
@@ -578,6 +771,61 @@ export interface DirectorResult {
   readonly provenance: DirectorProvenance;
 }
 
+/**
+ * Proposes 3 creative territories from the brief — call 1 of 2. Same
+ * capability id as the directive call itself (`creative_direction`); no new
+ * provider wiring. No fallback on failure, same discipline as the directive
+ * call below: a failed capability call is a failed stage, not a silently
+ * skipped step — a caller that cannot afford a second call should not enable
+ * the Director at all, not get a degraded single-call path with no way to
+ * tell the two apart from the outside.
+ */
+async function proposeTerritories(
+  brief: string,
+  ctx: AgentContext,
+  config: DirectorConfig,
+): Promise<readonly TerritoryCandidate[]> {
+  const invoke = createModelInvoker(
+    {
+      system: TERRITORY_SYSTEM_PROMPT,
+      prompt: `Here is the business brief. Propose 3 creative territories.\n\n${brief}`,
+      schema: TERRITORY_SCHEMA,
+      schemaName: 'territory_proposal',
+      maxTokens: config.maxOutputTokens,
+      signal: ctx.signal,
+      effort: config.effort,
+      modelOverrides: { [ctx.config.ai.provider]: config.model },
+    },
+    ctx.platform.providers,
+    ctx.logger,
+  );
+
+  const { outcome } = await ctx.platform.capabilities.run('creative_direction', invoke, {
+    tokens: { inputTokens: brief.length / 4, outputTokens: config.maxOutputTokens },
+  });
+
+  if (!outcome.ok) {
+    throw new UpstreamError(outcome.error.message, {
+      source: NAME,
+      retryable: outcome.error.retryable,
+      cause: outcome.error,
+    });
+  }
+
+  const data = outcome.data.data as { territories?: unknown };
+  if (!Array.isArray(data.territories) || data.territories.length === 0) {
+    throw new UpstreamError('Model returned no territories', { source: NAME, retryable: true });
+  }
+  return data.territories as readonly TerritoryCandidate[];
+}
+
+/** Formats proposed territories as a brief section the directive call reads. */
+function describeTerritories(territories: readonly TerritoryCandidate[]): string {
+  return territories
+    .map((t) => `- id:${t.id} "${t.name}" — ${t.thesis} Signature moment: ${t.signatureMoment} Case for: ${t.reasonToChoose} Risk: ${t.reasonToReject}`)
+    .join('\n');
+}
+
 async function direct(
   brief: string,
   ctx: AgentContext,
@@ -585,10 +833,13 @@ async function direct(
 ): Promise<DirectorResult> {
   const startedAt = new Date();
 
+  const territories = await proposeTerritories(brief, ctx, config);
+  const territoriesBrief = `${brief}\n\n## TERRITORIES (proposed — choose one, or synthesize, and justify against the others)\n${describeTerritories(territories)}`;
+
   const invoke = createModelInvoker(
     {
       system: SYSTEM_PROMPT,
-      prompt: `Here is the business brief. Produce a DesignDirective for this website.\n\n${brief}`,
+      prompt: `Here is the business brief, followed by 3 proposed creative territories. Choose one (or synthesize a stronger direction from them), and produce a DesignDirective built from that choice. Fill in consideredTerritories to show your reasoning against all 3.\n\n${territoriesBrief}`,
       schema: DIRECTIVE_SCHEMA,
       schemaName: 'design_directive',
       maxTokens: config.maxOutputTokens,
@@ -601,7 +852,7 @@ async function direct(
   );
 
   const { outcome, record } = await ctx.platform.capabilities.run('creative_direction', invoke, {
-    tokens: { inputTokens: brief.length / 4, outputTokens: config.maxOutputTokens },
+    tokens: { inputTokens: territoriesBrief.length / 4, outputTokens: config.maxOutputTokens },
   });
 
   const finishedAt = new Date();
@@ -704,6 +955,11 @@ export async function directDesign(
     density: directive.density,
     accessibilityTarget: directive.accessibilityTarget,
     confidence: directive.confidence,
+    // Shape-only here (the raw ids the model returned, pre-registry-check) —
+    // resolvePrimitives is what decides which of these actually ship; see
+    // directiveRuntimePrimitiveIds/resolvePrimitives at the renderStage call
+    // site for the validated, budget-capped result.
+    requestedRuntimePrimitives: (directive.runtimePrimitives ?? []).map((r) => r.id),
     model: provenance.model,
     inputTokens: provenance.inputTokens,
     outputTokens: provenance.outputTokens,

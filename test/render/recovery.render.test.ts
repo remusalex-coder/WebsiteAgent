@@ -104,8 +104,10 @@ describe('recovered capability: a genuine veil at the signature moment', () => {
     assert.ok(veil.includes('opacity: 0.85') || veil.includes('opacity:0.85'), 'the veil must start near-opaque and wash to nothing');
   });
 
-  it('applies the veil to the signature composition as a rhythm break', () => {
-    assert.ok(/\.section--signature-composition::before/.test(stylesheet), 'signature needs a ::before layer');
+  it('applies the veil to the signature moment as a rhythm break', () => {
+    // The veil is now kind-aware: it rides on the moment beat that carries
+    // data-transition="veil" (the signature composition is also .section--moment).
+    assert.ok(/\.section--moment\[data-transition="veil"\]::before/.test(stylesheet), 'the signature moment must carry a veil ::before layer keyed on data-transition="veil"');
     assert.ok(/forge-veil/.test(stylesheet), 'the signature peak must wash in via the veil keyframe');
   });
 });

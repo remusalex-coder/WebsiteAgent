@@ -46,6 +46,19 @@ test('a capability that must never be model-authored is marked so, for the F-08 
   assert.equal(creative.modelMayWriteOutput, false);
 });
 
+test('F-18 guardrail: audio_speech and three_d_generation stay frozen at gate never', () => {
+  // A regression check, not new behaviour — provider-orchestration work in this
+  // repository leaves these two capabilities untouched pending a separate,
+  // explicit decision to revisit F-18. If this test fails, someone changed
+  // the gate; make sure that was deliberate before touching it further.
+  const audio = CAPABILITY_REGISTRY.audio_speech;
+  assert.equal(audio.gate, 'never');
+
+  const threeD = CAPABILITY_REGISTRY.three_d_generation;
+  assert.equal(threeD.gate, 'never');
+  assert.equal(threeD.tier, 'rejected');
+});
+
 test('every core capability declares a terminal, or an explicit no-model/human gate', () => {
   for (const descriptor of capabilitiesAtTier('core')) {
     const hasTerminal = descriptor.terminal !== null;

@@ -203,6 +203,17 @@ export interface ServiceBinding {
   readonly fixedCents: number;
   /** Credential variable names this binding needs. Empty for local services. */
   readonly requiredCredentials: readonly string[];
+  /**
+   * Whether `fixedCents` is a real, sourced number or a rough placeholder.
+   *
+   * `'observed'` — fetched from a live pricing page or a vendor's published
+   * rate. `'estimated'` — a number this repository is not confident in yet.
+   * Every non-free binding declares one of these explicitly; the planner
+   * treats `'estimated'` as a hard filter under a hard budget unless the
+   * policy opts in, so a placeholder number can never silently spend real
+   * money (mirrors `ModelRecord.priceConfidence` below).
+   */
+  readonly priceConfidence: 'observed' | 'estimated';
 }
 
 /* ------------------------------------------------------------------ */
@@ -277,6 +288,14 @@ export interface ModelRecord {
   readonly freeAllowance: FreeAllowance | null;
   readonly licence: LicenceClass;
   readonly jurisdiction: Jurisdiction;
+  /**
+   * Whether the price above is sourced from a live, fetched rate
+   * (`'observed'`) or a rough, explicitly-unverified placeholder
+   * (`'estimated'`, e.g. a vendor that has not published per-model pricing).
+   * The planner drops an `'estimated'` model under a hard budget unless the
+   * policy explicitly allows unverified pricing — see `plan.ts`.
+   */
+  readonly priceConfidence: 'observed' | 'estimated';
 }
 
 /* ------------------------------------------------------------------ */

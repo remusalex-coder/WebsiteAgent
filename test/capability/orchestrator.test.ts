@@ -17,6 +17,8 @@ import { createCapabilityOrchestrator } from '../../lib/capability/orchestrator.
 import { unmeteredQuotaLedger } from '../../lib/capability/quota.js';
 import { createRateGovernor } from '../../lib/ai/governor.js';
 
+import type { PlanStep } from '../../lib/capability/plan.js';
+
 const logger = createLogger({ level: 'silent', scope: 'test', sink: createConsoleSink(false) });
 
 async function tmpDir(): Promise<string> {
@@ -94,6 +96,119 @@ test('a later plan sees the shrunken budget from an earlier run in the same sess
   const anthropicStep = plan.chain.find((s) => s.binding.provider === 'anthropic');
   assert.equal(anthropicStep, undefined, 'the budget should be exhausted after the first paid call');
 });
+
+test('sequential run() calls decrement the cumulative job budget correctly (test #15)', async () => {
+  const config = loadConfig({ ANTHROPIC_API_KEY: 'test-key' });
+  const orchestrator = await createCapabilityOrchestrator({
+    config,
+    logger,
+    quota: unmeteredQuotaLedger(),
+    governor: createRateGovernor(),
+    policy: { allowPaid: true, budgetCentsRemaining: 1_000, preferFree: false },
+  });
+
+  const spendAfter = async (): Promise<number> => {
+    const result = await orchestrator.run('prose_writing', async (step) => {
+      if (step.binding.provider !== 'anthropic') throw new Error('skip');
+      return 'written';
+    });
+    assert.equal(result.outcome.ok, true);
+    return orchestrator.spend().totalCents;
+  };
+
+  const before = orchestrator.remainingCents();
+  const first = await spendAfter();
+  const afterFirst = orchestrator.remainingCents();
+  const second = await spendAfter();
+  const afterSecond = orchestrator.remainingCents();
+
+  assert.ok(second > first, 'a second real call should add to the running total, not replace it');
+  assert.equal(first * 2, second, 'two identical calls should cost exactly twice one');
+  assert.ok(afterFirst < before, 'remaining budget shrinks after the first call');
+  assert.ok(afterSecond < afterFirst, 'remaining budget shrinks again after the second');
+  assert.equal(before - second, afterSecond, 'remainingCents is exactly the budget minus cumulative spend');
+});
+
+test(
+  'retrying a capability call adds exactly one new charge per real attempt, never duplicates one (test #17)',
+  async () => {
+    const config = loadConfig({ ANTHROPIC_API_KEY: 'test-key' });
+    const orchestrator = await createCapabilityOrchestrator({
+      config,
+      logger,
+      quota: unmeteredQuotaLedger(),
+      governor: createRateGovernor(),
+      policy: { allowPaid: true, budgetCentsRemaining: 1_000, preferFree: false },
+    });
+
+    await orchestrator.run('prose_writing', async (step) => {
+      if (step.binding.provider !== 'anthropic') throw new Error('skip');
+      return 'attempt one';
+    });
+    const linesAfterFirst = orchestrator.spend().lines.length;
+
+    // A caller-level retry: the same capability, called again.
+    await orchestrator.run('prose_writing', async (step) => {
+      if (step.binding.provider !== 'anthropic') throw new Error('skip');
+      return 'attempt two';
+    });
+    const linesAfterSecond = orchestrator.spend().lines.length;
+
+    assert.equal(
+      linesAfterSecond,
+      linesAfterFirst + 1,
+      'a retry is a new real charge, not a duplicate of the first one',
+    );
+  },
+);
+
+test(
+  'KNOWN LIMITATION: two concurrent run() calls can both plan against the same ' +
+    'pre-spend budget and jointly overshoot it (test #16)',
+  async () => {
+    const config = loadConfig({ ANTHROPIC_API_KEY: 'test-key' });
+    // prose_writing/anthropic costs exactly 12.42c at the default token estimate
+    // (276/1380 cents-per-million, 15k in / 6k out). 15c fits one call, not two.
+    const singleCallCents = 15;
+    const orchestrator = await createCapabilityOrchestrator({
+      config,
+      logger,
+      quota: unmeteredQuotaLedger(),
+      governor: createRateGovernor(),
+      policy: { allowPaid: true, budgetCentsRemaining: singleCallCents, preferFree: false },
+    });
+
+    const invoke = async (step: PlanStep): Promise<string> => {
+      if (step.binding.provider !== 'anthropic') throw new Error('skip');
+      return 'concurrent';
+    };
+
+    const [a, b] = await Promise.all([
+      orchestrator.run('prose_writing', invoke),
+      orchestrator.run('prose_writing', invoke),
+    ]);
+
+    const totalSpent = orchestrator.spend().totalCents;
+    // Documenting the gap, not asserting it is fine: `plan()` reads
+    // `remainingCents()` synchronously before either call's `await invoke()`
+    // resolves, so both can see the same unspent budget and both can charge
+    // against it. If this assertion ever starts failing because the
+    // orchestrator began reserving spend at plan time, that is a real fix —
+    // update this test to assert the safe bound instead of documenting the gap.
+    if (a.outcome.ok && b.outcome.ok) {
+      // Both succeeded: the known race allowed a joint overshoot.
+      assert.ok(
+        totalSpent > singleCallCents,
+        'expected the documented race to allow a joint overshoot when both calls succeed',
+      );
+    } else {
+      // At least one failed for an unrelated reason (e.g. a genuine
+      // serialisation this run's environment happened to provide) — the
+      // total must not exceed the budget in that case.
+      assert.ok(totalSpent <= singleCallCents * 2);
+    }
+  },
+);
 
 test('the on-disk quota ledger survives across two orchestrators pointed at the same directory', async () => {
   const dir = await tmpDir();

@@ -3973,22 +3973,30 @@ a {
 /* --- R2: a genuine veil/whiteout at the signature moment ----------------- */
 /* Bakery's whiteout covered the one polarity flip two grounds could not
  * legibly cross. The base .section--moment wash is scroll-timeline only
- * (a no-op where unsupported). This adds a load-time keyframe veil that
- * works everywhere reduced-motion allows, so the peak is unmistakably a
- * rhythm break, not a styled card. */
+ * (a no-op where unsupported). This adds a kind-aware transition that works
+ * everywhere reduced-motion allows, so the peak is unmistakably a rhythm
+ * break, not a styled card — and the *kind* of break is chosen by character
+ * (see ExperienceTransition), so two businesses with a moment differ in how
+ * the peak is hit.
+ *   [data-transition="veil"]  -> full-bleed whiteout that peaks then clears
+ *   [data-transition="wipe"]  -> directional clip-path reveal of the moment
+ */
 @keyframes forge-veil {
   0% { opacity: 0.85; backdrop-filter: blur(0px); }
   60% { opacity: 0.35; backdrop-filter: blur(6px); }
   100% { opacity: 0; backdrop-filter: blur(0px); }
 }
+@keyframes forge-wipe {
+  0% { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
 @media (prefers-reduced-motion: no-preference) {
-  .section--signature-composition,
-  .section--moment {
+  .section--moment[class*="section--moment-"] {
     position: relative;
     overflow: clip;
   }
-  .section--signature-composition::before,
-  .section--moment::before {
+  /* Veil: a whiteout wash that peaks as the moment arrives. */
+  .section--moment[data-transition="veil"]::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -3996,6 +4004,10 @@ a {
     pointer-events: none;
     z-index: 2;
     animation: forge-veil 900ms var(--easing) both;
+  }
+  /* Wipe: the whole moment is revealed by a directional clip-path sweep. */
+  .section--moment[data-transition="wipe"] {
+    animation: forge-wipe 700ms var(--easing) both;
   }
 }
 
@@ -4451,5 +4463,61 @@ a {
   .gallery img,
   .hero__media img {
     filter: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* RUNTIME — continuous traversal (opt-in, generic, bread-free)         */
+/* ------------------------------------------------------------------ */
+[data-runtime="scroll-progress"] {
+  --forge-scroll: 0;
+}
+[data-runtime="scroll-progress"] .section {
+  --forge-vis: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* B. Cinematic pinned hero — wider viewports with a fine pointer only.
+   * Never on touch/phone, where a pinned hero fights the visitor's thumb and
+   * where Playwright/headless may misreport the pointer type. */
+  @media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+    [data-runtime="scroll-progress"] .section--hero {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: clip;
+    }
+    [data-runtime="scroll-progress"] .section--hero + .section {
+      position: relative;
+      z-index: 2;
+    }
+    /* Gentle parallax: the hero media drifts as the page reads, bounded to the
+     * hero's own visibility so it never escapes its frame. */
+    [data-runtime="scroll-progress"] .section--hero .media-fill {
+      transform: translateY(calc((1 - var(--forge-vis, 1)) * -8%));
+      will-change: transform;
+    }
+  }
+
+  /* D. Continuous world crossing (ember world). Two robust, color-free
+   * effects driven only by --forge-vis / --forge-scroll:
+   *   - each dark band warms as it is read (brightness tracks visibility), so
+   *     the "room warms before morning" concept is felt continuously;
+   *   - a faint global daylight overlay rises with page progress, so the whole
+   *     page brightens as the scroll carries the day.
+   * No colour is authored here — brightness and a dawn overlay restate the
+   * world's own tokens. */
+  [data-world="ember"][data-runtime="scroll-progress"] .section[data-bg="inverted"],
+  [data-world="ember"][data-runtime="scroll-progress"] .section[data-bg="surface"] {
+    filter: brightness(calc(0.72 + (var(--forge-vis, 1) * 0.32)));
+  }
+  [data-world="ember"][data-runtime="scroll-progress"]::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: var(--ember-dawn);
+    opacity: calc(var(--forge-scroll, 0) * 0.14);
   }
 }

@@ -13,13 +13,31 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createModelInvoker } from '../capability/invokers.js';
+import { createModelInvoker, withDeterministicFloor } from '../capability/invokers.js';
 import { motionContractFor, motionContractPrompt, motionLibraryHtmlPrompt } from './motion.js';
 import { functionalModulePrompt } from './functionalModules.js';
 import { assetStrategyPrompt } from './assetStrategy.js';
 import type { ExperienceBlueprint, ForgeRouting, GeneratedCode } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
+import type { PlanStep } from '../capability/plan.js';
+
+/**
+ * `structured_generation`'s declared floor is `reject-directive`: "discard
+ * the response and keep the deterministic value" (`bindings.ts`). There is
+ * no deterministic HTML/CSS/JS to fall back to here — a page is either
+ * generated or it is not — so the correct behaviour on reaching this step is
+ * to fail the chain cleanly rather than fabricate markup. This throw is what
+ * makes that an intentional, well-labelled outcome instead of the
+ * `createModelInvoker was handed a non-model step` throw a caller would
+ * otherwise get, which reads like a wiring bug rather than an exhausted
+ * chain.
+ */
+function rejectDirectiveFloor(step: PlanStep): never {
+  throw new Error(
+    `[forge.builder] ${step.binding.id}: no deterministic markup exists to fall back to — discarding and failing over`,
+  );
+}
 
 /**
  * The experience-strategy directives every prompt below must obey —
@@ -44,11 +62,11 @@ function experienceStrategyPrompt(blueprint: ExperienceBlueprint): string {
 export async function buildFrontend(
   blueprint: ExperienceBlueprint,
   runDir: string,
+  siteDir: string,
   config: AppConfig,
   routing: ForgeRouting,
   logger: Logger,
 ): Promise<GeneratedCode> {
-  const siteDir = path.join(runDir, 'site');
   const siteAssetsDir = path.join(siteDir, 'assets');
   await fs.mkdir(siteAssetsDir, { recursive: true });
 
@@ -126,7 +144,7 @@ CRITICAL HTML5 MANDATES:
 
 Return JSON with a single key "html".`;
 
-  const htmlInvoke = createModelInvoker(
+  const htmlModelInvoke = createModelInvoker(
     {
       system: 'You generate pristine, semantic, accessible HTML5 for award-winning digital experiences. Never include inline style tags.',
       prompt: htmlPrompt,
@@ -145,6 +163,7 @@ Return JSON with a single key "html".`;
     routing.providers,
     logger,
   );
+  const htmlInvoke = withDeterministicFloor(htmlModelInvoke, rejectDirectiveFloor);
 
   const htmlOutcome = await routing.capabilities.run('structured_generation', htmlInvoke, {
     tokens: { inputTokens: htmlPrompt.length / 4, outputTokens: 8_000 },
@@ -210,7 +229,7 @@ JAVASCRIPT MANDATES (experience.js):
 
 Return JSON with "css" and "js" strings.`;
 
-  const cssJsInvoke = createModelInvoker(
+  const cssJsModelInvoke = createModelInvoker(
     {
       system:
         'You write bespoke, performant CSS3 and vanilla JavaScript strictly matching the provided HTML structure and visual grammar.',
@@ -231,6 +250,7 @@ Return JSON with "css" and "js" strings.`;
     routing.providers,
     logger,
   );
+  const cssJsInvoke = withDeterministicFloor(cssJsModelInvoke, rejectDirectiveFloor);
 
   const cssJsOutcome = await routing.capabilities.run('structured_generation', cssJsInvoke, {
     tokens: { inputTokens: cssJsPrompt.length / 4, outputTokens: 8_000 },

@@ -28,6 +28,9 @@ import { validateAgainstSchema } from '../../lib/ai/schema.js';
 import { executeCapability } from '../../lib/capability/execute.js';
 import { planCapability } from '../../lib/capability/plan.js';
 import { unmeteredQuotaLedger } from '../../lib/capability/quota.js';
+import { directiveRuntimePrimitiveIds } from '../../lib/design/directive.js';
+import { executablePrimitiveIds, resolvePrimitives } from '../../lib/design/experienceRegistry.js';
+import { NEUTRAL_ARCHITECTURE, RUNTIME_PRIMITIVE_BUDGET } from '../../lib/design/experience.js';
 import { profileFixture, strategyFixture } from '../fixtures/business.js';
 import { fullContent, minimalContent } from '../fixtures/content.js';
 
@@ -85,7 +88,26 @@ function capturingLogger(): { logger: Logger; warnings: string[] } {
 }
 
 /**
- * Builds a fake `AIProvider` whose `generate` returns the given data object.
+ * A valid 3-territory stub — what the fake provider returns automatically
+ * for the territory-proposal call (`direct()`'s call 1 of 2), so every
+ * existing `fakeProvider(data)` call site below (written against the old
+ * single-call contract) keeps testing exactly what it always tested — the
+ * directive call's behaviour — without needing to know a territory call now
+ * precedes it.
+ */
+const VALID_TERRITORIES = {
+  territories: [
+    { id: 'a', name: 'Territory A', thesis: 'Thesis A.', signatureMoment: 'hero', reasonToChoose: 'Strong evidence for A.', reasonToReject: 'Risks reading generic.' },
+    { id: 'b', name: 'Territory B', thesis: 'Thesis B.', signatureMoment: 'gallery', reasonToChoose: 'Strong evidence for B.', reasonToReject: 'Higher production risk.' },
+    { id: 'c', name: 'Territory C', thesis: 'Thesis C.', signatureMoment: 'about', reasonToChoose: 'Strong evidence for C.', reasonToReject: 'Least distinctive.' },
+  ],
+};
+
+/**
+ * Builds a fake `AIProvider` whose `generate` returns `data` for the
+ * directive call (`schemaName: 'design_directive'`) and a valid territory
+ * stub for the territory-proposal call that now precedes it
+ * (`schemaName: 'territory_proposal'`) — `direct()` always makes both.
  * Captures requests for assertion.
  */
 function fakeProvider(data: unknown): { provider: AIProvider; requests: AIGenerateRequest[] } {
@@ -98,7 +120,7 @@ function fakeProvider(data: unknown): { provider: AIProvider; requests: AIGenera
     async generate(request: AIGenerateRequest): Promise<AIGenerateResult> {
       requests.push(request);
       return {
-        data,
+        data: request.schemaName === 'territory_proposal' ? VALID_TERRITORIES : data,
         model: 'fake-model',
         usage: { inputTokens: 100, outputTokens: 50 },
         structuredOutput: 'native',
@@ -143,6 +165,8 @@ function fakeOrchestrator(logger: Logger): CapabilityOrchestrator {
     allowedLicences: ['permissive-local', 'copyleft-local', 'commercial-api', 'free-tier-unverified'] as const,
     autonomous: true,
     preferFree: true,
+    allowUnverifiedPricing: false,
+    allowUnverifiedPricingFor: [],
   };
 
   return {
@@ -398,6 +422,77 @@ describe('DIRECTIVE_SCHEMA – experienceIntent', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* DIRECTIVE_SCHEMA – runtimePrimitives                                */
+/* ------------------------------------------------------------------ */
+
+describe('DIRECTIVE_SCHEMA – runtimePrimitives', () => {
+  it('is optional — a directive without it still validates', () => {
+    assert.deepEqual(validateAgainstSchema(VALID_DIRECTIVE, DIRECTIVE_SCHEMA), []);
+  });
+
+  it("the id enum is built from the registry's executablePrimitiveIds(), not hardcoded", () => {
+    const schema = DIRECTIVE_SCHEMA as unknown as {
+      properties: Record<string, { items?: { properties?: Record<string, { enum?: readonly string[] }> } }>;
+    };
+    const idEnum = schema.properties['runtimePrimitives']?.items?.properties?.['id']?.enum;
+    assert.ok(idEnum);
+    assert.deepEqual([...idEnum].sort(), [...executablePrimitiveIds()].sort());
+  });
+
+  it('accepts a well-formed runtimePrimitives selection', () => {
+    const withPrimitives: DesignDirective = {
+      ...VALID_DIRECTIVE,
+      runtimePrimitives: [{ id: 'lenis-smooth-scroll', reason: 'editorial scroll pacing for this business' }],
+    };
+    assert.deepEqual(validateAgainstSchema(withPrimitives, DIRECTIVE_SCHEMA), []);
+  });
+
+  it('accepts an explicitly empty selection — the common, correct answer for most businesses', () => {
+    const withEmpty: DesignDirective = { ...VALID_DIRECTIVE, runtimePrimitives: [] };
+    assert.deepEqual(validateAgainstSchema(withEmpty, DIRECTIVE_SCHEMA), []);
+  });
+
+  it('rejects an id outside the registry enum', () => {
+    const bad = { ...VALID_DIRECTIVE, runtimePrimitives: [{ id: 'made-up-primitive', reason: 'x' }] };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.length > 0);
+  });
+
+  it('rejects an id that is a real registry key but not executable (status: researched)', () => {
+    const bad = { ...VALID_DIRECTIVE, runtimePrimitives: [{ id: 'awwwards-teardown-corpus', reason: 'x' }] };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.length > 0, 'a status:researched entry must not validate, even though it is a real registry key');
+  });
+
+  it('rejects a selection missing reason', () => {
+    const bad = { ...VALID_DIRECTIVE, runtimePrimitives: [{ id: 'lenis-smooth-scroll' }] };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.length > 0);
+  });
+
+  it('rejects CSS/JS smuggled into a runtimePrimitives entry via additionalProperties: false', () => {
+    const bad = {
+      ...VALID_DIRECTIVE,
+      runtimePrimitives: [{ id: 'lenis-smooth-scroll', reason: 'x', css: 'body{color:red}' }],
+    };
+    const problems = validateAgainstSchema(bad, DIRECTIVE_SCHEMA);
+    assert.ok(problems.length > 0);
+  });
+
+  it('declares maxItems: RUNTIME_PRIMITIVE_BUDGET, for providers (e.g. Gemini) that enforce it server-side', () => {
+    // validateAgainstSchema (lib/ai/schema.ts) does not check maxItems
+    // locally — only type/enum/required/additionalProperties — so a
+    // budget-overflowing response is not rejected here. The real
+    // enforcement is resolvePrimitives' `.slice(0, RUNTIME_PRIMITIVE_BUDGET)`
+    // (proved in test/design/directorRuntimeSeam.test.ts). This test only
+    // confirms the constraint is still declared, for the providers whose
+    // native schema support does enforce it before the response ever arrives.
+    const schema = DIRECTIVE_SCHEMA as unknown as { properties: Record<string, { maxItems?: number }> };
+    assert.equal(schema.properties['runtimePrimitives']?.maxItems, RUNTIME_PRIMITIVE_BUDGET);
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* buildDesignBrief                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -440,6 +535,21 @@ describe('buildDesignBrief', () => {
     assert.ok(brief.includes('[hero]'), 'brief should include hero section');
   });
 
+  it('includes the runtime-primitive arsenal, built dynamically from the registry', () => {
+    const brief = buildDesignBrief(profileFixture(), strategyFixture(), fullContent, 2_000);
+    assert.ok(brief.includes('ARSENAL'), 'brief should include the arsenal section');
+    // Every id the schema will accept should be named in the brief, so the
+    // model is never asked to choose from a vocabulary it cannot see.
+    for (const id of executablePrimitiveIds()) {
+      assert.ok(brief.includes(id), `brief should list "${id}" from the arsenal`);
+    }
+    // Real registry facts, not a placeholder list — the model needs cost/risk
+    // to decide restraint, not just a name.
+    assert.ok(brief.includes('performanceCost:'));
+    assert.ok(brief.includes('accessibilityRisk:'));
+    assert.ok(brief.includes('mobileSupport:'));
+  });
+
   it('produces a non-empty brief for minimal content', () => {
     const brief = buildDesignBrief(profileFixture(), strategyFixture(), minimalContent, 2_000);
     assert.ok(brief.length > 100, 'brief should be non-trivial even for minimal content');
@@ -480,11 +590,65 @@ describe('SYSTEM_PROMPT', () => {
   it('instructs the model not to invent facts', () => {
     assert.ok(SYSTEM_PROMPT.includes('invent'));
   });
+
+  it('instructs the model to select from the verified arsenal, not write implementation code', () => {
+    assert.ok(SYSTEM_PROMPT.includes('ARSENAL'));
+    assert.ok(SYSTEM_PROMPT.toLowerCase().includes('not writing implementation code'));
+  });
+
+  it('instructs the model that no selection is the common, correct answer for most businesses', () => {
+    assert.ok(SYSTEM_PROMPT.includes('select none'));
+  });
 });
 
 /* ------------------------------------------------------------------ */
 /* designDirectorAgent.run — happy path                               */
 /* ------------------------------------------------------------------ */
+
+describe('designDirectorAgent.run – runtime primitive selection reaches the resolver', () => {
+  // The full, real call path this suite can exercise without a live network
+  // call: fake AIProvider → real capability orchestrator → real
+  // directDesign/assertDirectiveShape → real DesignDirective →
+  // directiveRuntimePrimitiveIds → resolvePrimitives. Only the AIProvider is
+  // fake; every function between it and the resolved primitive list is the
+  // exact production code `main.ts`'s `executePipeline` calls.
+  it('a model-selected primitive survives the real agent path and reaches resolvePrimitives', async () => {
+    const directive: DesignDirective = {
+      ...VALID_DIRECTIVE,
+      runtimePrimitives: [{ id: 'gsap-scrolltrigger', reason: 'scroll-scrubbed reveal fits the editorial pacing' }],
+    };
+    const { provider } = fakeProvider(directive);
+    const result = await designDirectorAgent.run(baseInput(), fakeContext(provider));
+
+    assert.deepEqual(result.runtimePrimitives, [{ id: 'gsap-scrolltrigger', reason: 'scroll-scrubbed reveal fits the editorial pacing' }]);
+
+    const resolved = resolvePrimitives(NEUTRAL_ARCHITECTURE, directiveRuntimePrimitiveIds(result));
+    assert.deepEqual(resolved, ['gsap-scrolltrigger']);
+  });
+
+  it('a directive with no selection resolves to no primitives, through the same real path', async () => {
+    const { provider } = fakeProvider(VALID_DIRECTIVE); // no runtimePrimitives field at all
+    const result = await designDirectorAgent.run(baseInput(), fakeContext(provider));
+
+    const resolved = resolvePrimitives(NEUTRAL_ARCHITECTURE, directiveRuntimePrimitiveIds(result));
+    assert.deepEqual(resolved, []);
+  });
+
+  it("a model that hallucinates an id outside the registry is caught by the resolver, not silently trusted", async () => {
+    // The schema's enum should stop this in a real provider, but the
+    // resolver is the actual authority regardless of what a provider lets
+    // through — this proves the second, independent layer.
+    const directive = {
+      ...VALID_DIRECTIVE,
+      runtimePrimitives: [{ id: 'made-up-primitive', reason: 'sounds impressive' }],
+    } as unknown as DesignDirective;
+    const { provider } = fakeProvider(directive);
+    const result = await designDirectorAgent.run(baseInput(), fakeContext(provider));
+
+    const resolved = resolvePrimitives(NEUTRAL_ARCHITECTURE, directiveRuntimePrimitiveIds(result));
+    assert.deepEqual(resolved, []);
+  });
+});
 
 describe('designDirectorAgent.run – happy path', () => {
   it('returns a DesignDirective, not a WebsiteDesign', async () => {
@@ -516,7 +680,7 @@ describe('designDirectorAgent.run – happy path', () => {
     // in designDirectorAgent.ts. If it did, the TypeScript compiler would surface it.
     const { provider, requests } = fakeProvider(VALID_DIRECTIVE);
     await designDirectorAgent.run(baseInput(), fakeContext(provider));
-    assert.equal(requests.length, 1);
+    assert.equal(requests.length, 2);
     // A request object has `prompt`, `system`, `schema` — not `generate`.
     assert.ok('prompt' in requests[0]!);
     assert.ok(!('generate' in requests[0]!));
@@ -529,16 +693,16 @@ describe('designDirectorAgent.run – happy path', () => {
     assert.equal(requests[0]!.effort, 'medium');
   });
 
-  it('passes the DIRECTIVE_SCHEMA to the provider', async () => {
+  it('passes the DIRECTIVE_SCHEMA to the provider for the directive call', async () => {
     const { provider, requests } = fakeProvider(VALID_DIRECTIVE);
     await designDirectorAgent.run(baseInput(), fakeContext(provider));
-    assert.deepEqual(requests[0]!.schema, DIRECTIVE_SCHEMA);
+    assert.deepEqual(requests[1]!.schema, DIRECTIVE_SCHEMA);
   });
 
-  it('passes the system prompt to the provider', async () => {
+  it('passes the system prompt to the provider for the directive call', async () => {
     const { provider, requests } = fakeProvider(VALID_DIRECTIVE);
     await designDirectorAgent.run(baseInput(), fakeContext(provider));
-    assert.equal(requests[0]!.system, SYSTEM_PROMPT);
+    assert.equal(requests[1]!.system, SYSTEM_PROMPT);
   });
 
   it('does not call getBrowser (agent does not browse)', async () => {
@@ -756,9 +920,9 @@ describe('directDesign – provenance', () => {
       version: 'fake-1.0',
       defaultModel: 'fake-model',
       supportsNativeSchema: true,
-      async generate(): Promise<AIGenerateResult> {
+      async generate(request: AIGenerateRequest): Promise<AIGenerateResult> {
         return {
-          data: VALID_DIRECTIVE,
+          data: request.schemaName === 'territory_proposal' ? VALID_TERRITORIES : VALID_DIRECTIVE,
           model: 'fake-model-002',
           usage: { inputTokens: 1, outputTokens: 2 },
           structuredOutput: 'native',
@@ -791,10 +955,12 @@ describe('directDesign – provenance', () => {
     assert.ok(provenance.durationMs >= 0);
   });
 
-  it('makes exactly one provider call', async () => {
+  it('makes exactly two provider calls — territories, then the directive built from them', async () => {
     const { provider, requests } = fakeProvider(VALID_DIRECTIVE);
     await directDesign(baseInput(), fakeContext(provider));
-    assert.equal(requests.length, 1);
+    assert.equal(requests.length, 2);
+    assert.equal(requests[0]!.schemaName, 'territory_proposal');
+    assert.equal(requests[1]!.schemaName, 'design_directive');
   });
 });
 

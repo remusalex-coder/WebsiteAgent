@@ -149,6 +149,15 @@ export interface ComposeOptions {
    * Absent, the plan is derived here exactly as it always was.
    */
   readonly plan?: NarrativePlan | undefined;
+  /**
+   * The AI Design Director's full directive, when one was produced.
+   *
+   * Used only to record the open creative concept (creativeThesis etc.) onto
+   * the design for observability and QA — the closed-set decisions in the
+   * directive are applied deterministically by `applyDirective` elsewhere;
+   * this field is the intent record, never a behavioural override.
+   */
+  readonly directive?: import('./directive.js').DesignDirective | undefined;
 }
 
 /* ------------------------------------------------------------------ */
@@ -625,6 +634,7 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     pacing: experience.pacing,
     momentSection: resolvedMoment,
     momentTransition: resolvedMomentTransition,
+    transition: experience.transition,
     galleryLead: experience.galleryLead,
   });
   notes.push(...layout.notes);
@@ -638,6 +648,16 @@ export function composeDesign(input: ComposeInput, options: ComposeOptions = {})
     industry,
     patterns,
     world: world.id,
+    concept: options.directive
+      ? {
+          thesis: options.directive.creativeThesis ?? null,
+          visualMetaphor: options.directive.visualMetaphor ?? null,
+          emotionalJourney: options.directive.emotionalJourney ?? null,
+          spatialStrategy: options.directive.spatialStrategy ?? null,
+          compositionStrategy: options.directive.compositionStrategy ?? null,
+          whatToAvoid: options.directive.whatToAvoid ?? null,
+        }
+      : undefined,
     tokens: { color: color.system, typography, spacing, radius, elevation, motion },
     layout: layout.plan,
     imagery: imageryFor(theme, defaults.imageReliance, layout.plan.hero),

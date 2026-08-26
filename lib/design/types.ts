@@ -50,11 +50,12 @@ export type DesignDirection =
   | 'playful'
   | 'bold'
   | 'premium'
-  | 'friendly';
+  | 'friendly'
+  | 'avantgarde';
 
 export const DESIGN_DIRECTIONS: readonly DesignDirection[] = [
   'minimal', 'luxury', 'corporate', 'elegant', 'modern', 'editorial',
-  'creative', 'playful', 'bold', 'premium', 'friendly',
+  'creative', 'playful', 'bold', 'premium', 'friendly', 'avantgarde',
 ];
 
 /** How much air the layout leaves. Drives spacing, type size and column counts. */
@@ -491,6 +492,13 @@ export interface SectionDesign {
    */
   readonly momentTransition: boolean;
   /**
+   * The *kind* of transition primitive applied at this section, from
+   * `ExperienceArchitecture.transition`. `none` when no transition is earned.
+   * Carried to the renderer as `data-transition`, so the stylesheet can pick the
+   * concrete wash (`veil` | `wipe` | `circular-handoff`).
+   */
+  readonly transition: 'none' | 'veil' | 'wipe' | 'circular-handoff';
+  /**
    * What this section is doing in the story, from `planNarrativeOrder`.
    *
    * Carried onto the layout — and from there onto the rendered element as
@@ -595,6 +603,23 @@ export interface WebsiteDesign {
   readonly patterns: readonly string[];
   /** The visual world the page is built in. See lib/design/worlds.ts. */
   readonly world: string;
+  /**
+   * The AI-authored creative concept, when the Design Director supplied one.
+   *
+   * Open, free-text intent (creativeThesis / visualMetaphor / etc.) recorded
+   * from the directive so a reviewer or the QA gate can see WHAT the site is
+   * meant to be, and so reconcept iterations can be checked for having changed
+   * the concept rather than merely the tint. Never CSS, JS or tokens — intent
+   * only. Absent on a purely deterministic (director-off) build.
+   */
+  readonly concept?: Readonly<{
+    readonly thesis: string | null;
+    readonly visualMetaphor: string | null;
+    readonly emotionalJourney: string | null;
+    readonly spatialStrategy: string | null;
+    readonly compositionStrategy: string | null;
+    readonly whatToAvoid: string | null;
+  }> | undefined;
   readonly tokens: DesignTokens;
   readonly layout: LayoutPlan;
   readonly imagery: ImageStrategy;

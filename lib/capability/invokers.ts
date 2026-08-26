@@ -109,4 +109,56 @@ export function createModelInvoker(
   };
 }
 
+/**
+ * Dispatches a plan step to a model invoker or a deterministic handler, by
+ * `step.binding.kind`.
+ *
+ * `createModelInvoker`'s returned function throws when handed anything but a
+ * `kind: 'model'` step — deliberately: it has no way to serve a `tool`,
+ * `skill`, or `deterministic` binding, and that throw is the right defence
+ * against a caller wiring it up wrong. But every capability in `bindings.ts`
+ * ends its chain with a `deterministic` floor precisely so a run survives
+ * when every model fails, and that floor is reachable only if *something* in
+ * the chain knows how to run it. Before this combinator, no call site did:
+ * the model invoker was the only `invoke` most stages ever built, so the
+ * chain reaching its own declared floor produced the same "non-model step"
+ * throw as a genuine wiring bug — indistinguishable from one, and in
+ * `grounding.ts` and `research.ts`, fatal to the whole run.
+ *
+ * `onModel` is typically `createModelInvoker(...)`'s return value. `onDeterministic`
+ * is the call site's own floor implementation — whatever "compose the
+ * baseline", "discard and keep the deterministic value", or similar means
+ * for that particular capability and shape of `T`.
+ */
+export function withDeterministicFloor<T>(
+  onModel: CapabilityInvoker<T>,
+  onDeterministic: (step: PlanStep) => T | Promise<T>,
+): CapabilityInvoker<T> {
+  return async (step: PlanStep): Promise<T> => {
+    if (step.binding.kind === 'deterministic') {
+      return onDeterministic(step);
+    }
+    return onModel(step);
+  };
+}
+
+/**
+ * The `AIGenerateResult` shape for a deterministic floor step, so a call
+ * site's `onDeterministic` handler can hand back a value indistinguishable
+ * in shape from a real model response. That matters because every stage
+ * already writes `(parsed.field as T) ?? default` for a field a model
+ * *omitted* — passing `data` here through that same parsing path is what
+ * lets those existing per-field fallbacks compose the whole result when the
+ * chain lands on the floor, rather than duplicating that logic.
+ */
+export function deterministicModelResult(step: PlanStep, data: unknown): AIGenerateResult {
+  return {
+    data,
+    model: step.binding.id,
+    usage: { inputTokens: null, outputTokens: null },
+    structuredOutput: 'native',
+    finishReason: 'deterministic-floor',
+  };
+}
+
 export const SOURCE_NAME = SOURCE;

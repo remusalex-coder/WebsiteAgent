@@ -217,7 +217,7 @@ async function inspect(indexPath: string, shotDir: string) {
             externalScripts: Array.from(document.querySelectorAll('script[src]'))
               .map((s) => s.getAttribute('src') ?? '')
               .filter((s) => /^https?:/i.test(s)),
-            iframes: document.querySelectorAll('iframe').length,
+            iframes: Array.from(document.querySelectorAll('iframe')).map((f) => f.getAttribute('src') ?? ''),
             formsWithoutAction: Array.from(document.querySelectorAll('form'))
               .filter((f) => !f.getAttribute('action')).length,
           };

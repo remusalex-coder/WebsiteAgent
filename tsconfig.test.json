@@ -1,5 +1,5 @@
 {
-  "// ": "Typechecking config: the build config plus the tests. `npm run build` uses tsconfig.json so nothing under test/ is ever emitted to dist/.",
+  "// ": "Typechecking config: the build config plus the tests. `npm run build` uses tsconfig.json so nothing under test/ is ever emitted to dist/. Operational scripts are checked separately — see tsconfig.scripts.json.",
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true

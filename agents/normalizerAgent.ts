@@ -18,6 +18,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { InvalidInputError } from '../lib/errors.js';
+import { classifyPhone, classifyEmail } from '../lib/sources/piiScreen.js';
+import type { PiiBoundary } from '../lib/sources/piiScreen.js';
 import type { Logger } from '../lib/logger.js';
 import type {
   Agent,
@@ -762,6 +764,49 @@ export const normalizerAgent: NormalizerAgent = {
     }
     const emails = dedupeCandidates(emailCandidates, (item) => item.value, () => 0);
 
+    /*
+     * -- PII screen (N-19, P4-7) -------------------------------------
+     *
+     * Runs BEFORE the profile is written and therefore before the first model
+     * call (M-11): a boundaried value never reaches a brief. The screen keys
+     * on attribution — a value a personal page or a review byline carries is
+     * not the business publishing it. Business-published phones and emails
+     * (from the listing or the site's own contact pages) pass unchanged; a
+     * boundaried value is dropped and recorded, never silently lost.
+     */
+    const piiBoundaries: PiiBoundary[] = [];
+    const screenedPhones: Attributed<PhoneNumber>[] = [];
+    for (const phone of phones) {
+      const result = classifyPhone(
+        phone.value.formatted,
+        { businessPublished: phone.source === 'maps' || phone.source === 'website', individualConsented: false },
+        phone.source,
+      );
+      if (result.boundary === null) {
+        screenedPhones.push(phone);
+      } else {
+        piiBoundaries.push(result.boundary);
+      }
+    }
+    const screenedEmails: Attributed<string>[] = [];
+    for (const email of emails) {
+      const result = classifyEmail(
+        email.value,
+        { businessPublished: email.source === 'maps' || email.source === 'website', individualConsented: false },
+        email.source,
+      );
+      if (result.boundary === null) {
+        screenedEmails.push(email);
+      } else {
+        piiBoundaries.push(result.boundary);
+      }
+    }
+    if (piiBoundaries.length > 0) {
+      logger.warn('PII screen boundaried contact values before any model call', {
+        boundaries: piiBoundaries.map((b) => ({ kind: b.kind, fingerprint: b.fingerprint, reason: b.reason })),
+      });
+    }
+
     /* -- socials ---------------------------------------------------- */
     const socialCandidates: AttributedValue<SocialProfile>[] = [];
     for (const [platform, url] of Object.entries(discovery.socialLinks)) {
@@ -810,8 +855,8 @@ export const normalizerAgent: NormalizerAgent = {
       address,
       coordinates,
       website,
-      phones,
-      emails,
+      phones: screenedPhones,
+      emails: screenedEmails,
       socialProfiles,
       // Content sources first, per day. Discovery reads a signed-out pane that
       // renders roughly one day; an API that answers with the week is not a

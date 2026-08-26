@@ -59,6 +59,17 @@ test('a model binding always names a provider and a model class', () => {
   }
 });
 
+test('every binding declares a price confidence — no candidate can spend on an implicit default', () => {
+  for (const id of CAPABILITY_IDS) {
+    for (const binding of bindingsFor(id)) {
+      assert.ok(
+        binding.priceConfidence === 'observed' || binding.priceConfidence === 'estimated',
+        `${binding.id} has no priceConfidence`,
+      );
+    }
+  }
+});
+
 test('craft_judging and distinctness_judging declare the pairing in opposite vendor order', () => {
   const craft = bindingsFor('craft_judging')
     .filter((b) => b.kind === 'model')

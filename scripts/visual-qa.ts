@@ -5,9 +5,16 @@
  *   npm run visual-qa -- <runId> [--autofix]
  *
  * Captures desktop and mobile screenshots of an already-rendered site, asks a
- * vision model what is wrong, and — when `--autofix` is set — has Claude Code
- * apply targeted CSS/HTML fixes. Then it re-captures and re-analyses until the
- * defects clear or the attempt budget runs out.
+ * vision model what is wrong, and — when `--autofix` is set AND a human
+ * confirms it at a terminal — has Claude Code apply targeted CSS/HTML fixes.
+ * Then it re-captures and re-analyses until the defects clear or the attempt
+ * budget runs out.
+ *
+ * **Autofix is human-only, by construction.** It lets a model write bytes that
+ * a customer receives, which the deterministic renderer would otherwise own
+ * alone, so it requires a real TTY and a typed phrase — see `autofixAllowed`.
+ * No automated caller in this repository can satisfy those conditions, and an
+ * unattended run degrades to report-only rather than hanging or failing.
  *
  * It does NOT render and does NOT deploy. The site it works on is the rendered
  * deliverable (the same `site/` tree `publish-run.ts` assembles), so fixes land
@@ -31,6 +38,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { chromium } from 'playwright';
 
 import { createConsoleSink, createLogger } from '../lib/logger.js';
+import { loadConfig } from '../lib/config.js';
 import {
   analyzeScreenshots,
   runVisualQa,
@@ -232,12 +240,102 @@ async function noPatch(_defects: readonly VisualDefect[], attempt: number): Prom
 }
 
 /* ------------------------------------------------------------------ */
+/* Autofix gate — human-only, by construction                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The phrase a human has to type to let a model edit the deliverable.
+ *
+ * ## Why this gate exists
+ *
+ * `patchWithClaude` spawns Claude Code with `Read,Edit,Write` inside the
+ * rendered site directory and lets it rewrite `index.html` and `styles.css`.
+ * That is a model authoring bytes that a customer receives, which is the one
+ * thing the architecture's central invariant forbids — the deterministic
+ * renderer owns every byte that ships.
+ *
+ * The path is kept because a human repairing a run by hand is a legitimate use.
+ * It is fenced so that nothing *automated* can reach it: a flag alone was not
+ * enough, because a flag is exactly what an orchestrator would pass.
+ *
+ * ## Why not an environment variable
+ *
+ * Because the n8n stage server would inherit it. Every automated caller in this
+ * repository is a spawned process with an inherited environment and no
+ * terminal, so the gate is a real TTY plus a typed phrase — two things a
+ * spawned stage cannot produce and would not survive.
+ *
+ * With no terminal the script does not hang and does not fail; it degrades to
+ * report-only, which is the correct behaviour for an unattended run.
+ */
+const AUTOFIX_CONFIRMATION = 'edit delivered bytes';
+
+async function confirmAutofix(): Promise<boolean> {
+  process.stdout.write(
+    '\n' +
+      '─────────────────────────────────────────────────────────────────────\n' +
+      '  --autofix lets a MODEL EDIT THE DELIVERED SITE.\n' +
+      '\n' +
+      '  Claude Code will be given Read/Edit/Write inside:\n' +
+      `    ${siteDir}\n` +
+      '  and may rewrite index.html and styles.css. Those bytes are what a\n' +
+      '  customer receives. The deterministic renderer will NOT have produced\n' +
+      '  them, and re-rendering the run will not reproduce them.\n' +
+      '\n' +
+      `  Type exactly: ${AUTOFIX_CONFIRMATION}\n` +
+      '  Anything else runs in report-only mode.\n' +
+      '─────────────────────────────────────────────────────────────────────\n' +
+      '> ',
+  );
+
+  const answer = await new Promise<string>((resolve) => {
+    const onData = (chunk: Buffer | string): void => {
+      process.stdin.off('data', onData);
+      process.stdin.pause();
+      resolve(String(chunk).trim());
+    };
+    process.stdin.resume();
+    process.stdin.once('data', onData);
+  });
+
+  return answer === AUTOFIX_CONFIRMATION;
+}
+
+/**
+ * Resolves whether the model patcher may run.
+ *
+ * Three conditions, all required: the flag, an interactive terminal on both
+ * stdin and stdout, and the typed phrase. Any of them missing leaves the run in
+ * report-only mode with the reason printed.
+ */
+async function autofixAllowed(): Promise<boolean> {
+  if (!autofix) return false;
+
+  if (process.stdin.isTTY !== true || process.stdout.isTTY !== true) {
+    process.stderr.write(
+      'refusing --autofix: no interactive terminal.\n' +
+        '  A model may only edit delivered bytes when a human confirms it at a TTY.\n' +
+        '  Continuing in report-only mode.\n',
+    );
+    return false;
+  }
+
+  const confirmed = await confirmAutofix();
+  if (!confirmed) {
+    process.stdout.write('\nnot confirmed; continuing in report-only mode.\n');
+  }
+  return confirmed;
+}
+
+/* ------------------------------------------------------------------ */
 /* Run                                                                 */
 /* ------------------------------------------------------------------ */
 
-const apiKey = process.env.OPENAI_API_KEY ?? '';
-const baseUrl = process.env.VISION_BASE_URL ?? 'https://api.openai.com/v1';
-const model = process.env.VISION_MODEL ?? 'gpt-4o';
+const config = loadConfig();
+const vision = config.vision;
+const apiKey = vision.apiKey !== '' ? vision.apiKey : (config.ai.apiKeys.openai ?? '');
+const baseUrl = vision.baseUrl ?? 'https://api.openai.com/v1';
+const model = vision.model !== '' ? vision.model : 'gpt-4o';
 
 if (apiKey === '') {
   process.stderr.write('warning: OPENAI_API_KEY is not set — vision analysis will fail. Set it to run the loop; capture + mechanical checks still run.\n');
@@ -265,6 +363,8 @@ const analysis = await (async () => {
   };
 })();
 
+const patchingAllowed = await autofixAllowed();
+
 const result = await runVisualQa({
   siteDir,
   visionApiKey: apiKey,
@@ -275,7 +375,7 @@ const result = await runVisualQa({
   logger,
   capture,
   analyze: analysis,
-  patchSite: autofix ? patchWithClaude : noPatch,
+  patchSite: patchingAllowed ? patchWithClaude : noPatch,
 });
 
 process.stdout.write(`\n=== Visual QA: ${result.verdict} ===\n`);

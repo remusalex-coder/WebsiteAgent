@@ -94,6 +94,20 @@ export function maxCompletionTokensFor(request: Pick<AIGenerateRequest, 'maxToke
 }
 
 /**
+ * OpenAI only accepts `reasoning_effort` on reasoning models (o1/o3/o4 and
+ * their variants). Sending it to a non-reasoning model (gpt-4o, gpt-4o-mini,
+ * gpt-5 family) returns HTTP 400 "Unrecognized request argument supplied:
+ * reasoning_effort", which silently breaks every OpenAI call on this
+ * deployment. Gate the field on a model-name prefix whitelist so the adapter
+ * works for both model classes.
+ */
+const REASONING_MODEL_PREFIXES = ['o1', 'o3', 'o4', 'o1-', 'o3-', 'o4-'];
+function modelSupportsReasoningEffort(model: string): boolean {
+  const m = model.toLowerCase();
+  return REASONING_MODEL_PREFIXES.some((p) => m.startsWith(p));
+}
+
+/**
  * Normalizes a JSON Schema for OpenAI's `strict: true` mode: every object
  * node gets `additionalProperties: false`, and every key in `properties`
  * is added to `required` (OpenAI's strict mode has no notion of an
@@ -149,7 +163,9 @@ function createOpenAIProvider(options: ProviderOptions): AIProvider {
         body: {
           model: request.model,
           max_completion_tokens: maxCompletionTokensFor(request),
-          reasoning_effort: toOpenAIEffort(request.effort),
+          ...(modelSupportsReasoningEffort(request.model)
+            ? { reasoning_effort: toOpenAIEffort(request.effort) }
+            : {}),
           response_format: {
             type: 'json_schema',
             json_schema: {

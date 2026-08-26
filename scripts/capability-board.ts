@@ -15,13 +15,21 @@
 
 import { loadConfig } from '../lib/config.js';
 import { createLogger, createConsoleSink } from '../lib/logger.js';
+import { resolveBudgetTier } from '../lib/capability/budget.js';
 import { createCapabilityOrchestrator } from '../lib/capability/orchestrator.js';
 
 async function main(): Promise<void> {
   const config = loadConfig();
   const logger = createLogger({ level: config.logLevel, scope: 'capability-board', sink: createConsoleSink() });
 
-  const orchestrator = await createCapabilityOrchestrator({ config, logger });
+  const orchestrator = await createCapabilityOrchestrator({
+    config,
+    logger,
+    policy: {
+      ...resolveBudgetTier(config.budgetTier, config.budgetCustomCents ?? undefined),
+      ...(config.allowCerebrasSpend ? { allowUnverifiedPricingFor: ['cerebras'] as const } : {}),
+    },
+  });
   const board = orchestrator.board();
 
   if (process.argv.includes('--json')) {

@@ -55,7 +55,7 @@ function groundingCall(routing: { capabilities: ReturnType<typeof fakeCapability
 /* #7 Gemini exhaustion excludes Gemini                                  */
 /* -------------------------------------------------------------------- */
 
-test('an exhausted Gemini daily quota excludes Gemini from the plan entirely — not merely ranks it behind', async () => {
+test('an exhausted Gemini daily quota excludes Gemini from the plan entirely, and the run degrades to the deterministic floor instead of failing', async () => {
   const { factory, calls } = fakeProviderFactory({
     gemini: 'unreachable', // if reached at all, the test should fail loudly
   });
@@ -67,10 +67,15 @@ test('an exhausted Gemini daily quota excludes Gemini from the plan entirely —
     quota,
   });
 
-  await assert.rejects(
-    () => groundingCall({ capabilities: orchestrator, providers: factory }, fakeConfig()),
-    /no vendor could compile the factual dossier/,
-  );
+  // Gemini is the only credentialled vendor and its quota is exhausted, so
+  // the plan's only remaining step is `reasoning`'s deterministic floor.
+  // Before `withDeterministicFloor` (`lib/capability/invokers.ts`) that step
+  // could not actually run — reaching it crashed the whole run instead of
+  // degrading, exactly the defect this suite now proves fixed: the dossier
+  // still comes back, composed from grounding.ts's own defaults.
+  const dossier = await groundingCall({ capabilities: orchestrator, providers: factory }, fakeConfig());
+
+  assert.equal(dossier.businessName, 'River Park Events Drăgășani');
   assert.equal(calls.length, 0, 'an exhausted vendor must never actually be called');
 });
 
@@ -123,7 +128,7 @@ test('an exhausted-but-paid-allowed Gemini is still tried as a paid option, not 
 /* #11 Budget policy prevents unintended paid execution                  */
 /* -------------------------------------------------------------------- */
 
-test('zero-budget policy (the default) excludes a paid vendor entirely — no spend, no call, an honest failure', async () => {
+test('zero-budget policy (the default) excludes a paid vendor entirely, and the run degrades to the deterministic floor rather than failing', async () => {
   const { factory, calls } = fakeProviderFactory({
     openai: { businessName: 'Should never be reached', category: 'x', verifiedFacts: [], inferences: [], creativeInterpretations: [], conflicts: [], forbiddenAssumptions: [], location: { fullAddress: '', street: '', city: '', region: '' }, contact: {}, primaryLanguage: 'en' },
   });
@@ -131,10 +136,12 @@ test('zero-budget policy (the default) excludes a paid vendor entirely — no sp
   // policy (allowPaid: false, budgetCentsRemaining: 0).
   const orchestrator = fakeCapabilityOrchestrator({ credentials: new Set(['OPENAI_API_KEY']) });
 
-  await assert.rejects(
-    () => groundingCall({ capabilities: orchestrator, providers: factory }, fakeConfig('openai')),
-    /no vendor could compile the factual dossier/,
-  );
+  // OpenAI is filtered out before ranking (zero budget), leaving only
+  // `reasoning`'s deterministic floor — which now actually runs instead of
+  // crashing the run with `createModelInvoker`'s "non-model step" error.
+  const dossier = await groundingCall({ capabilities: orchestrator, providers: factory }, fakeConfig('openai'));
+
+  assert.equal(dossier.businessName, 'River Park Events Drăgășani');
   assert.equal(calls.length, 0, 'a zero-budget run must never reach a paid vendor');
 });
 

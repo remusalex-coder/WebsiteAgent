@@ -82,7 +82,8 @@ test('the HTML pass prompt names the selected functional module\'s real fields',
   };
   const orchestrator = fakeCapabilityOrchestrator({ credentials: new Set(['GEMINI_API_KEY']) });
 
-  await buildFrontend(blueprint(), tmpDir('bf-wiring-'), fakeConfig(), { capabilities: orchestrator, providers: providers as any }, noopLogger);
+  const runDir = tmpDir('bf-wiring-');
+  await buildFrontend(blueprint(), runDir, path.join(runDir, 'site'), fakeConfig(), { capabilities: orchestrator, providers: providers as any }, noopLogger);
 
   assert.equal(prompts.length, 2);
   const [htmlPrompt, cssJsPrompt] = prompts;
@@ -137,7 +138,8 @@ test('a "none" motion intensity tells the CSS/JS pass no animated transitions ar
   const bp = blueprint();
   const noneStrategySig = { ...bp.signature, experienceStrategy: { ...DEFAULT_EXPERIENCE_STRATEGY, motionIntensity: 'none' as const, functionalModules: ['none' as const] } };
 
-  await buildFrontend({ ...bp, signature: noneStrategySig }, tmpDir('bf-wiring-none-'), fakeConfig(), { capabilities: orchestrator, providers: providers as any }, noopLogger);
+  const runDirNone = tmpDir('bf-wiring-none-');
+  await buildFrontend({ ...bp, signature: noneStrategySig }, runDirNone, path.join(runDirNone, 'site'), fakeConfig(), { capabilities: orchestrator, providers: providers as any }, noopLogger);
 
   assert.match(prompts[1]!, /no animated transitions beyond instant state changes/);
   assert.match(prompts[0]!, /none selected/i);

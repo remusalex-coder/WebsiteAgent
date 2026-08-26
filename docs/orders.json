@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "1.0.0",
+  "purpose": "Persistent order queue for the autonomous execution loop (scripts/autonomous-loop.ts). A 'business order' is one short natural-language request (e.g. 'Build a premium site for an artisan bakery in Sibiu'). The loop pulls the oldest PENDING order, runs the full pipeline (runJobFull: evidence -> strategy -> design -> content -> build -> QA -> repair -> deploy), records the runId + decision, and moves on. This file is the resume point: a fresh process reads it on boot and continues exactly where the previous one left off, so a killed session never loses a queued order. Same shape as docs/WORK_QUEUE.json's taskSchema.",
+  "lastUpdated": "2026-08-25",
+  "orderSchema": {
+    "id": "stable short id, e.g. ORD-001",
+    "order": "the customer's request, in words (1-2 sentences, <=2000 chars)",
+    "status": "PENDING | RUNNING | DONE | ESCALATED | FAILED",
+    "runId": "slug the loop assigned, maps to output/<runId>/",
+    "maxIter": "integer 1..20, bounds the QA loop inside runJobFull",
+    "attempts": "integer, incremented per real attempt",
+    "budgetTier": "tier0|tier1|tier2|tier3 — how much a run may spend",
+    "decision": "deliver|escalate|null — terminal decision from runJobFull",
+    "finalOutput": "local site path or live URL, or null",
+    "error": "short machine-readable reason when status is FAILED",
+    "createdAt": "ISO date",
+    "updatedAt": "ISO date"
+  },
+  "orders": [
+    {
+      "id": "ORD-001",
+      "order": "Construieste un website premium pentru o brutarie artizanala din Sibiu",
+      "status": "DONE",
+      "maxIter": 2,
+      "attempts": 2,
+      "budgetTier": "tier1",
+      "createdAt": "2026-08-25T17:06:11.546Z",
+      "updatedAt": "2026-08-25T17:10:46.180Z",
+      "runId": "ord-mt8x2uh5-4410dd",
+      "error": null,
+      "decision": "deliver",
+      "finalOutput": "C:\\Users\\40728\\WebsiteAgent\\output\\ord-mt8x2uh5-4410dd\\site"
+    },
+    {
+      "id": "ORD-TEST",
+      "order": "Construieste un website modern pentru un salon de masaj din Constanta",
+      "status": "DONE",
+      "maxIter": 2,
+      "attempts": 1,
+      "budgetTier": "tier1",
+      "decision": "deliver",
+      "finalOutput": "C:\\Users\\40728\\WebsiteAgent\\output\\ord-mt929wza-824221\\site",
+      "error": null,
+      "createdAt": "2026-08-25T19:29:24.423Z",
+      "updatedAt": "2026-08-25T19:35:55.619Z",
+      "runId": "ord-mt929wza-824221"
+    },
+    {
+      "id": "ORD-002",
+      "order": "Site modern pentru un coafor din Bucuresti",
+      "status": "ESCALATED",
+      "maxIter": 2,
+      "attempts": 1,
+      "budgetTier": "tier1",
+      "decision": "escalate",
+      "finalOutput": null,
+      "error": null,
+      "createdAt": "2026-08-25T19:53:14.554Z",
+      "updatedAt": "2026-08-25T19:56:19.473Z",
+      "runId": "ord-mt932gj1-978ddd"
+    },
+    {
+      "id": "ORD-004",
+      "order": "Site modern pentru un barbershop din Timisoara",
+      "status": "DONE",
+      "maxIter": 2,
+      "attempts": 1,
+      "budgetTier": "tier1",
+      "decision": "deliver",
+      "finalOutput": "C:\\Users\\40728\\WebsiteAgent\\output\\ord-mt93tr5x-61201b\\site",
+      "error": null,
+      "createdAt": "2026-08-25T20:15:20.494Z",
+      "updatedAt": "2026-08-25T20:17:38.934Z",
+      "runId": "ord-mt93tr5x-61201b"
+    }
+  ]
+}

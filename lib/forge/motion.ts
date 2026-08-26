@@ -209,7 +209,12 @@ const MOTION_LIBRARIES: Readonly<Record<MotionIntensity, MotionLibraryGuidance>>
   none: { recommended: ['CSS transitions/animations only — no JS animation library'], forbidden: FORBIDDEN_LIBRARIES },
   subtle: { recommended: ['CSS transitions/animations', 'the Web Animations API for the rare case CSS cannot express it'], forbidden: FORBIDDEN_LIBRARIES },
   expressive: { recommended: ['GSAP + ScrollTrigger (scroll-linked choreography, timelines)', 'Lenis (smooth/inertia scroll)'], forbidden: FORBIDDEN_LIBRARIES },
-  immersive: { recommended: ['GSAP + ScrollTrigger', 'Lenis', 'the View Transitions API for page/route transitions, as progressive enhancement with a GSAP fallback for unsupported browsers', 'OGL (not Three.js) as the lightweight WebGL entry point, only when experienceStrategy.requires3D is also true'], forbidden: FORBIDDEN_LIBRARIES },
+  // `requires3D` builds recommend `three-js-hero-object` (the vendored,
+  // registered adapter — see `lib/design/experienceRegistry.ts`), not OGL:
+  // OGL has no registered adapter today, and any build that used it would
+  // fail `checkRuntimePrimitiveRegistryGate` (`lib/forge/registryGate.ts`)
+  // outright. Recommend only what the registry can actually gate and ship.
+  immersive: { recommended: ['GSAP + ScrollTrigger', 'Lenis', 'the View Transitions API for page/route transitions, as progressive enhancement with a GSAP fallback for unsupported browsers', 'Three.js, only when experienceStrategy.requires3D is also true'], forbidden: FORBIDDEN_LIBRARIES },
 };
 
 /**
@@ -380,9 +385,9 @@ ${contract.forbiddenTechniques.map((t) => `  - ${t}`).join('\n')}`;
 export function motionLibraryHtmlPrompt(contract: MotionContract): string {
   // "recommended" at none/subtle names browser built-ins (CSS, the Web
   // Animations API) — nothing external to load. Only flag intensities that
-  // name an actual loadable library (GSAP, Lenis, OGL), so this fragment
-  // doesn't tell the HTML pass to CDN-load "the Web Animations API".
-  const loadableLibraries = contract.libraries.recommended.filter((l) => /GSAP|Lenis|OGL/.test(l));
+  // name an actual loadable, registered library (GSAP, Lenis, Three.js), so
+  // this fragment doesn't tell the HTML pass to CDN-load "the Web Animations API".
+  const loadableLibraries = contract.libraries.recommended.filter((l) => /GSAP|Lenis|Three\.js/.test(l));
   if (loadableLibraries.length === 0) {
     return `MOTION LIBRARIES (intensity: "${contract.intensity}"): none recommended — CSS/browser-native only, do not add a motion-library CDN <script> tag.`;
   }

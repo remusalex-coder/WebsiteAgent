@@ -178,8 +178,8 @@ describe('emphasisFor', () => {
 });
 
 describe('theme library', () => {
-  it('defines all eleven directions', () => {
-    assert.equal(DESIGN_DIRECTIONS.length, 11);
+  it('defines all twelve directions', () => {
+    assert.equal(DESIGN_DIRECTIONS.length, 12);
     for (const direction of DESIGN_DIRECTIONS) {
       assert.ok(THEMES[direction], direction);
       assert.equal(themeFor(direction).id, direction);

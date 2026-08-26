@@ -12,7 +12,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { applyDirective, applyExperienceIntent } from '../../lib/design/directive.js';
+import { applyDirective, applyExperienceIntent, directiveRuntimePrimitiveIds } from '../../lib/design/directive.js';
+import { RUNTIME_PRIMITIVE_BUDGET } from '../../lib/design/experience.js';
 import { composeDesign } from '../../lib/design/index.js';
 import { profileFixture, strategyFixture } from '../fixtures/business.js';
 import { fullContent, minimalContent } from '../fixtures/content.js';
@@ -724,5 +725,72 @@ describe('end-to-end: experienceIntent → composeDesign', () => {
     const a = composeDesign(baseInput(), options);
     const b = composeDesign(baseInput(), options);
     assert.deepEqual(a, b);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* directiveRuntimePrimitiveIds — shape-only extraction                */
+/* ------------------------------------------------------------------ */
+
+describe('directiveRuntimePrimitiveIds', () => {
+  it('extracts ids from a valid Director selection, in request order', () => {
+    const ids = directiveRuntimePrimitiveIds({
+      runtimePrimitives: [
+        { id: 'lenis-smooth-scroll', reason: 'editorial scroll pacing fits the portfolio' },
+        { id: 'gsap-scrolltrigger', reason: 'section reveals build the narrative arc' },
+      ],
+    });
+    assert.deepEqual(ids, ['lenis-smooth-scroll', 'gsap-scrolltrigger']);
+  });
+
+  it('an undefined directive (director off, or a historical directive) yields no primitives', () => {
+    assert.deepEqual(directiveRuntimePrimitiveIds(undefined), []);
+  });
+
+  it('a directive with no runtimePrimitives field yields no primitives — the common, correct answer', () => {
+    assert.deepEqual(directiveRuntimePrimitiveIds({ direction: 'minimal' }), []);
+  });
+
+  it('an explicitly empty selection yields no primitives', () => {
+    assert.deepEqual(directiveRuntimePrimitiveIds({ runtimePrimitives: [] }), []);
+  });
+
+  it('a malformed entry (no id, non-string id) is dropped, never thrown', () => {
+    const ids = directiveRuntimePrimitiveIds({
+      runtimePrimitives: [
+        { id: 'lenis-smooth-scroll', reason: 'ok' },
+        // @ts-expect-error — deliberately malformed, exercising the untrusted-input path
+        { reason: 'no id at all' },
+        // @ts-expect-error — deliberately malformed
+        { id: 42, reason: 'a number, not a string' },
+        { id: '', reason: 'blank id' },
+      ],
+    });
+    assert.deepEqual(ids, ['lenis-smooth-scroll']);
+  });
+
+  it('deduplicates repeated ids, keeping first-seen order', () => {
+    const ids = directiveRuntimePrimitiveIds({
+      runtimePrimitives: [
+        { id: 'gsap-scrolltrigger', reason: 'a' },
+        { id: 'lenis-smooth-scroll', reason: 'b' },
+        { id: 'gsap-scrolltrigger', reason: 'c (duplicate)' },
+      ],
+    });
+    assert.deepEqual(ids, ['gsap-scrolltrigger', 'lenis-smooth-scroll']);
+  });
+
+  it('defensively caps a pathologically long response before the real budget ever applies', () => {
+    const many = Array.from({ length: RUNTIME_PRIMITIVE_BUDGET * 5 }, (_unused, i) => ({
+      id: `made-up-id-${i}`,
+      reason: 'stress test',
+    }));
+    const ids = directiveRuntimePrimitiveIds({ runtimePrimitives: many });
+    assert.equal(ids.length, RUNTIME_PRIMITIVE_BUDGET * 2);
+  });
+
+  it('is a pure function: identical input produces identical output', () => {
+    const directive = { runtimePrimitives: [{ id: 'lenis-smooth-scroll', reason: 'x' }] };
+    assert.deepEqual(directiveRuntimePrimitiveIds(directive), directiveRuntimePrimitiveIds(directive));
   });
 });

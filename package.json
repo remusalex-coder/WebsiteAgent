@@ -30,6 +30,7 @@
     "capability-board": "node --import tsx --env-file=.env scripts/capability-board.ts",
     "capability-proof": "node --import tsx --env-file=.env scripts/capability-e2e-proof.ts",
     "status": "node --import tsx scripts/status.ts",
+    "autonomous": "node --import tsx --env-file=.env scripts/autonomous-loop.ts",
     "preview": "node scripts/preview.mjs",
     "postinstall": "playwright install chromium"
   },

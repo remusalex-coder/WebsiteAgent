@@ -145,14 +145,17 @@ test('"expressive" and "immersive" recommend the OBSERVED real-world stack: GSAP
   }
 });
 
-test('OGL, not Three.js, is the recommended 3D entry point, and only at immersive intensity', () => {
+test('Three.js is the recommended 3D entry point, and only at immersive intensity', () => {
+  // OGL was dropped from this recommendation: it has no entry in
+  // lib/design/experienceRegistry.ts (no vendored adapter exists), so any
+  // build that used it would fail checkRuntimePrimitiveRegistryGate outright
+  // — see lib/forge/registryGate.ts and lib/forge/motion.ts's own note.
+  // Three.js maps to the registered `three-js-hero-object` primitive.
   const immersive = motionContractFor('immersive').libraries.recommended.join(' ');
-  assert.match(immersive, /OGL/);
-  // "Three.js" appears only as an explicit negation ("OGL (not Three.js)") —
-  // never as a standalone recommendation of its own.
-  assert.match(immersive, /OGL \(not Three\.js\)/);
+  assert.match(immersive, /Three\.js/);
+  assert.doesNotMatch(immersive, /OGL/);
   for (const intensity of ['none', 'subtle', 'expressive'] as const) {
-    assert.doesNotMatch(motionContractFor(intensity).libraries.recommended.join(' '), /OGL/);
+    assert.doesNotMatch(motionContractFor(intensity).libraries.recommended.join(' '), /Three\.js/);
   }
 });
 

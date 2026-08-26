@@ -17,7 +17,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createModelInvoker } from '../capability/invokers.js';
+import { createModelInvoker, deterministicModelResult, withDeterministicFloor } from '../capability/invokers.js';
 import type { FactualDossier, ForgeRouting, ProvenanceFact, SourcedAsset } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
@@ -65,7 +65,7 @@ CRITICAL FACTUAL GROUNDING RULES:
 
 Return strictly valid JSON conforming to the schema.`;
 
-  const invoke = createModelInvoker(
+  const modelInvoke = createModelInvoker(
     {
       system:
         'You are a rigorous factual auditor. Never invent facts. Separate verified truths from inferences and forbid unproven name-based assumptions.',
@@ -207,6 +207,19 @@ Return strictly valid JSON conforming to the schema.`;
     routing.providers,
     logger,
   );
+
+  // Every field this stage reads below already falls back to a hardcoded
+  // default when a model *omits* it (`(parsed.x as T) || default`). Handing
+  // back an empty object on the deterministic floor routes through that same
+  // fallback path, so a run survives every vendor being unreachable — the
+  // exact case `bindings.ts` declared this floor for — instead of crashing
+  // on a step this invoker never expected to see.
+  const invoke = withDeterministicFloor(modelInvoke, (step) => {
+    logger.warn('reasoning capability degraded to its deterministic floor — compiling the dossier from defaults only', {
+      service: step.binding.id,
+    });
+    return deterministicModelResult(step, {});
+  });
 
   const outcome = await routing.capabilities.run('reasoning', invoke, {
     tokens: { inputTokens: prompt.length / 4, outputTokens: 6_000 },

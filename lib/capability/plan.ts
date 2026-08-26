@@ -84,6 +84,8 @@ export type ExclusionReason =
   | 'over-budget'
   /** Paid services are disabled for this run. */
   | 'paid-disabled'
+  /** The price is an unverified placeholder and the policy does not allow spending against it. */
+  | 'unpriced-blocked'
   /** The licence class is not permitted by policy. */
   | 'licence-blocked'
   /** The jurisdiction is not permitted by policy. */
@@ -160,6 +162,21 @@ export interface CapabilityPolicy {
   readonly autonomous: boolean;
   /** Free-before-paid ordering. Off only for a deliberate quality-first run. */
   readonly preferFree: boolean;
+  /**
+   * Whether a candidate whose price is an unverified placeholder
+   * (`priceConfidence: 'estimated'`) may be selected once it would cost
+   * something. `false` everywhere by default, including at every budget
+   * tier — a rough number can rank candidates, but it cannot spend real
+   * money without someone explicitly saying so.
+   */
+  readonly allowUnverifiedPricing: boolean;
+  /**
+   * Providers whose `'estimated'` price may spend anyway — a named, scoped
+   * exception to `allowUnverifiedPricing`. Empty by default: naming a vendor
+   * here is the only way in, so authorizing one vendor's placeholder price
+   * never widens the blanket flag or any other vendor's.
+   */
+  readonly allowUnverifiedPricingFor: readonly AIProviderName[];
 }
 
 export const DEFAULT_POLICY: CapabilityPolicy = {
@@ -174,6 +191,8 @@ export const DEFAULT_POLICY: CapabilityPolicy = {
   ],
   autonomous: true,
   preferFree: true,
+  allowUnverifiedPricing: false,
+  allowUnverifiedPricingFor: [],
 };
 
 export interface PlanOptions {
@@ -311,6 +330,15 @@ export function planCapability(options: PlanOptions): CapabilityPlan {
         drop('paid-disabled', `would cost about ${cents} cents; this run is zero-budget`);
         continue;
       }
+      const unverifiedAllowed =
+        policy.allowUnverifiedPricing || policy.allowUnverifiedPricingFor.includes(record.provider);
+      if (cents > 0 && record.priceConfidence === 'estimated' && !unverifiedAllowed) {
+        drop(
+          'unpriced-blocked',
+          `${record.id}'s price is an unverified placeholder; re-check before allowing spend`,
+        );
+        continue;
+      }
       if (cents > policy.budgetCentsRemaining && cents > 0) {
         drop(
           'over-budget',
@@ -335,6 +363,16 @@ export function planCapability(options: PlanOptions): CapabilityPlan {
     const cents = binding.fixedCents;
     if (cents > 0 && !policy.allowPaid) {
       drop('paid-disabled', `would cost about ${cents} cents; this run is zero-budget`);
+      continue;
+    }
+    const unverifiedAllowedLocal =
+      policy.allowUnverifiedPricing ||
+      (binding.provider !== null && policy.allowUnverifiedPricingFor.includes(binding.provider));
+    if (cents > 0 && binding.priceConfidence === 'estimated' && !unverifiedAllowedLocal) {
+      drop(
+        'unpriced-blocked',
+        `${binding.id}'s price is an unverified placeholder; re-check before allowing spend`,
+      );
       continue;
     }
     if (cents > policy.budgetCentsRemaining && cents > 0) {
@@ -408,6 +446,22 @@ function compareSteps(
   telemetry: Readonly<Record<string, CapabilityMetrics>>,
   policy: CapabilityPolicy,
 ): number {
+  // The deterministic floor is the chain's guaranteed terminal (`bindings.ts`'s
+  // own docstring: "the last row of the chain"), not a candidate competing on
+  // price — but its `estimatedCents` is always 0, so without this rule
+  // `preferFree` below would rank it ahead of every paid vendor, and once the
+  // floor actually runs something (`withDeterministicFloor`,
+  // `lib/capability/invokers.ts`) that pre-empts real cross-vendor failover
+  // the moment a free run exhausts its unpaid options, rather than only after
+  // every vendor — paid ones included, where policy allows spending — has
+  // been tried. It always sorts after every non-deterministic step; the
+  // remaining criteria (including declared order, last) still decide between
+  // two deterministic candidates, though no capability currently declares
+  // more than one.
+  const aFloor = a.binding.kind === 'deterministic';
+  const bFloor = b.binding.kind === 'deterministic';
+  if (aFloor !== bFloor) return aFloor ? 1 : -1;
+
   if (policy.preferFree && a.free !== b.free) return a.free ? -1 : 1;
   if (a.estimatedCents !== b.estimatedCents) return a.estimatedCents - b.estimatedCents;
 

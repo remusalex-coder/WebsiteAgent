@@ -16,12 +16,30 @@
  * stage outright.
  */
 
-import { createModelInvoker } from '../capability/invokers.js';
+import { createModelInvoker, withDeterministicFloor } from '../capability/invokers.js';
 import { EXPERIENCE_STRATEGY_PROMPT, EXPERIENCE_STRATEGY_SCHEMA, normalizeExperienceStrategy } from './experienceStrategy.js';
 
 import type { CreativeTerritory, ExperienceSignature, FactualDossier, ForgeRouting } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
+import type { PlanStep } from '../capability/plan.js';
+
+/**
+ * `creative_direction`'s declared floor is `derive-character` — a directive
+ * "deriveCharacter plus worlds.ts" would produce (`bindings.ts`). No such
+ * deterministic composer exists yet for this pipeline's creative-territory
+ * and experience-signature shapes (unlike `grounding.ts`/`research.ts`,
+ * which already had per-field fallback literals to reuse), so until one is
+ * built the honest behaviour on reaching this step is to fail the chain
+ * intentionally — caught by the `!outcome.ok` checks below, same as any
+ * other unreachable-vendor failure — rather than throwing the generic
+ * "handed a non-model step" error that reads like a wiring bug.
+ */
+function deriveCharacterFloor(step: PlanStep): never {
+  throw new Error(
+    `[forge.signature] ${step.binding.id}: no deterministic creative direction exists yet — discarding and failing over`,
+  );
+}
 
 export interface SignatureResult {
   readonly territories: readonly CreativeTerritory[];
@@ -241,7 +259,7 @@ For EACH territory, specify: id, name, conceptThesis, metaphor, emotionalTarget,
 
 Return strictly valid JSON containing an array of 3 territories under "territories".`;
 
-  const territoryInvoke = createModelInvoker(
+  const territoryModelInvoke = createModelInvoker(
     {
       system: 'You generate distinct, radical, high-craft creative territories grounded strictly in verified evidence.',
       prompt: territoryPrompt,
@@ -254,6 +272,7 @@ Return strictly valid JSON containing an array of 3 territories under "territori
     routing.providers,
     logger,
   );
+  const territoryInvoke = withDeterministicFloor(territoryModelInvoke, deriveCharacterFloor);
 
   const territoryOutcome = await routing.capabilities.run('creative_direction', territoryInvoke, {
     tokens: { inputTokens: territoryPrompt.length / 4, outputTokens: 4_000 },
@@ -308,7 +327,7 @@ MANDATES FOR EXPERIENCE SIGNATURE:
 
 Return strictly valid JSON conforming to the ExperienceSignature schema.`;
 
-  const signatureInvoke = createModelInvoker(
+  const signatureModelInvoke = createModelInvoker(
     {
       system:
         'You formulate an intentional, bespoke Experience Signature with strict restraint and artistic discipline. Never generate generic templates.',
@@ -322,6 +341,7 @@ Return strictly valid JSON conforming to the ExperienceSignature schema.`;
     routing.providers,
     logger,
   );
+  const signatureInvoke = withDeterministicFloor(signatureModelInvoke, deriveCharacterFloor);
 
   const signatureOutcome = await routing.capabilities.run('creative_direction', signatureInvoke, {
     tokens: { inputTokens: signaturePrompt.length / 4, outputTokens: 6_000 },

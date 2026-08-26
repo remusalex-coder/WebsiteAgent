@@ -188,7 +188,7 @@ test('builder.ts routes both generation passes through the "structured_generatio
   const orchestrator = fakeCapabilityOrchestrator({ credentials: GEMINI_ONLY });
   const runDir = tmpDir('bf-builder-');
 
-  const code = await buildFrontend(blueprint(), runDir, fakeConfig(), { capabilities: orchestrator, providers: providers as any }, noopLogger);
+  const code = await buildFrontend(blueprint(), runDir, path.join(runDir, 'site'), fakeConfig(), { capabilities: orchestrator, providers: providers as any }, noopLogger);
 
   assert.equal(code.html, '<!DOCTYPE html><html><body>hi</body></html>');
   assert.equal(code.css, 'body{}');
@@ -221,7 +221,7 @@ test('critic.ts calls capabilities.run("craft_judging", …) — the vision-spec
     remainingCents: () => 0,
     quota: { used: () => 0, hasRoom: () => true, remaining: () => null, record: async () => {}, snapshot: () => ({ day: 'test', used: {} }) },
     governor: { acquire: async () => {}, release: () => {} } as any,
-    policy: { allowPaid: false, budgetCentsRemaining: 0, allowedJurisdictions: ['local'], allowedLicences: ['permissive-local'], autonomous: true, preferFree: true },
+    policy: { allowPaid: false, budgetCentsRemaining: 0, allowedJurisdictions: ['local'], allowedLicences: ['permissive-local'], autonomous: true, preferFree: true, allowUnverifiedPricing: false, allowUnverifiedPricingFor: [] },
   };
 
   // A 1x1 transparent PNG, base64 — evaluateVision reads real files off disk.

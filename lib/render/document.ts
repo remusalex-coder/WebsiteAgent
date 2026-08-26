@@ -48,6 +48,12 @@ export interface DocumentInput {
   readonly themeColor: string;
   /** The design, when one was supplied. `null` is the pre-design shell. */
   readonly design: WebsiteDesign | null;
+  /**
+   * Optional generic runtime. When `'scroll-progress'`, the document carries
+   * `data-runtime="scroll-progress"` and a `<script>` that starts it. `undefined`
+   * or `'none'` renders the static floor with no script.
+   */
+  readonly runtime?: 'none' | 'scroll-progress' | undefined;
   /** Collects what the shell had to leave out. Never throws. */
   readonly warn: (message: string) => void;
 }
@@ -116,6 +122,10 @@ function renderHead(
 
     favicon === null ? null : element('link', { rel: 'icon', href: favicon.src }),
     element('link', { rel: 'stylesheet', href: options.cssFileName }),
+    // Only when a real deployed base URL is known (RenderOptions.siteUrl) —
+    // never invented. See that field's own doc comment for why it is not
+    // the Maps listing's canonicalUrl.
+    options.siteUrl === null ? null : element('link', { rel: 'canonical', href: options.siteUrl }),
 
     !hasStructuredData
       ? null
@@ -427,6 +437,9 @@ export function renderDocument(input: DocumentInput): string {
           ),
     ),
     renderFooter(input),
+    ...(input.runtime === 'scroll-progress'
+      ? [element('script', { type: 'module', src: 'runtime.js', defer: true }, null)]
+      : []),
   ]);
 
   // The root carries the decisions that hold for the whole page. Rules that
@@ -435,6 +448,7 @@ export function renderDocument(input: DocumentInput): string {
   // read the four loudest choices off the first line of the document.
   const html = element('html', {
     lang: options.lang,
+    ...(input.runtime === 'scroll-progress' ? { 'data-runtime': 'scroll-progress' } : {}),
     ...(design === null ? {} : {
       'data-world': design.world,
       'data-direction': design.personality.direction,

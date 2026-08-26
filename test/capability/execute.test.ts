@@ -119,6 +119,31 @@ test('cost lines are only recorded for steps that estimated a non-zero cost', as
   assert.ok(result.record.totalCents > 0);
 });
 
+test('a failed paid step still produces a cost line — it consumed the vendor call before it threw (test #12)', async () => {
+  const plan = planCapability({
+    capability: 'prose_writing',
+    credentials: ALL_CREDENTIALS,
+    policy: { allowPaid: true, budgetCentsRemaining: 1_000, preferFree: false },
+  });
+  const anthropicStep = plan.chain.find((s) => s.binding.provider === 'anthropic');
+  assert.ok(anthropicStep, 'expected a paid step to exist for this test to mean anything');
+
+  const result = await executeCapability<string>({
+    plan,
+    logger,
+    invoke: async (step) => {
+      if (step.binding.id === anthropicStep.binding.id) throw new Error('upstream 500');
+      throw new Error('not this one either');
+    },
+  });
+
+  const anthropicAttempt = result.record.attempts.find((a) => a.service === anthropicStep.binding.id);
+  assert.equal(anthropicAttempt?.ok, false);
+  const anthropicLine = result.record.costLines.find((l) => l.provider === 'anthropic');
+  assert.ok(anthropicLine, 'a failed call that estimated a real cost must still be charged');
+  assert.ok(anthropicLine.cents > 0);
+});
+
 test('a successful deterministic-only capability records zero cost', async () => {
   const plan = planCapability({ capability: 'accessibility', credentials: new Set() });
   const result = await executeCapability<string>({

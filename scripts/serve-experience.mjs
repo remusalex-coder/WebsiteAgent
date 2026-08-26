@@ -18,7 +18,11 @@ const runId = process.argv[2] ?? '25e648c7';
 // PORT wins when a launcher assigns one dynamically; the positional arg is
 // for a human running this by hand.
 const port = Number(process.env.PORT ?? process.argv[3] ?? 4321);
-const base = path.join(ROOT, 'output', runId, 'experience');
+// `experience/` is the hand-built demo folder; `site/` is what the pipeline
+// renders. A factory run only ever produces the latter, so serve whichever the
+// run actually has rather than 404ing on every generated site.
+const candidates = ['experience', 'site'].map((dir) => path.join(ROOT, 'output', runId, dir));
+const base = candidates.find((dir) => fs.existsSync(dir)) ?? candidates[0];
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',

@@ -242,3 +242,23 @@ test('a build with no violations and no peers passes clean', async () => {
   assert.deepEqual(result.flags, []);
   assert.equal(result.structuralConvergence?.verdict, 'NO_PEERS');
 });
+
+/* -------------------------------------------------------------------- */
+/* checkRuntimePrimitiveRegistryGate, wired into the overall result      */
+/* -------------------------------------------------------------------- */
+
+test('a build using an unregistered runtime library (OGL) fails the overall gate', async () => {
+  const outputDir = tmpOutputDir();
+  const sig = signature();
+
+  const result = await auditAntiAIGeneric({
+    code: { html: '<html><body></body></html>', css: '', js: 'const r = new Renderer();' },
+    blueprint: blueprint(sig),
+    outputDir,
+    runId: 'self',
+    logger,
+  });
+
+  assert.equal(result.passed, false);
+  assert.ok(result.flags.some((f) => f.code === 'RUNTIME_PRIMITIVE_UNREGISTERED'));
+});

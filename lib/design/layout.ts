@@ -561,6 +561,13 @@ export interface LayoutInput {
   /** Whether the moment section (if any) also gets the transition primitive. */
   readonly momentTransition?: boolean | undefined;
   /**
+   * The *kind* of transition that marks the moment's entry, from
+   * `ExperienceArchitecture.transition`. Drives which CSS primitive the renderer
+   * applies (`veil` | `wipe` | `circular-handoff`); `none` emits no primitive.
+   * Defaults to `none` when the input does not carry it.
+   */
+  readonly transition?: 'none' | 'veil' | 'wipe' | 'circular-handoff' | undefined;
+  /**
    * The render order, as indices into `content.sections`, from the experience
    * script (`planNarrativeOrder`). When present it replaces the industry-priority
    * sort — the page is ordered by narrative role, not category. Absent, the
@@ -638,7 +645,9 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
   // worth building emphasis around.
   let momentApplied = false;
 
-  const partial = order.map((index, position) => {
+  const partial: Array<
+    Omit<SectionDesign, 'background' | 'frame'> & { index: number }
+  > = order.map((index, position) => {
     const section = content.sections[index];
     if (section === undefined) {
       return {
@@ -650,6 +659,7 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
         columns: null,
         fullBleed: false,
         momentTransition: false,
+        transition: 'none',
         role: null,
         rationale: 'Section index out of range.',
       };
@@ -720,6 +730,9 @@ export function planLayout(input: LayoutInput): { plan: LayoutPlan; notes: reado
       columns: columnsFor(chosen.variant, shape),
       fullBleed: chosen.variant === 'collage' || (section.kind === 'gallery' && emphasis === 'lead'),
       momentTransition: isMoment && (input.momentTransition ?? false),
+      // The transition *kind* rides on the moment beat only; elsewhere it is
+      // `none`. Defaults to `none` when the input does not carry one.
+      transition: (isMoment ? (input.transition ?? 'none') : 'none') as SectionDesign['transition'],
       role: role ?? null,
       rationale: chosen.rationale,
     };

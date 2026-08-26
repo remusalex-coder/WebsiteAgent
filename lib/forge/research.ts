@@ -17,7 +17,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { createModelInvoker } from '../capability/invokers.js';
+import { createModelInvoker, deterministicModelResult, withDeterministicFloor } from '../capability/invokers.js';
 import type { BusinessResearch, ForgeRouting, SourcedAsset } from './types.js';
 import type { AppConfig } from '../config.js';
 import type { Logger } from '../logger.js';
@@ -129,65 +129,6 @@ export async function harvestResearch(options: ResearchOptions): Promise<Busines
     if (browser) await browser.close().catch(() => {});
   }
 
-  // Check local profile registries and cached assets for River Park or other known venues
-  const isRiverPark = url.toLowerCase().includes('river.park') || url.toLowerCase().includes('riverpark') || (order && order.toLowerCase().includes('river park'));
-  const isGoSweet = url.toLowerCase().includes('go-sweet') || (order && order.toLowerCase().includes('sweet'));
-
-  if (isRiverPark) {
-    try {
-      const riverProfilePath = path.join(config.outputDir, 'riverpark', '3-profile.json');
-      const cached = JSON.parse(await fs.readFile(riverProfilePath, 'utf8'));
-      if (cached) {
-        rawPages.push({
-          url: 'https://www.instagram.com/river.park.events/ (Verified Registry)',
-          title: cached.name?.value || 'River Park Events Drăgășani',
-          text: JSON.stringify(cached, null, 2),
-          images: [],
-        });
-      }
-    } catch {
-      // ignore
-    }
-
-    // Ingest authentic high-res venue photography from riverpark assets
-    const riverAssetsDir = path.join(config.outputDir, 'riverpark', 'assets');
-    try {
-      const files = await fs.readdir(riverAssetsDir);
-      for (const f of files) {
-        if (f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.webp')) {
-          await fs.copyFile(path.join(riverAssetsDir, f), path.join(assetsDir, f));
-          const role = f.includes('firstdance') ? 'hero' : f.includes('hall') ? 'interior' : f.includes('detail') ? 'gallery' : 'gallery';
-          downloadedAssets.push({
-            id: `asset-${downloadedAssets.length + 1}`,
-            role: role as any,
-            url: `assets/${f}`,
-            localPath: `assets/${f}`,
-            alt: f.replace(/[-_.]/g, ' '),
-            realDescription: f.replace(/[-_.]/g, ' '),
-            provenanceSource: 'Verified Venue Photo Registry (Weddingo / Google Maps / Instagram)',
-          });
-        }
-      }
-    } catch {
-      // ignore
-    }
-  } else if (isGoSweet) {
-    try {
-      const cachedProfilePath = path.join(config.outputDir, 'gosweet1', '3-profile.json');
-      const cached = JSON.parse(await fs.readFile(cachedProfilePath, 'utf8'));
-      if (cached) {
-        rawPages.push({
-          url: 'https://go-sweet.ro (Profile Registry)',
-          title: cached.name?.value || 'Go Sweet & More Sibiu',
-          text: JSON.stringify(cached, null, 2),
-          images: [],
-        });
-      }
-    } catch {
-      // ignore
-    }
-  }
-
   // Synthesize research using LLM
   const prompt = `You are the Lead Business Intelligence Researcher for an elite digital design agency.
 Synthesize the gathered raw web/social/location evidence for "${url}" into a rich, structured dossier.
@@ -203,7 +144,7 @@ Requirements:
 - If primary language is Romanian (e.g. for a venue in Drăgășani, Romania), write evocative Romanian copy for descriptions/story/services, while keeping the structure valid.
 - Output MUST be valid JSON conforming to the schema.`;
 
-  const invoke = createModelInvoker(
+  const modelInvoke = createModelInvoker(
     {
       system: 'You extract factual, evocative, high-fidelity business intelligence into structured JSON. Never return generic placeholders.',
       prompt,
@@ -297,6 +238,23 @@ Requirements:
     logger,
   );
 
+  // Same reasoning as `grounding.ts`: every field below already falls back
+  // to a default when a model omits it, so an empty object on the
+  // deterministic floor lets that same fallback path compose the whole
+  // result — a run survives every vendor being unreachable rather than
+  // crashing on a step this invoker never expected to see. The defaults
+  // themselves must stay neutral: derived only from evidence already in
+  // scope (the crawl target's own `url`, or a crawled page's own `title`),
+  // never a fabricated business identity — inventing specific facts here is
+  // exactly what the Factual Firewall (`grounding.ts`) exists to catch
+  // downstream, one stage too late.
+  const invoke = withDeterministicFloor(modelInvoke, (step) => {
+    logger.warn('reasoning capability degraded to its deterministic floor — synthesizing research from defaults only', {
+      service: step.binding.id,
+    });
+    return deterministicModelResult(step, {});
+  });
+
   const outcome = await routing.capabilities.run('reasoning', invoke, {
     tokens: { inputTokens: prompt.length / 4, outputTokens: 6_000 },
   });
@@ -307,60 +265,48 @@ Requirements:
 
   const parsed = outcome.outcome.data.data as Record<string, unknown>;
 
+  // Neutral, non-fabricated fallback for the business name: prefer a title
+  // actually seen on a crawled page (real evidence), then the crawl
+  // target's own hostname, before giving up on a generic placeholder.
+  // Never a specific invented business identity.
+  let fallbackName = 'Unknown Business';
+  const crawledTitle = rawPages.find((p) => p.title?.trim())?.title?.trim();
+  if (crawledTitle) {
+    fallbackName = crawledTitle;
+  } else {
+    try {
+      const host = new URL(url).hostname.replace(/^www\./, '');
+      if (host) fallbackName = host;
+    } catch {
+      // url isn't a parseable absolute URL (e.g. a bare handle); keep the placeholder
+    }
+  }
+
   const result: BusinessResearch = {
-    name: (parsed.name as string) || (isRiverPark ? 'River Park Events Drăgășani' : 'River Park Events'),
-    taglines: (parsed.taglines as string[]) || ['Domeniu Exclusivist de Nunți și Evenimente pe Malul Râului'],
-    category: (parsed.category as string) || 'Event & Wedding Venue',
-    description:
-      (parsed.description as string) ||
-      'Domeniu de evenimente premium în Drăgășani, pe malul râului, cu sală mare de recepție, candelabru floral impunător, grădină de ceremonie și momentul semnătură — primul dans pe nori.',
-    storyAndPhilosophy:
-      (parsed.storyAndPhilosophy as string) ||
-      'La River Park Events, fiecare celebrare devine o filă de poveste. Îmbinăm măreția arhitecturii cu decorul floral luxuriant și atmosfera caldă a văii râului.',
-    productsOrServices: (parsed.productsOrServices as any[]) || [
-      {
-        name: 'Nunți de Poveste',
-        description: 'Recepții spectaculoase în sala mare, sub candelabrul floral impunător, cu ringul de dans pe nori și artificii reci.',
-        highlight: 'Signature Experience',
-      },
-      {
-        name: 'Ceremonii în Grădină',
-        description: 'Cununii civile și religioase în aer liber, înconjurate de natură pe malul râului, cu decor floral personalizat.',
-        highlight: 'Riverside Garden',
-      },
-      {
-        name: 'Botezuri & Petreceri Private',
-        description: 'Momente intime celebrate într-o atmosferă caldă și primitoare, cu meniuri gastronomice adaptate fiecărei familii.',
-        highlight: 'Bespoke Moments',
-      },
-    ],
-    differentiators: (parsed.differentiators as string[]) || [
-      'Momentul semnătură al primului dans pe nori cu ceață joasă și artificii reci',
-      'Sală mare monumentală cu candelabru floral și arcade filigranate',
-      'Grădină romantică pe malul râului pentru ceremonii în aer liber',
-      'Bucătărie proprie cu gastronomie fină și degustare de meniu inclusă',
-    ],
+    name: (parsed.name as string) || fallbackName,
+    taglines: (parsed.taglines as string[]) || [],
+    category: (parsed.category as string) || '',
+    description: (parsed.description as string) || '',
+    storyAndPhilosophy: (parsed.storyAndPhilosophy as string) || '',
+    productsOrServices: (parsed.productsOrServices as any[]) || [],
+    differentiators: (parsed.differentiators as string[]) || [],
     location: {
-      address: ((parsed.location as any)?.address as string) || 'Strada Regele Ferdinand 56',
-      city: ((parsed.location as any)?.city as string) || 'Drăgășani',
-      coordinates: { lat: 44.6605789, lng: 24.2519676 },
+      address: ((parsed.location as any)?.address as string) || '',
+      city: ((parsed.location as any)?.city as string) || '',
+      ...((parsed.location as any)?.coordinates ? { coordinates: (parsed.location as any).coordinates } : {}),
     },
     contact: {
-      phone: ((parsed.contact as any)?.phone as string) || '0723 607 005',
-      website: ((parsed.contact as any)?.website as string) || 'https://www.instagram.com/river.park.events/',
-      instagram: ((parsed.contact as any)?.instagram as string) || 'https://www.instagram.com/river.park.events/',
-      facebook: ((parsed.contact as any)?.facebook as string) || 'https://www.facebook.com/riverparkeventsdragasani/',
+      ...((parsed.contact as any)?.phone ? { phone: (parsed.contact as any).phone as string } : {}),
+      ...((parsed.contact as any)?.email ? { email: (parsed.contact as any).email as string } : {}),
+      website: ((parsed.contact as any)?.website as string) || url,
+      ...((parsed.contact as any)?.instagram ? { instagram: (parsed.contact as any).instagram as string } : {}),
+      ...((parsed.contact as any)?.facebook ? { facebook: (parsed.contact as any).facebook as string } : {}),
     },
-    hours: (parsed.hours as any[]) || [
-      { day: 'Luni - Duminică', range: '09:00 — 17:00 (Program Vizite & Birou Evenimente)' },
-    ],
-    reviews: (parsed.reviews as any[]) || [
-      { author: 'Andreea & Mihai V.', text: 'O locație de vis! Sala mare este superbă, iar primul dans pe nori a fost magic. Toți invitații au fost încântați!', rating: 5 },
-      { author: 'Cristina D.', text: 'Mâncarea delicioasă, servirea ireproșabilă și grădina minunată pentru poze. Recomand cu toată căldura!', rating: 5 },
-    ],
-    ratingSummary: { rating: 4.7, count: 217 },
+    hours: (parsed.hours as any[]) || [],
+    reviews: (parsed.reviews as any[]) || [],
+    ...(parsed.ratingSummary ? { ratingSummary: parsed.ratingSummary as any } : {}),
     assets: downloadedAssets,
-    primaryLanguage: (parsed.primaryLanguage as string) || 'ro',
+    primaryLanguage: (parsed.primaryLanguage as string) || 'en',
   };
 
   logger.info('Research completed successfully', {

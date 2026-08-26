@@ -124,6 +124,8 @@ const DEFAULT_TEST_POLICY: CapabilityPolicy = {
   allowedLicences: ['permissive-local', 'copyleft-local', 'commercial-api', 'free-tier-unverified'],
   autonomous: true,
   preferFree: true,
+  allowUnverifiedPricing: false,
+  allowUnverifiedPricingFor: [],
 };
 
 /** A `CapabilityOrchestrator` over the real planner/executor. See the module docstring for why. */
